@@ -14,7 +14,7 @@ export default [
 		plugins: [
 		
 			includePaths({
-				paths: ["./src", "./three.js/examples/jsm/renderers/webgpu"],
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/renderers/webgpu"],
 				//include: {
 				 // 'three': './three.js/build/three.module.js'
 				//}
@@ -35,7 +35,7 @@ export default [
 		plugins: [
 		
 			includePaths({
-				paths: ["./src", "./three.js/examples/jsm/renderers/webgpu"],
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/renderers/webgpu"],
 				include: {
 				  'three': './three.js/build/three.module.js'
 				}

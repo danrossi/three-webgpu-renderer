@@ -1,6 +1,6 @@
 class WebGPU {
 
-	async isAvailable() {
+	static async isAvailable() {
 		if (navigator.gpu !== undefined) {
 
 			const adapter = await navigator.gpu.requestAdapter();
