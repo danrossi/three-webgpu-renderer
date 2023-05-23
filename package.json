@@ -1,9 +1,9 @@
 {
     "name": "three-webgpu-renderer",
     "version": "0.153.0",
-    "description": "JavaScript 3D library",
+    "description": "Three.js WebGPU Renderer",
     "main": "build/three-webgpu-renderer.js",
-    "module": "build/three-webgpu-renderer.module.js",
+    "module": "build/webgpu-renderer.module.js",
     "scripts": {
       "build": "rollup -c rollup.config.js"
     },

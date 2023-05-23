@@ -18,15 +18,7 @@ import { Frustum, Matrix4, Vector3, Color, SRGBColorSpace, NoToneMapping, DepthF
 
 let staticAdapter = null;
 
-if ( navigator.gpu !== undefined ) {
-
-	staticAdapter = await navigator.gpu.requestAdapter();
-
-}
-
-console.info( 'THREE.WebGPURenderer: Modified Matrix4.makePerspective() and Matrix4.makeOrtographic() to work with WebGPU, see https://github.com/mrdoob/three.js/issues/20276.' );
-
-Matrix4.prototype.makePerspective = function ( left, right, top, bottom, near, far ) {
+const makePerspective = function ( left, right, top, bottom, near, far ) {
 
 	const te = this.elements;
 	const x = 2 * near / ( right - left );
@@ -46,7 +38,7 @@ Matrix4.prototype.makePerspective = function ( left, right, top, bottom, near, f
 
 };
 
-Matrix4.prototype.makeOrthographic = function ( left, right, top, bottom, near, far ) {
+const makeOrthographic = function ( left, right, top, bottom, near, far ) {
 
 	const te = this.elements;
 	const w = 1.0 / ( right - left );
@@ -66,7 +58,7 @@ Matrix4.prototype.makeOrthographic = function ( left, right, top, bottom, near, 
 
 };
 
-Frustum.prototype.setFromProjectionMatrix = function ( m ) {
+const setFromProjectionMatrix = function ( m ) {
 
 	const planes = this.planes;
 	const me = m.elements;
@@ -86,9 +78,9 @@ Frustum.prototype.setFromProjectionMatrix = function ( m ) {
 
 };
 
-const _frustum = new Frustum();
-const _projScreenMatrix = new Matrix4();
-const _vector3 = new Vector3();
+let _frustum, 
+_projScreenMatrix,
+_vector3;
 
 class WebGPURenderer {
 
@@ -185,7 +177,25 @@ class WebGPURenderer {
 
 	}
 
+	patchApi() {
+
+        Matrix4.prototype.makePerspective = makePerspective;
+        Matrix4.prototype.makeOrthographic = makeOrthographic;
+        Frustum.prototype.setFromProjectionMatrix = setFromProjectionMatrix;
+        _frustum = new Frustum();
+        _projScreenMatrix = new Matrix4();
+        _vector3 = new Vector3();
+    }
+
 	async init() {
+
+		if ( navigator.gpu !== undefined ) {
+
+            staticAdapter = await navigator.gpu.requestAdapter();
+        
+        }
+
+        this.patchApi();
 
 		if ( this._initialized === true ) {
 
