@@ -10,13 +10,14 @@ import includePaths from 'rollup-plugin-includepaths';
 export default [
 	{
 		input: './webgpu-renderer.js',
+		external: ['three'],
 		plugins: [
 		
 			includePaths({
 				paths: ["./src", "./three.js/examples/jsm/renderers/webgpu"],
-				include: {
-				  'three': './three.js/build/three.module.js'
-				}
+				//include: {
+				 // 'three': './three.js/build/three.module.js'
+				//}
 		  	}),
 			strip({
 				debugger: true
