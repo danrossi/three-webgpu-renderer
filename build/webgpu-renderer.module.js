@@ -19485,4 +19485,4 @@ class WebGPURenderer extends Renderer {
 
 }
 
-export { WebGPU, WebGPURenderer };
+export { WebGPU, WebGPURenderer, equirectUV, texture };
