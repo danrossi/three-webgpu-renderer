@@ -1,0 +1,4 @@
+[submodule "three.js"]
+	path = three.js
+	url = git@github.com:danrossi/three.js.git
+	branch = dev
