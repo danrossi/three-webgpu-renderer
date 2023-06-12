@@ -64,8 +64,11 @@
 					renderer = new THREE.WebGLRenderer();
 				}
 
-				renderer.outputColorSpace = THREE.SRGBColorSpace;
-                renderer.colorSpace = THREE.SRGBColorSpace;
+				//renderer.outputColorSpace = THREE.SRGBColorSpace;
+                //renderer.colorSpace = THREE.SRGBColorSpace;
+
+				renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+				renderer.colorSpace = THREE.LinearSRGBColorSpace;
 
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
