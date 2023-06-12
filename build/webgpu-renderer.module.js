@@ -1,4 +1,4 @@
-import { DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, MathUtils, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, DepthTexture, NearestFilter, ShaderMaterial, NoColorSpace, Material, SRGBColorSpace, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, LinearSRGBColorSpace, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, LinearMipmapLinearFilter, UnsignedIntType, DepthFormat, EventDispatcher, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, BackSide, Mesh, BoxGeometry, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Frustum, WebGLRenderTarget, WebGLCubeRenderTarget, NoBlending, Scene, LinearFilter, CubeCamera, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, DoubleSide, FrontSide, SrcAlphaSaturateFactor, OneMinusDstAlphaFactor, DstAlphaFactor, OneMinusDstColorFactor, DstColorFactor, OneMinusSrcAlphaFactor, SrcAlphaFactor, OneMinusSrcColorFactor, SrcColorFactor, OneFactor, ZeroFactor, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, ReverseSubtractEquation, SubtractEquation, AddEquation, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, CubeReflectionMapping, CubeRefractionMapping, Texture, CubeTexture, FloatType, RGFormat, RedFormat, RGBAFormat, NeverCompare, AlwaysCompare, LessCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, RepeatWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, RGBA_ASTC_12x12_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_4x4_Format, RGBA_ETC2_EAC_Format, RGB_ETC2_Format, RGBA_S3TC_DXT5_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, UnsignedShortType, HalfFloatType, UnsignedByteType, WebGPUCoordinateSystem } from 'three';
+import { DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, MathUtils, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, DepthTexture, NearestFilter, ShaderMaterial, NoColorSpace, Material, SRGBColorSpace, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, LinearSRGBColorSpace, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, LinearMipmapLinearFilter, UnsignedIntType, DepthFormat, EventDispatcher, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, BackSide, Mesh, SphereGeometry, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Frustum, WebGLRenderTarget, WebGLCubeRenderTarget, BoxGeometry, NoBlending, Scene, LinearFilter, CubeCamera, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, DoubleSide, FrontSide, SrcAlphaSaturateFactor, OneMinusDstAlphaFactor, DstAlphaFactor, OneMinusDstColorFactor, DstColorFactor, OneMinusSrcAlphaFactor, SrcAlphaFactor, OneMinusSrcColorFactor, SrcColorFactor, OneFactor, ZeroFactor, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, ReverseSubtractEquation, SubtractEquation, AddEquation, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, CubeReflectionMapping, CubeRefractionMapping, Texture, CubeTexture, FloatType, RGFormat, RedFormat, RGBAFormat, NeverCompare, AlwaysCompare, LessCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, RepeatWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, RGBA_ASTC_12x12_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_4x4_Format, RGBA_ETC2_EAC_Format, RGB_ETC2_Format, RGBA_S3TC_DXT5_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, UnsignedShortType, HalfFloatType, UnsignedByteType, WebGPUCoordinateSystem } from 'three';
 
 class WebGPU {
 
@@ -3179,8 +3179,9 @@ addNodeClass( InstanceIndexNode );
 
 class LightingModel {
 
-	constructor( direct = null, indirectDiffuse = null, indirectSpecular = null, ambientOcclusion = null ) {
+	constructor( init = null, direct = null, indirectDiffuse = null, indirectSpecular = null, ambientOcclusion = null ) {
 
+		this.init = init;
 		this.direct = direct;
 		this.indirectDiffuse = indirectDiffuse;
 		this.indirectSpecular = indirectSpecular;
@@ -3397,6 +3398,8 @@ const property = ( type, name ) => nodeObject( new PropertyNode( type, name ) );
 const diffuseColor = nodeImmutable( PropertyNode, 'vec4', 'DiffuseColor' );
 const roughness = nodeImmutable( PropertyNode, 'float', 'Roughness' );
 const metalness = nodeImmutable( PropertyNode, 'float', 'Metalness' );
+const clearcoat = nodeImmutable( PropertyNode, 'float', 'Clearcoat' );
+const clearcoatRoughness = nodeImmutable( PropertyNode, 'float', 'ClearcoatRoughness' );
 const specularColor = nodeImmutable( PropertyNode, 'color', 'SpecularColor' );
 const shininess = nodeImmutable( PropertyNode, 'float', 'Shininess' );
 
@@ -3418,7 +3421,7 @@ class UVNode extends AttributeNode {
 
 		const index = this.index;
 
-		return 'uv' + ( index > 0 ? index + 1 : '' );
+		return 'uv' + ( index > 0 ? index : '' );
 
 	}
 
@@ -3936,6 +3939,34 @@ class MaterialNode extends Node {
 
 			}
 
+		} else if ( scope === MaterialNode.CLEARCOAT ) {
+
+			const clearcoatNode = this.getFloat( 'clearcoat' );
+
+			if ( material.clearcoatMap && material.clearcoatMap.isTexture === true ) {
+
+				node = clearcoatNode.mul( this.getTexture( 'clearcoatMap' ).r );
+
+			} else {
+
+				node = clearcoatNode;
+
+			}
+
+		} else if ( scope === MaterialNode.CLEARCOAT_ROUGHNESS ) {
+
+			const clearcoatRoughnessNode = this.getFloat( 'clearcoatRoughness' );
+
+			if ( material.clearcoatRoughnessMap && material.clearcoatRoughnessMap.isTexture === true ) {
+
+				node = clearcoatRoughnessNode.mul( this.getTexture( 'clearcoatRoughnessMap' ).r );
+
+			} else {
+
+				node = clearcoatRoughnessNode;
+
+			}
+
 		} else if ( scope === MaterialNode.ROTATION ) {
 
 			node = this.getFloat( 'rotation' );
@@ -4011,6 +4042,8 @@ MaterialNode.SPECULAR_COLOR = 'specularColor';
 MaterialNode.REFLECTIVITY = 'reflectivity';
 MaterialNode.ROUGHNESS = 'roughness';
 MaterialNode.METALNESS = 'metalness';
+MaterialNode.CLEARCOAT = 'clearcoat';
+MaterialNode.CLEARCOAT_ROUGHNESS = 'clearcoatRoughness';
 MaterialNode.EMISSIVE = 'emissive';
 MaterialNode.ROTATION = 'rotation';
 MaterialNode.UV = 'uv';
@@ -4025,94 +4058,11 @@ const materialSpecularColor = nodeImmutable( MaterialNode, MaterialNode.SPECULAR
 const materialReflectivity = nodeImmutable( MaterialNode, MaterialNode.REFLECTIVITY );
 const materialRoughness = nodeImmutable( MaterialNode, MaterialNode.ROUGHNESS );
 const materialMetalness = nodeImmutable( MaterialNode, MaterialNode.METALNESS );
+const materialClearcoat = nodeImmutable( MaterialNode, MaterialNode.CLEARCOAT );
+const materialClearcoatRoughness = nodeImmutable( MaterialNode, MaterialNode.CLEARCOAT_ROUGHNESS );
 const materialRotation = nodeImmutable( MaterialNode, MaterialNode.ROTATION );
 
 addNodeClass( MaterialNode );
-
-class VarNode extends Node {
-
-	constructor( node, name = null ) {
-
-		super();
-
-		this.node = node;
-		this.name = name;
-
-	}
-
-	assign( node ) {
-
-		node.traverse( ( childNode, replaceNode ) => {
-
-			if ( replaceNode && childNode.uuid === this.uuid ) {
-
-				replaceNode( this.node );
-
-			}
-
-		} );
-		this.node = node;
-		return this;
-
-	}
-
-	isGlobal() {
-
-		return true;
-
-	}
-
-	getHash( builder ) {
-
-		return this.name || super.getHash( builder );
-
-	}
-
-	getNodeType( builder ) {
-
-		return this.node.getNodeType( builder );
-
-	}
-
-	generate( builder ) {
-
-		const node = this.node;
-		const name = this.name;
-
-		if ( name === null && node.isTempNode === true ) {
-
-			return node.build( builder );
-
-		}
-
-		const type = builder.getVectorType( this.getNodeType( builder ) );
-
-		const snippet = node.build( builder, type );
-		const nodeVar = builder.getVarFromNode( this, type );
-
-		if ( name !== null ) {
-
-			nodeVar.name = name;
-
-		}
-
-		const propertyName = builder.getPropertyName( nodeVar );
-
-		builder.addLineFlowCode( `${propertyName} = ${snippet}` );
-
-		return propertyName;
-
-	}
-
-}
-
-const label = nodeProxy( VarNode );
-const temp = label;
-
-addNodeElement( 'label', label );
-addNodeElement( 'temp', temp );
-
-addNodeClass( VarNode );
 
 class OperatorNode extends TempNode {
 
@@ -4593,6 +4543,8 @@ MathNode.DFDX = 'dFdx';
 MathNode.DFDY = 'dFdy';
 MathNode.ROUND = 'round';
 MathNode.RECIPROCAL = 'reciprocal';
+MathNode.TRUNC = 'trunc';
+MathNode.FWIDTH = 'fwidth';
 
 // 2 inputs
 
@@ -4647,6 +4599,8 @@ const dFdx = nodeProxy( MathNode, MathNode.DFDX );
 const dFdy = nodeProxy( MathNode, MathNode.DFDY );
 const round = nodeProxy( MathNode, MathNode.ROUND );
 const reciprocal = nodeProxy( MathNode, MathNode.RECIPROCAL );
+const trunc = nodeProxy( MathNode, MathNode.TRUNC );
+const fwidth = nodeProxy( MathNode, MathNode.FWIDTH );
 
 const atan2 = nodeProxy( MathNode, MathNode.ATAN2 );
 const min$1 = nodeProxy( MathNode, MathNode.MIN );
@@ -4701,6 +4655,8 @@ addNodeElement( 'dFdx', dFdx );
 addNodeElement( 'dFdy', dFdy );
 addNodeElement( 'round', round );
 addNodeElement( 'reciprocal', reciprocal );
+addNodeElement( 'trunc', trunc );
+addNodeElement( 'fwidth', fwidth );
 addNodeElement( 'atan2', atan2 );
 addNodeElement( 'min', min$1 );
 addNodeElement( 'max', max$1 );
@@ -5067,10 +5023,96 @@ const normalGeometry = nodeImmutable( NormalNode, NormalNode.GEOMETRY );
 const normalLocal = nodeImmutable( NormalNode, NormalNode.LOCAL );
 const normalView = nodeImmutable( NormalNode, NormalNode.VIEW );
 const normalWorld = nodeImmutable( NormalNode, NormalNode.WORLD );
-const transformedNormalView = label( normalView, 'TransformedNormalView' );
+const transformedNormalView = property( 'vec3', 'TransformedNormalView' );
 const transformedNormalWorld = transformedNormalView.transformDirection( cameraViewMatrix ).normalize();
+const transformedClearcoatNormalView = property( 'vec3', 'TransformedClearcoatNormalView' );
 
 addNodeClass( NormalNode );
+
+class VarNode extends Node {
+
+	constructor( node, name = null ) {
+
+		super();
+
+		this.node = node;
+		this.name = name;
+
+	}
+
+	assign( node ) {
+
+		node.traverse( ( childNode, replaceNode ) => {
+
+			if ( replaceNode && childNode.uuid === this.uuid ) {
+
+				replaceNode( this.node );
+
+			}
+
+		} );
+		this.node = node;
+		return this;
+
+	}
+
+	isGlobal() {
+
+		return true;
+
+	}
+
+	getHash( builder ) {
+
+		return this.name || super.getHash( builder );
+
+	}
+
+	getNodeType( builder ) {
+
+		return this.node.getNodeType( builder );
+
+	}
+
+	generate( builder ) {
+
+		const node = this.node;
+		const name = this.name;
+
+		if ( name === null && node.isTempNode === true ) {
+
+			return node.build( builder );
+
+		}
+
+		const type = builder.getVectorType( this.getNodeType( builder ) );
+
+		const snippet = node.build( builder, type );
+		const nodeVar = builder.getVarFromNode( this, type );
+
+		if ( name !== null ) {
+
+			nodeVar.name = name;
+
+		}
+
+		const propertyName = builder.getPropertyName( nodeVar );
+
+		builder.addLineFlowCode( `${propertyName} = ${snippet}` );
+
+		return propertyName;
+
+	}
+
+}
+
+const label = nodeProxy( VarNode );
+const temp = label;
+
+addNodeElement( 'label', label );
+addNodeElement( 'temp', temp );
+
+addNodeClass( VarNode );
 
 class TangentNode extends Node {
 
@@ -5470,7 +5512,7 @@ class ExtendedMaterialNode extends MaterialNode {
 		const scope = this.scope;
 		let type = null;
 
-		if ( scope === ExtendedMaterialNode.NORMAL ) {
+		if ( scope === ExtendedMaterialNode.NORMAL || scope === ExtendedMaterialNode.CLEARCOAT_NORMAL ) {
 
 			type = 'vec3';
 
@@ -5491,6 +5533,10 @@ class ExtendedMaterialNode extends MaterialNode {
 
 			node = material.normalMap ? normalMap( this.getTexture( 'normalMap' ), materialReference( 'normalScale', 'vec2' ) ) : normalView;
 
+		} else if ( scope === ExtendedMaterialNode.CLEARCOAT_NORMAL ) {
+
+			node = material.clearcoatNormalMap ? normalMap( this.getTexture( 'clearcoatNormalMap' ), materialReference( 'clearcoatNormalScale', 'vec2' ) ) : normalView;
+
 		}
 
 		return node || super.construct( builder );
@@ -5500,8 +5546,10 @@ class ExtendedMaterialNode extends MaterialNode {
 }
 
 ExtendedMaterialNode.NORMAL = 'normal';
+ExtendedMaterialNode.CLEARCOAT_NORMAL = 'clearcoatNormal';
 
 const materialNormal = nodeImmutable( ExtendedMaterialNode, ExtendedMaterialNode.NORMAL );
+const materialClearcoatNormal = nodeImmutable( ExtendedMaterialNode, ExtendedMaterialNode.CLEARCOAT_NORMAL );
 
 addNodeClass( ExtendedMaterialNode );
 
@@ -6418,113 +6466,142 @@ class EnvironmentNode extends LightingNode {
 
 		}
 
-		let reflectVec;
-		let radianceTextureUVNode;
-		let irradianceTextureUVNode;
+		//
 
-		const radianceContext = context( envNode, {
-			getUVNode: ( textureNode ) => {
+		const intensity = reference( 'envMapIntensity', 'float', builder.material ); // @TODO: Add materialEnvIntensity in MaterialNode
 
-				let node = null;
+		const radiance = context( envNode, createRadianceContext( roughness, transformedNormalView ) ).mul( intensity );
+		const irradiance = context( envNode, createIrradianceContext( transformedNormalWorld ) ).mul( Math.PI ).mul( intensity );
 
-				if ( reflectVec === undefined ) {
-
-					reflectVec = positionViewDirection.negate().reflect( transformedNormalView );
-					reflectVec = roughness.mul( roughness ).mix( reflectVec, transformedNormalView ).normalize();
-					reflectVec = reflectVec.transformDirection( cameraViewMatrix );
-
-				}
-
-				if ( textureNode.isCubeTextureNode ) {
-
-					node = reflectVec;
-
-				} else if ( textureNode.isTextureNode ) {
-
-					if ( radianceTextureUVNode === undefined ) {
-
-						// @TODO: Needed PMREM
-
-						radianceTextureUVNode = equirectUV( reflectVec );
-
-					}
-
-					node = radianceTextureUVNode;
-
-				}
-
-				return node;
-
-			},
-			getSamplerLevelNode: () => {
-
-				return roughness;
-
-			},
-			getMIPLevelAlgorithmNode: ( textureNode, levelNode ) => {
-
-				return specularMIPLevel( textureNode, levelNode );
-
-			}
-		} );
-
-		const irradianceContext = context( envNode, {
-			getUVNode: ( textureNode ) => {
-
-				let node = null;
-
-				if ( textureNode.isCubeTextureNode ) {
-
-					node = transformedNormalWorld;
-
-				} else if ( textureNode.isTextureNode ) {
-
-					if ( irradianceTextureUVNode === undefined ) {
-
-						// @TODO: Needed PMREM
-
-						irradianceTextureUVNode = equirectUV( transformedNormalWorld );
-						irradianceTextureUVNode = vec2( irradianceTextureUVNode.x, irradianceTextureUVNode.y.oneMinus() );
-
-					}
-
-					node = irradianceTextureUVNode;
-
-				}
-
-				return node;
-
-			},
-			getSamplerLevelNode: () => {
-
-				return float( 1 );
-
-			},
-			getMIPLevelAlgorithmNode: ( textureNode, levelNode ) => {
-
-				return specularMIPLevel( textureNode, levelNode );
-
-			}
-		} );
+		const isolateRadiance = cache( radiance );
 
 		//
 
-		const isolateRadianceFlowContext = cache( radianceContext );
+		builder.context.radiance.addAssign( isolateRadiance );
+
+		builder.context.iblIrradiance.addAssign( irradiance );
 
 		//
 
-		const intensity = reference( 'envMapIntensity', 'float', builder.material );
+		let isolateClearcoatRadiance = null;
 
-		builder.context.radiance.addAssign( isolateRadianceFlowContext.mul( intensity ) );
+		if ( builder.context.clearcoatRadiance  ) {
 
-		builder.context.iblIrradiance.addAssign( irradianceContext.mul( Math.PI ).mul( intensity ) );
+			const clearcoatRadiance = context( envNode, createRadianceContext( clearcoatRoughness, transformedClearcoatNormalView ) ).mul( intensity );
 
-		properties.radianceContext = isolateRadianceFlowContext;
-		properties.irradianceContext = irradianceContext;
+			isolateClearcoatRadiance = cache( clearcoatRadiance );
+
+			builder.context.clearcoatRadiance.addAssign( isolateClearcoatRadiance );
+
+		}
+
+		//
+
+		properties.radiance = isolateRadiance;
+		properties.clearcoatRadiance = isolateClearcoatRadiance;
+		properties.irradiance = irradiance;
 
 	}
 
 }
+
+const createRadianceContext = ( roughnessNode, normalViewNode ) => {
+
+	let reflectVec = null;
+	let textureUVNode = null;
+
+	return {
+		getUVNode: ( textureNode ) => {
+
+			let node = null;
+
+			if ( reflectVec === null ) {
+
+				reflectVec = positionViewDirection.negate().reflect( normalViewNode );
+				reflectVec = roughnessNode.mul( roughnessNode ).mix( reflectVec, normalViewNode ).normalize();
+				reflectVec = reflectVec.transformDirection( cameraViewMatrix );
+
+			}
+
+			if ( textureNode.isCubeTextureNode ) {
+
+				node = reflectVec;
+
+			} else if ( textureNode.isTextureNode ) {
+
+				if ( textureUVNode === null ) {
+
+					// @TODO: Needed PMREM
+
+					textureUVNode = equirectUV( reflectVec );
+
+				}
+
+				node = textureUVNode;
+
+			}
+
+			return node;
+
+		},
+		getSamplerLevelNode: () => {
+
+			return roughnessNode;
+
+		},
+		getMIPLevelAlgorithmNode: ( textureNode, levelNode ) => {
+
+			return specularMIPLevel( textureNode, levelNode );
+
+		}
+	};
+
+};
+
+const createIrradianceContext = ( normalWorldNode ) => {
+
+	let textureUVNode = null;
+
+	return {
+		getUVNode: ( textureNode ) => {
+
+			let node = null;
+
+			if ( textureNode.isCubeTextureNode ) {
+
+				node = normalWorldNode;
+
+			} else if ( textureNode.isTextureNode ) {
+
+				if ( textureUVNode === null ) {
+
+					// @TODO: Needed PMREM
+
+					textureUVNode = equirectUV( normalWorldNode );
+					textureUVNode = vec2( textureUVNode.x, textureUVNode.y.oneMinus() );
+
+				}
+
+				node = textureUVNode;
+
+			}
+
+			return node;
+
+		},
+		getSamplerLevelNode: () => {
+
+			return float( 1 );
+
+		},
+		getMIPLevelAlgorithmNode: ( textureNode, levelNode ) => {
+
+			return specularMIPLevel( textureNode, levelNode );
+
+		}
+	};
+
+};
 
 addNodeClass( EnvironmentNode );
 
@@ -6539,6 +6616,8 @@ class NodeMaterial extends ShaderMaterial {
 		this.isNodeMaterial = true;
 
 		this.type = this.constructor.name;
+
+		this.forceSinglePass = false;
 
 		this.lights = true;
 		this.normals = true;
@@ -6559,7 +6638,7 @@ class NodeMaterial extends ShaderMaterial {
 
 	customProgramCacheKey() {
 
-		return getCacheKey( this );
+		return this.type + getCacheKey( this );
 
 	}
 
@@ -6747,11 +6826,12 @@ class NodeMaterial extends ShaderMaterial {
 		const lights = this.lights === true || this.lightsNode !== null;
 
 		const lightsNode = lights ? this.constructLights( builder ) : null;
-		const lightingModelNode = lightsNode ? this.constructLightingModel( builder ) : null;
 
 		let outgoingLightNode = diffuseColor.rgb;
 
 		if ( lightsNode && lightsNode.hasLight !== false ) {
+
+			const lightingModelNode = this.constructLightingModel( builder );
 
 			outgoingLightNode = lightsNode.lightingContext( lightingModelNode, backdropNode, backdropAlphaNode );
 
@@ -7350,6 +7430,12 @@ class NodeBuilder {
 
 		this.shaderStage = null;
 		this.buildStage = null;
+
+	}
+
+	includes( node ) {
+
+		return this.nodes.includes( node );
 
 	}
 
@@ -10913,7 +10999,7 @@ class PointLightNode extends AnalyticLightNode {
 				lightDirection,
 				lightColor,
 				reflectedLight
-			}, builder );
+			} );
 
 		}
 
@@ -10948,7 +11034,7 @@ class DirectionalLightNode extends AnalyticLightNode {
 				lightDirection,
 				lightColor,
 				reflectedLight
-			}, builder );
+			} );
 
 		}
 
@@ -11027,7 +11113,7 @@ class SpotLightNode extends AnalyticLightNode {
 				lightDirection,
 				lightColor,
 				reflectedLight
-			}, builder );
+			} );
 
 		}
 
@@ -11136,10 +11222,10 @@ class LightingContextNode extends ContextNode {
 		const context = this.context = {}; // reset context
 		const properties = builder.getNodeProperties( this );
 
-		const directDiffuse = temp( vec3() ),
-			directSpecular = temp( vec3() ),
-			indirectDiffuse = temp( vec3() ),
-			indirectSpecular = temp( vec3() );
+		const directDiffuse = vec3().temp(),
+			directSpecular = vec3().temp(),
+			indirectDiffuse = vec3().temp(),
+			indirectSpecular = vec3().temp();
 
 		let totalDiffuse = add( directDiffuse, indirectDiffuse );
 
@@ -11150,7 +11236,7 @@ class LightingContextNode extends ContextNode {
 		}
 
 		const totalSpecular = add( directSpecular, indirectSpecular );
-		const total = add( totalDiffuse, totalSpecular );
+		const total = add( totalDiffuse, totalSpecular ).temp();
 
 		const reflectedLight = {
 			directDiffuse,
@@ -11161,21 +11247,24 @@ class LightingContextNode extends ContextNode {
 		};
 
 		const lighting = {
-			radiance: temp( vec3() ),
-			irradiance: temp( vec3() ),
-			iblIrradiance: temp( vec3() ),
-			ambientOcclusion: temp( float( 1 ) )
+			radiance: vec3().temp(),
+			irradiance: vec3().temp(),
+			iblIrradiance: vec3().temp(),
+			ambientOcclusion: float( 1 ).temp()
 		};
-
-		Object.assign( properties, reflectedLight, lighting );
-		Object.assign( context, lighting );
 
 		context.reflectedLight = reflectedLight;
 		context.lightingModelNode = lightingModelNode || context.lightingModelNode;
 
-		if ( lightingModelNode && lightingModelNode.indirectDiffuse ) lightingModelNode.indirectDiffuse.call( context );
-		if ( lightingModelNode && lightingModelNode.indirectSpecular ) lightingModelNode.indirectSpecular.call( context );
-		if ( lightingModelNode && lightingModelNode.ambientOcclusion ) lightingModelNode.ambientOcclusion.call( context );
+		Object.assign( properties, reflectedLight, lighting );
+		Object.assign( context, lighting );
+
+		// @TODO: Call needed return a new node ( or rename the ShaderNodeInternal.call() function ), it's not moment to run
+		if ( lightingModelNode && lightingModelNode.init ) lightingModelNode.init.call( context, builder.stack, builder );
+
+		if ( lightingModelNode && lightingModelNode.indirectDiffuse ) lightingModelNode.indirectDiffuse.call( context, builder.stack, builder );
+		if ( lightingModelNode && lightingModelNode.indirectSpecular ) lightingModelNode.indirectSpecular.call( context, builder.stack, builder );
+		if ( lightingModelNode && lightingModelNode.ambientOcclusion ) lightingModelNode.ambientOcclusion.call( context, builder.stack, builder );
 
 		return super.construct( builder );
 
@@ -11454,7 +11543,7 @@ const RE_IndirectDiffuse_BlinnPhong = new ShaderNode( ( { irradiance, reflectedL
 
 } );
 
-const phongLightingModel = lightingModel( RE_Direct_BlinnPhong, RE_IndirectDiffuse_BlinnPhong );
+const phongLightingModel = lightingModel( null, RE_Direct_BlinnPhong, RE_IndirectDiffuse_BlinnPhong );
 
 const defaultValues$4 = new MeshPhongMaterial();
 
@@ -11579,13 +11668,15 @@ const BRDF_GGX = new ShaderNode( ( inputs ) => {
 
 	const { lightDirection, f0, f90, roughness } = inputs;
 
+	const normalView = inputs.normalView || transformedNormalView;
+
 	const alpha = roughness.pow2(); // UE4's roughness
 
 	const halfDir = lightDirection.add( positionViewDirection ).normalize();
 
-	const dotNL = transformedNormalView.dot( lightDirection ).clamp();
-	const dotNV = transformedNormalView.dot( positionViewDirection ).clamp();
-	const dotNH = transformedNormalView.dot( halfDir ).clamp();
+	const dotNL = normalView.dot( lightDirection ).clamp();
+	const dotNV = normalView.dot( positionViewDirection ).clamp(); // @ TODO: Move to core dotNV
+	const dotNH = normalView.dot( halfDir ).clamp();
 	const dotVH = positionViewDirection.dot( halfDir ).clamp();
 
 	const F = F_Schlick.call( { f0, f90, dotVH } );
@@ -11604,13 +11695,13 @@ const DFGApprox = new ShaderNode( ( inputs ) => {
 
 	const { roughness } = inputs;
 
+	const dotNV = inputs.dotNV || transformedNormalView.dot( positionViewDirection ).clamp(); // @ TODO: Move to core dotNV
+
 	const c0 = vec4( - 1, - 0.0275, - 0.572, 0.022 );
 
 	const c1 = vec4( 1, 0.0425, 1.04, - 0.04 );
 
 	const r = roughness.mul( c0 ).add( c1 );
-
-	const dotNV = transformedNormalView.dot( positionViewDirection ).clamp();
 
 	const a004 = r.x.mul( r.x ).min( dotNV.mul( - 9.28 ).exp2() ).mul( r.x ).add( r.y );
 
@@ -11619,6 +11710,18 @@ const DFGApprox = new ShaderNode( ( inputs ) => {
 	return fab;
 
 } );
+
+const EnvironmentBRDF = new ShaderNode( ( inputs ) => {
+
+	const { dotNV, specularColor, specularF90, roughness } = inputs;
+
+	const fab = DFGApprox.call( { dotNV, roughness } );
+	return specularColor.mul( fab.x ).add( specularF90.mul( fab.y ) );
+
+} );
+
+const clearcoatF0 = vec3( 0.04 );
+const clearcoatF90 = vec3( 1 );
 
 // Fdez-Agüera's "Multiple-Scattering Microfacet Model for Real-Time Image Based Lighting"
 // Approximates multiscattering in order to preserve energy.
@@ -11640,14 +11743,53 @@ const computeMultiscattering = ( singleScatter, multiScatter, specularF90 = floa
 
 };
 
-const RE_IndirectSpecular_Physical = new ShaderNode( ( inputs ) => {
+const LM_Init = new ShaderNode( ( context, stack, builder ) => {
 
-	const { radiance, iblIrradiance, reflectedLight } = inputs;
+	if ( builder.includes( clearcoat ) ) {
+
+		context.clearcoatRadiance = vec3().temp();
+		context.reflectedLight.clearcoatSpecular = vec3().temp();
+
+		const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
+
+		const Fcc = F_Schlick.call( {
+			dotVH: dotNVcc,
+			f0: clearcoatF0,
+			f90: clearcoatF90
+		} );
+
+		const outgoingLight = context.reflectedLight.total;
+		const clearcoatLight = outgoingLight.mul( clearcoat.mul( Fcc ).oneMinus() ).add( context.reflectedLight.clearcoatSpecular.mul( clearcoat ) );
+
+		outgoingLight.assign( clearcoatLight );
+
+	}
+
+} );
+
+const RE_IndirectSpecular_Physical = new ShaderNode( ( context ) => {
+
+	const { radiance, iblIrradiance, reflectedLight } = context;
+
+	if ( reflectedLight.clearcoatSpecular ) {
+
+		const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
+
+		const clearcoatEnv = EnvironmentBRDF.call( {
+			dotNV: dotNVcc,
+			specularColor: clearcoatF0,
+			specularF90: clearcoatF90,
+			roughness: clearcoatRoughness
+		} );
+
+		reflectedLight.clearcoatSpecular.addAssign( context.clearcoatRadiance.mul( clearcoatEnv ) );
+
+	}
 
 	// Both indirect specular and indirect diffuse light accumulate here
 
-	const singleScattering = temp( vec3() );
-	const multiScattering = temp( vec3() );
+	const singleScattering = vec3().temp();
+	const multiScattering = vec3().temp();
 	const cosineWeightedIrradiance = iblIrradiance.mul( 1 / Math.PI );
 
 	computeMultiscattering( singleScattering, multiScattering );
@@ -11663,9 +11805,9 @@ const RE_IndirectSpecular_Physical = new ShaderNode( ( inputs ) => {
 
 } );
 
-const RE_IndirectDiffuse_Physical = new ShaderNode( ( inputs ) => {
+const RE_IndirectDiffuse_Physical = new ShaderNode( ( context ) => {
 
-	const { irradiance, reflectedLight } = inputs;
+	const { irradiance, reflectedLight } = context;
 
 	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert.call( { diffuseColor } ) ) );
 
@@ -11678,15 +11820,26 @@ const RE_Direct_Physical = new ShaderNode( ( inputs ) => {
 	const dotNL = transformedNormalView.dot( lightDirection ).clamp();
 	const irradiance = dotNL.mul( lightColor );
 
+	if ( reflectedLight.clearcoatSpecular ) {
+
+		const dotNLcc = transformedClearcoatNormalView.dot( lightDirection ).clamp();
+		const ccIrradiance = dotNLcc.mul( lightColor );
+
+		reflectedLight.clearcoatSpecular.addAssign( ccIrradiance.mul( BRDF_GGX.call( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
+
+	}
+
 	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert.call( { diffuseColor: diffuseColor.rgb } ) ) );
 
 	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_GGX.call( { lightDirection, f0: specularColor, f90: 1, roughness } ) ) );
 
 } );
 
-const RE_AmbientOcclusion_Physical = new ShaderNode( ( { ambientOcclusion, reflectedLight } ) => {
+const RE_AmbientOcclusion_Physical = new ShaderNode( ( context ) => {
 
-	const dotNV = transformedNormalView.dot( positionViewDirection ).clamp();
+	const { ambientOcclusion, reflectedLight } = context;
+
+	const dotNV = transformedNormalView.dot( positionViewDirection ).clamp(); // @ TODO: Move to core dotNV
 
 	const aoNV = dotNV.add( ambientOcclusion );
 	const aoExp = roughness.mul( - 16.0 ).oneMinus().negate().exp2();
@@ -11700,7 +11853,7 @@ const RE_AmbientOcclusion_Physical = new ShaderNode( ( { ambientOcclusion, refle
 
 } );
 
-const physicalLightingModel = lightingModel( RE_Direct_Physical, RE_IndirectDiffuse_Physical, RE_IndirectSpecular_Physical, RE_AmbientOcclusion_Physical );
+const physicalLightingModel = lightingModel( LM_Init, RE_Direct_Physical, RE_IndirectDiffuse_Physical, RE_IndirectSpecular_Physical, RE_AmbientOcclusion_Physical );
 
 const defaultValues$3 = new MeshStandardMaterial();
 
@@ -11816,6 +11969,34 @@ class MeshPhysicalNodeMaterial extends MeshStandardNodeMaterial {
 		this.setDefaultValues( defaultValues$2 );
 
 		this.setValues( parameters );
+
+	}
+
+	constructVariants( builder ) {
+
+		super.constructVariants( builder );
+
+		const { stack } = builder;
+
+		// CLEARCOAT
+
+		const clearcoatNode = this.clearcoatNode ? float( this.clearcoatNode ) : materialClearcoat;
+		const clearcoatRoughnessNode = this.clearcoatRoughnessNode ? float( this.clearcoatRoughnessNode ) : materialClearcoatRoughness;
+
+		stack.assign( clearcoat, clearcoatNode );
+		stack.assign( clearcoatRoughness, clearcoatRoughnessNode );
+
+	}
+
+	constructNormal( builder ) {
+
+		super.constructNormal( builder );
+
+		// CLEARCOAT NORMAL
+
+		const clearcoatNormalNode = this.clearcoatNormalNode ? vec3( this.clearcoatNormalNode ) : materialClearcoatNormal;
+
+		builder.stack.assign( transformedClearcoatNormalView, clearcoatNormalNode );
 
 	}
 
@@ -13265,7 +13446,7 @@ class Background extends DataMap {
 				nodeMaterial.depthWrite = false;
 				nodeMaterial.fog = false;
 
-				this.boxMesh = boxMesh = new Mesh( new BoxGeometry( 1, 1, 1 ), nodeMaterial );
+				this.boxMesh = boxMesh = new Mesh( new SphereGeometry( 1, 32, 32 ), nodeMaterial );
 				boxMesh.frustumCulled = false;
 
 				boxMesh.onBeforeRender = function ( renderer, scene, camera ) {
@@ -18635,7 +18816,6 @@ import 'https://greggman.github.io/webgpu-avoid-redundant-state-setting/webgpu-c
 
 let _staticAdapter = null;
 
-
 //
 
 class WebGPUBackend extends Backend {
@@ -18679,12 +18859,12 @@ class WebGPUBackend extends Backend {
 
 		await super.init( renderer );
 
+		//request static adapter in init async
 		if ( navigator.gpu !== undefined && !_staticAdapter ) {
 
 			_staticAdapter = await navigator.gpu.requestAdapter();
 		
 		}
-
 
 		//
 

@@ -1,6 +1,4 @@
 import terser from '@rollup/plugin-terser';
-import commonjs from '@rollup/plugin-commonjs';
-import resolve  from '@rollup/plugin-node-resolve';
 import strip from '@rollup/plugin-strip';
 
 import includePaths from 'rollup-plugin-includepaths';

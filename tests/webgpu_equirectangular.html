@@ -42,13 +42,7 @@
 
 			async function init() {
 
-				if (await WebGPU.isAvailable() === false ) {
-
-					document.body.appendChild( WebGPU.getErrorMessage() );
-
-					throw new Error( 'No WebGPU support' );
-
-				}
+				
 
 				const container = document.createElement( 'div' );
 				document.body.appendChild( container );
@@ -62,7 +56,17 @@
 				scene = new THREE.Scene();
 				scene.backgroundNode = texture( equirectTexture, equirectUV(), 0 );
 
-				renderer = new WebGPURenderer();
+				
+
+				if (await WebGPU.isAvailable()) {
+					renderer = new WebGPURenderer();				
+				} else {
+					renderer = new THREE.WebGLRenderer();
+				}
+
+				renderer.outputColorSpace = THREE.SRGBColorSpace;
+                renderer.colorSpace = THREE.SRGBColorSpace;
+
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.setAnimationLoop( render );

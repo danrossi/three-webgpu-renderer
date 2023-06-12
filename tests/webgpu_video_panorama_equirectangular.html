@@ -80,12 +80,13 @@
 				scene.add( mesh );
 
 				if (await WebGPU.isAvailable()) {
-					renderer = new WebGPURenderer();
+					renderer = new WebGPURenderer();				
 				} else {
 					renderer = new THREE.WebGLRenderer();
 				}
 
-				
+				renderer.outputColorSpace = THREE.SRGBColorSpace;
+                renderer.colorSpace = THREE.SRGBColorSpace;
 				
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
