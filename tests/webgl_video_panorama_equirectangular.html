@@ -1,33 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>three.js webgl - equirectangular video panorama</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link type="text/css" rel="stylesheet" href="../three.js/examples/main.css">
-		<style>
-			body {
-				touch-action: none;
-			}
-		</style>
-	</head>
-	<body>
-		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - video panorama
-		</div>
 
-		<div id="container"></div>
+<head>
+	<title>three.js webgl - equirectangular video panorama</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="../three.js/examples/main.css">
+	<style>
+		body {
+			touch-action: none;
+		}
+	</style>
+</head>
 
-		<video id="video" loop muted crossOrigin="anonymous" playsinline style="display:none">
-			<source src="../three.js/examples/textures/pano.webm">
-			<source src="../three.js/examples/textures/pano.mp4">
-		</video>
+<body>
+	<div id="info">
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - video panorama
+	</div>
 
-		<!-- Import maps polyfill -->
-		<!-- Remove this when import maps will be widely supported -->
-		<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+	<div id="container"></div>
 
-		<script type="importmap">
+	<video id="video" loop muted autoplay crossOrigin="anonymous" preload="metadata" playsinline style="display:none">
+
+	</video>
+
+	<!-- Import maps polyfill -->
+	<!-- Remove this when import maps will be widely supported -->
+	<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+	<script type="importmap">
 			{
 				"imports": {
 					"three": "../three.js/build/three.module.js",
@@ -37,131 +38,184 @@
 			}
 		</script>
 
-		<script type="module">
+	<script type="module">
 
-			import * as THREE from 'three';
-			import { WebGPU, WebGPURenderer, texture, equirectUV } from 'three-webgpu';
+		import * as THREE from 'three';
 
-			let camera, scene, renderer;
 
-			let isUserInteracting = false,
-				lon = 0, lat = 0,
-				phi = 0, theta = 0,
-				onPointerDownPointerX = 0,
-				onPointerDownPointerY = 0,
-				onPointerDownLon = 0,
-				onPointerDownLat = 0;
+		let _requestVideoFrameCallback = false;
 
-			const distance = 50;
+		class CustomVideoTexture extends THREE.Texture {
 
-			init();
-			
+			constructor(video) {
+				super(video, THREE.Texture.DEFAULT_MAPPING, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter, THREE.RGBAFormat);
 
-			async function init() {
+				this.generateMipmaps = false;
 
-				const container = document.getElementById( 'container' );
+				const updateVideo = () => {
 
-				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
+					this.needsUpdate = true;
+					video.requestVideoFrameCallback(updateVideo);
 
-				scene = new THREE.Scene();
+				}
 
-				const geometry = new THREE.SphereGeometry( 500, 60, 40 );
-				// invert the geometry on the x-axis so that all of the faces point inward
-				geometry.scale( - 1, 1, 1 );
+				if ('requestVideoFrameCallback' in video) {
 
-				const video = document.getElementById( 'video' );
-				video.play();
+					_requestVideoFrameCallback = true;
 
-				const texture = new THREE.VideoTexture( video );
-				texture.colorSpace = THREE.SRGBColorSpace;
-				const material = new THREE.MeshBasicMaterial( { map: texture } );
-
-				const mesh = new THREE.Mesh( geometry, material );
-				scene.add( mesh );
-
-				renderer = new THREE.WebGLRenderer();
-				
-				renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-				renderer.colorSpace = THREE.LinearSRGBColorSpace;
-				
-				
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-
-				document.addEventListener( 'pointerdown', onPointerDown );
-				document.addEventListener( 'pointermove', onPointerMove );
-				document.addEventListener( 'pointerup', onPointerUp );
-
-				//
-
-				window.addEventListener( 'resize', onWindowResize );
-
-				animate();
-
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-			}
-
-			function onPointerDown( event ) {
-
-				isUserInteracting = true;
-
-				onPointerDownPointerX = event.clientX;
-				onPointerDownPointerY = event.clientY;
-
-				onPointerDownLon = lon;
-				onPointerDownLat = lat;
-
-			}
-
-			function onPointerMove( event ) {
-
-				if ( isUserInteracting === true ) {
-
-					lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
-					lat = ( onPointerDownPointerY - event.clientY ) * 0.1 + onPointerDownLat;
+					video.requestVideoFrameCallback(updateVideo);
 
 				}
 
 			}
 
-			function onPointerUp() {
+			get isVideoTexture() {
+				return true;
+			}
 
-				isUserInteracting = false;
+			update() {
+				if (!_requestVideoFrameCallback) this.needsUpdate = true;
+			}
+
+		}
+
+
+		let camera, scene, renderer;
+
+		let isUserInteracting = false,
+			lon = 0, lat = 0,
+			phi = 0, theta = 0,
+			onPointerDownPointerX = 0,
+			onPointerDownPointerY = 0,
+			onPointerDownLon = 0,
+			onPointerDownLat = 0;
+
+		const distance = 50;
+
+		const video = document.getElementById('video');
+		video.src = "//videos.electroteque.org/360/ultra_light_flight_720p.mp4";
+		video.play();
+
+		video.addEventListener("loadedmetadata", () => {
+			console.log("loadedmetadata");
+			init();
+		});
+
+
+
+
+		async function init() {
+
+			const container = document.getElementById('container');
+
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+
+			scene = new THREE.Scene();
+
+			const geometry = new THREE.SphereGeometry(500, 60, 40);
+			// invert the geometry on the x-axis so that all of the faces point inward
+			geometry.scale(- 1, 1, 1);
+
+
+
+			const texture = new CustomVideoTexture(video);
+			//texture.colorSpace = THREE.LinearSRGBColorSpace;
+			texture.colorSpace = THREE.SRGBColorSpace;
+
+			//texture.colorSpace = THREE.LinearSRGBColorSpace;
+			const material = new THREE.MeshBasicMaterial({ map: texture });
+
+			const mesh = new THREE.Mesh(geometry, material);
+			scene.add(mesh);
+
+			renderer = new THREE.WebGLRenderer();
+
+			//renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+			//renderer.colorSpace = THREE.LinearSRGBColorSpace;
+			//renderer.outputColorSpace = THREE.SRGBColorSpace;
+			//renderer.colorSpace = THREE.SRGBColorSpace;
+
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+			//renderer.setSize(video.videoWidth, video.videoHeight );
+
+			container.appendChild(renderer.domElement);
+
+			document.addEventListener('pointerdown', onPointerDown);
+			document.addEventListener('pointermove', onPointerMove);
+			document.addEventListener('pointerup', onPointerUp);
+
+			//
+
+			//window.addEventListener( 'resize', onWindowResize );
+
+			animate();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+		function onPointerDown(event) {
+
+			isUserInteracting = true;
+
+			onPointerDownPointerX = event.clientX;
+			onPointerDownPointerY = event.clientY;
+
+			onPointerDownLon = lon;
+			onPointerDownLat = lat;
+
+		}
+
+		function onPointerMove(event) {
+
+			if (isUserInteracting === true) {
+
+				lon = (onPointerDownPointerX - event.clientX) * 0.1 + onPointerDownLon;
+				lat = (onPointerDownPointerY - event.clientY) * 0.1 + onPointerDownLat;
 
 			}
 
-			function animate() {
+		}
 
-				requestAnimationFrame( animate );
-				update();
+		function onPointerUp() {
 
-			}
+			isUserInteracting = false;
 
-			function update() {
+		}
 
-				lat = Math.max( - 85, Math.min( 85, lat ) );
-				phi = THREE.MathUtils.degToRad( 90 - lat );
-				theta = THREE.MathUtils.degToRad( lon );
+		function animate() {
 
-				camera.position.x = distance * Math.sin( phi ) * Math.cos( theta );
-				camera.position.y = distance * Math.cos( phi );
-				camera.position.z = distance * Math.sin( phi ) * Math.sin( theta );
+			requestAnimationFrame(animate);
+			update();
 
-				camera.lookAt( 0, 0, 0 );
+		}
 
-				renderer.render( scene, camera );
+		function update() {
 
-			}
+			lat = Math.max(- 85, Math.min(85, lat));
+			phi = THREE.MathUtils.degToRad(90 - lat);
+			theta = THREE.MathUtils.degToRad(lon);
 
-		</script>
-	</body>
+			camera.position.x = distance * Math.sin(phi) * Math.cos(theta);
+			camera.position.y = distance * Math.cos(phi);
+			camera.position.z = distance * Math.sin(phi) * Math.sin(theta);
+
+			camera.lookAt(0, 0, 0);
+
+			renderer.render(scene, camera);
+
+		}
+
+	</script>
+</body>
+
 </html>
