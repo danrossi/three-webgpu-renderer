@@ -18814,8 +18814,15 @@ import 'https://greggman.github.io/webgpu-avoid-redundant-state-setting/webgpu-c
 
 // statics
 
-let _staticAdapter = null;
+/*let _staticAdapter = null;
 
+if ( navigator.gpu !== undefined ) {
+
+	_staticAdapter = await navigator.gpu.requestAdapter();
+
+}*/
+
+let _deferFeatures = [];
 //
 
 class WebGPUBackend extends Backend {
@@ -18857,16 +18864,10 @@ class WebGPUBackend extends Backend {
 
 	async init( renderer ) {
 
+		//console.log("INIT1", _staticAdapter);
+
 		await super.init( renderer );
 
-		//request static adapter in init async
-		if ( navigator.gpu !== undefined && !_staticAdapter ) {
-
-			_staticAdapter = await navigator.gpu.requestAdapter();
-		
-		}
-
-		//
 
 		const parameters = this.parameters;
 
@@ -18881,6 +18882,8 @@ class WebGPUBackend extends Backend {
 			throw new Error( 'WebGPUBackend: Unable to create WebGPU adapter.' );
 
 		}
+
+	
 
 		// feature support
 
@@ -18910,6 +18913,14 @@ class WebGPUBackend extends Backend {
 		this.adapter = adapter;
 		this.device = device;
 		this.context = context;
+
+		
+		//resolve deferred adapter features
+		//https://github.com/mrdoob/three.js/pull/26242
+		if (_deferFeatures.length) {	
+			_deferFeatures.forEach(resolve => resolve());
+			_deferFeatures = [];
+		}
 
 		this.updateSize();
 
@@ -19475,23 +19486,25 @@ class WebGPUBackend extends Backend {
 	// utils public
 
 	hasFeature( name ) {
+		return new Promise((resolve, reject) => {
+			
+			if (this.adapter) {
+				//const adapter = this.adapter || _staticAdapter;
+				//const features = Object.values( GPUFeatureName );
 
-		const adapter = this.adapter || _staticAdapter;
+				//if ( features.includes( name ) === false ) {
 
-		//
+				//	resolve(false);
 
-		const features = Object.values( GPUFeatureName );
+					//reject( 'THREE.WebGPURenderer: Unknown WebGPU GPU feature: ' + name );
+					//throw new Error( 'THREE.WebGPURenderer: Unknown WebGPU GPU feature: ' + name );
 
-		if ( features.includes( name ) === false ) {
-
-			throw new Error( 'THREE.WebGPURenderer: Unknown WebGPU GPU feature: ' + name );
-
-		}
-
-		//
-
-		return adapter.features.has( name );
-
+				//}
+				resolve(this.adapter.features.has( name ));
+			} else {
+				_deferFeatures.push(() => resolve(this.hasFeature(name)));
+			}
+		});
 	}
 
 	copyFramebufferToTexture( texture, renderContext ) {
