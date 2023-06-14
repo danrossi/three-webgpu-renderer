@@ -119,8 +119,8 @@
 
 
 			const texture = new CustomVideoTexture(video);
-			texture.colorSpace = THREE.LinearSRGBColorSpace;
-			//texture.colorSpace = THREE.SRGBColorSpace;
+			//texture.colorSpace = THREE.LinearSRGBColorSpace;
+			texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
 			const material = new THREE.MeshBasicMaterial({ map: texture });
@@ -134,8 +134,8 @@
 				renderer = new THREE.WebGLRenderer();
 			}
 
-			renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-			renderer.colorSpace = THREE.LinearSRGBColorSpace;
+			//renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+			//renderer.colorSpace = THREE.LinearSRGBColorSpace;
 			//renderer.outputColorSpace = THREE.SRGBColorSpace;
 			//renderer.colorSpace = THREE.SRGBColorSpace;
 

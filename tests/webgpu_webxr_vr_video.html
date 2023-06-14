@@ -62,8 +62,8 @@
 				video.play();
 
 				const texture = new THREE.VideoTexture( video );
-				//texture.colorSpace = THREE.SRGBColorSpace;
-				texture.colorSpace = THREE.LinearSRGBColorSpace;
+				texture.colorSpace = THREE.SRGBColorSpace;
+				//texture.colorSpace = THREE.LinearSRGBColorSpace;
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0x101010 );
@@ -120,8 +120,8 @@
 
 				//renderer.outputColorSpace = THREE.SRGBColorSpace;
                 //renderer.colorSpace = THREE.SRGBColorSpace;
-				renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-				renderer.colorSpace = THREE.LinearSRGBColorSpace;
+				//renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+				//renderer.colorSpace = THREE.LinearSRGBColorSpace;
 
            
 				renderer.setPixelRatio( window.devicePixelRatio );
