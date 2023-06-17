@@ -123,7 +123,32 @@
 			//texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-			const material = new THREE.MeshBasicMaterial({ map: texture });
+			//const material = new THREE.MeshBasicMaterial({ map: texture });
+
+			const material = new THREE.RawShaderMaterial( {
+				uniforms: { map: { value: texture } },
+				vertexShader: `
+					attribute vec2 uv;
+					attribute vec4 position;
+					uniform mat4 projectionMatrix;
+					uniform mat4 modelViewMatrix;
+					varying vec2 vUV;
+
+					void main() {
+						vUV = vec2(uv.x, uv.y); 
+						gl_Position = projectionMatrix * modelViewMatrix * position;
+					}
+				`,
+				fragmentShader: `
+					precision highp float;
+					precision highp int;
+					uniform sampler2D map;
+					varying vec2 vUV;
+					void main() {
+						gl_FragColor = texture2D( map, vUV );
+					}
+				`
+			});
 
 			const mesh = new THREE.Mesh(geometry, material);
 			scene.add(mesh);
