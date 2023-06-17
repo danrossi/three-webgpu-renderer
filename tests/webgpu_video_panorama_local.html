@@ -21,8 +21,10 @@
 	<div id="container"></div>
 
 	<video id="video" loop muted autoplay crossOrigin="anonymous" preload="metadata" playsinline style="display:none">
-
+        <source src="../three.js/examples/textures/pano.webm">
+        <source src="../three.js/examples/textures/pano.mp4">
 	</video>
+
 
 	<!-- Import maps polyfill -->
 	<!-- Remove this when import maps will be widely supported -->
@@ -93,16 +95,14 @@
 		const distance = 50;
 
 		const video = document.getElementById('video');
-		video.src = "//videos.electroteque.org/360/ultra_light_flight_720p.mp4";
-		video.play();
+		//
+		
 
-		video.addEventListener("loadedmetadata", () => {
-			console.log("loadedmetadata");
-			init();
-		});
+	
 
+        video.play();
 
-
+        init();
 
 		async function init() {
 
