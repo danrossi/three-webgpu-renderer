@@ -3599,7 +3599,7 @@ class OperatorNode extends TempNode {
 
 				typeB = typeA;
 
-			} else if ( op === '<' || op === '>' || op === '<=' || op === '>=' ) {
+			} else if ( op === '<' || op === '>' || op === '<=' || op === '>=' || op === '==' ) {
 
 				if ( builder.isVector( typeA ) ) {
 
@@ -4365,7 +4365,7 @@ class TextureNode extends UniformNode {
 
 			let snippet = propertyName;
 
-			if ( builder.needsColorSpace( this.value ) ) {
+			if ( builder.needsColorSpaceToLinear( this.value ) ) {
 
 				snippet = colorSpaceToLinear( expression( snippet, nodeType ), this.value.colorSpace ).construct( builder ).build( builder, nodeType );
 
@@ -7829,7 +7829,7 @@ class NodeBuilder {
 
 	}
 
-	needsColorSpace( /*texture*/ ) {
+	needsColorSpaceToLinear( /*texture*/ ) {
 
 		return false;
 
@@ -15974,7 +15974,7 @@ class WebGPUNodeBuilder extends NodeBuilder {
 
 	}
 
-	needsColorSpace( texture ) {
+	needsColorSpaceToLinear( texture ) {
 
 		return texture.isVideoTexture === true;
 
