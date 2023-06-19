@@ -1,20 +1,21 @@
 {
     "name": "three-webgpu-renderer",
-    "version": "0.153.0",
+    "version": "0.154.0",
     "description": "Three.js WebGPU Renderer",
     "main": "build/three-webgpu-renderer.js",
     "module": "build/webgpu-renderer.module.js",
     "scripts": {
-      "build": "rollup -c rollup.config.js"
+        "build": "npm run update && rollup -c rollup.config.js",
+        "update": "git submodule update --remote"
     },
     "author": "danielr",
     "devDependencies": {
-      "@rollup/plugin-commonjs": "^19.0.2",
-      "@rollup/plugin-node-resolve": "^11.2.1",
-      "@rollup/plugin-strip": "^3.0.2",
-      "@rollup/plugin-terser": "^0.4.1",
-      "rollup": "^2.38.0",
-      "rollup-plugin-includepaths": "^0.2.4"
+        "@rollup/plugin-commonjs": "^19.0.2",
+        "@rollup/plugin-node-resolve": "^11.2.1",
+        "@rollup/plugin-strip": "^3.0.2",
+        "@rollup/plugin-terser": "^0.4.1",
+        "magic-string": "^0.30.0",
+        "rollup": "^2.38.0",
+        "rollup-plugin-includepaths": "^0.2.4"
     }
-  }
-  
+}

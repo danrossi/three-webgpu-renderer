@@ -1,9 +1,33 @@
 import terser from '@rollup/plugin-terser';
 import strip from '@rollup/plugin-strip';
+import MagicString from 'magic-string';
 
 import includePaths from 'rollup-plugin-includepaths';
 
+function header() {
 
+	return {
+
+		renderChunk( code ) {
+
+			code = new MagicString( code );
+
+			code.prepend( `/**
+ * @license
+ * Copyright 2010-2023 Three.js Authors
+ * SPDX-License-Identifier: MIT
+ */\n` );
+
+			return {
+				code: code.toString(),
+				map: code.generateMap().toString()
+			};
+
+		}
+
+	};
+
+}
 
 export default [
 	{
@@ -12,14 +36,15 @@ export default [
 		plugins: [
 		
 			includePaths({
-				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/renderers/webgpu"],
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes","./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
 				//include: {
 				 // 'three': './three.js/build/three.module.js'
 				//}
 		  	}),
 			strip({
 				debugger: true
-			})
+			}),
+			header()
 		],
 		output: [
 			{
@@ -33,7 +58,7 @@ export default [
 		plugins: [
 		
 			includePaths({
-				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/renderers/webgpu"],
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes","./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
 				include: {
 				  'three': './three.js/build/three.module.js'
 				}
@@ -54,7 +79,7 @@ export default [
 		plugins: [
 		
 			includePaths({
-				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/renderers/webgpu"],
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
 				include: {
 				  'three': './three.js/build/three.module.js'
 				}
@@ -77,7 +102,7 @@ export default [
 		plugins: [
 		
 			includePaths({
-				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/renderers/webgpu"],
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes","./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
 				include: {
 				  'three': './three.js/build/three.module.js'
 				}

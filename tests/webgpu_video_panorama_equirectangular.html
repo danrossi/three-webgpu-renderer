@@ -119,22 +119,64 @@
 
 
 			const texture = new CustomVideoTexture(video);
-			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-			texture.colorSpace = THREE.SRGBColorSpace;
+			
+			//texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-			const material = new THREE.MeshBasicMaterial({ map: texture });
-
-			const mesh = new THREE.Mesh(geometry, material);
-			scene.add(mesh);
+			let material;
 
 			if (await WebGPU.isAvailable()) {
 				console.log("Using WebGPU");
 				renderer = new WebGPURenderer();
+				texture.colorSpace = THREE.SRGBColorSpace;
+				material = new THREE.MeshBasicMaterial({ map: texture });
 			} else {
 				console.log("Using WebGL");
 				renderer = new THREE.WebGLRenderer();
+				texture.colorSpace = THREE.LinearSRGBColorSpace;
+
+				//use shader material for performance srgb decode fix
+				material = new THREE.ShaderMaterial( {
+					uniforms: { map: { value: texture }, color: new THREE.Color( 0xffffff ) },
+					vertexShader: `
+						#define attribute in
+						#define varying out
+						#define texture2D texture
+						precision highp float;
+						precision highp int;
+
+						varying vec2 vUv;
+						varying vec3 vClipPosition;
+
+						void main() {
+							vUv = vec3( uv, 1 ).xy;
+							//vec3 transformed = vec3( position );
+							vec4 mvPosition = vec4( position, 1.0 );
+							mvPosition = modelViewMatrix * mvPosition;
+							gl_Position = projectionMatrix * mvPosition;
+		
+						}
+					`,
+					fragmentShader: `
+						uniform sampler2D map;
+						varying vec2 vUv;
+						
+						void main() {
+							gl_FragColor = texture2D( map, vUv );
+							//gl_FragColor = linearToOutputTexel( gl_FragColor );
+							gl_FragColor.rgb *= gl_FragColor.a;
+						}
+					`
+				});
+
+				material.color = new THREE.Color( 0xffffff );
 			}
+
+
+			const mesh = new THREE.Mesh(geometry, material);
+			scene.add(mesh);
+
+			
 
 			//renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 			//renderer.colorSpace = THREE.LinearSRGBColorSpace;

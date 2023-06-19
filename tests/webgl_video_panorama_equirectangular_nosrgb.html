@@ -119,7 +119,7 @@
 
 
 			const texture = new CustomVideoTexture(video);
-			//texture.colorSpace = THREE.LinearSRGBColorSpace;
+			texture.colorSpace = THREE.LinearSRGBColorSpace;
 			//texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
@@ -162,12 +162,8 @@
 					precision highp float;
 					precision highp int;
 
-					uniform mat3 mapTransform;
-
 					varying vec2 vUv;
 					varying vec3 vClipPosition;
-					varying vec2 vMapUv;
-					
 
 					void main() {
 						vUv = vec3( uv, 1 ).xy;
@@ -180,10 +176,8 @@
 				`,
 				fragmentShader: `
 					uniform sampler2D map;
-
 					varying vec2 vUv;
 					
-
 					void main() {
 						gl_FragColor = texture2D( map, vUv );
 						//gl_FragColor = linearToOutputTexel( gl_FragColor );
