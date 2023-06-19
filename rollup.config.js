@@ -87,7 +87,9 @@ export default [
 			strip({
 				debugger: true
 			}),
-			terser()
+			terser({
+                keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material/
+            })
 		],
 		output: [
 			{
@@ -109,8 +111,7 @@ export default [
 		  	}),
 			strip({
 				debugger: true
-			}),
-			terser()
+			})
 		],
 		output: [
 			{
