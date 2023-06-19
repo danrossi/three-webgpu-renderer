@@ -123,9 +123,12 @@
 			//texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-			//const material = new THREE.MeshBasicMaterial({ map: texture });
+			const material1 = new THREE.MeshBasicMaterial({ map: texture });
 
-            const material = new THREE.RawShaderMaterial( {
+
+
+
+            /*const material = new THREE.RawShaderMaterial( {
 				uniforms: { map: { value: texture } },
 				vertexShader: `
 					attribute vec2 uv;
@@ -148,7 +151,49 @@
 						gl_FragColor = texture2D( map, vUV );
 					}
 				`
+			});*/
+
+			const material = new THREE.ShaderMaterial( {
+				uniforms: { map: { value: texture }, color: new THREE.Color( 0xffffff ) },
+				vertexShader: `
+					#define attribute in
+					#define varying out
+					#define texture2D texture
+					precision highp float;
+					precision highp int;
+
+					uniform mat3 mapTransform;
+
+					varying vec2 vUv;
+					varying vec3 vClipPosition;
+					varying vec2 vMapUv;
+					
+
+					void main() {
+						vUv = vec3( uv, 1 ).xy;
+						//vec3 transformed = vec3( position );
+						vec4 mvPosition = vec4( position, 1.0 );
+						mvPosition = modelViewMatrix * mvPosition;
+						gl_Position = projectionMatrix * mvPosition;
+	
+					}
+				`,
+				fragmentShader: `
+					uniform sampler2D map;
+
+					varying vec2 vUv;
+					
+
+					void main() {
+						gl_FragColor = texture2D( map, vUv );
+						//gl_FragColor = linearToOutputTexel( gl_FragColor );
+						gl_FragColor.rgb *= gl_FragColor.a;
+					}
+				`
 			});
+
+			//material1.color = new THREE.Color( 0xffffff );
+
 
 			const mesh = new THREE.Mesh(geometry, material);
 			scene.add(mesh);
