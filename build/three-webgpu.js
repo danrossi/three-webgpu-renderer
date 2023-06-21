@@ -17820,11 +17820,31 @@ var THREE = (function (exports) {
 
 				}
 
-				attributes.update( object.instanceMatrix, gl.ARRAY_BUFFER );
+				if ( updateMap.get( object ) !== frame ) {
 
-				if ( object.instanceColor !== null ) {
+					attributes.update( object.instanceMatrix, gl.ARRAY_BUFFER );
 
-					attributes.update( object.instanceColor, gl.ARRAY_BUFFER );
+					if ( object.instanceColor !== null ) {
+
+						attributes.update( object.instanceColor, gl.ARRAY_BUFFER );
+
+					}
+
+					updateMap.set( object, frame );
+
+				}
+
+			}
+
+			if ( object.isSkinnedMesh ) {
+
+				const skeleton = object.skeleton;
+
+				if ( updateMap.get( skeleton ) !== frame ) {
+
+					skeleton.update();
+
+					updateMap.set( skeleton, frame );
 
 				}
 
@@ -28149,7 +28169,7 @@ var THREE = (function (exports) {
 
 				}
 
-				if ( _gl instanceof WebGLRenderingContext ) { // @deprecated, r153
+				if ( typeof WebGLRenderingContext !== 'undefined' && _gl instanceof WebGLRenderingContext ) { // @deprecated, r153
 
 					console.warn( 'THREE.WebGLRenderer: WebGL 1 support was deprecated in r153 and will be removed in r163.' );
 
@@ -28949,6 +28969,8 @@ var THREE = (function (exports) {
 
 				//
 
+				this.info.render.frame ++;
+
 				if ( _clippingEnabled === true ) clipping.beginShadows();
 
 				const shadowsArray = currentRenderState.state.shadowsArray;
@@ -28961,7 +28983,6 @@ var THREE = (function (exports) {
 
 				if ( this.info.autoReset === true ) this.info.reset();
 
-				this.info.render.frame ++;
 
 				//
 
@@ -29090,19 +29111,6 @@ var THREE = (function (exports) {
 					} else if ( object.isMesh || object.isLine || object.isPoints ) {
 
 						if ( ! object.frustumCulled || _frustum.intersectsObject( object ) ) {
-
-							if ( object.isSkinnedMesh ) {
-
-								// update skeleton only once in a frame
-
-								if ( object.skeleton.frame !== info.render.frame ) {
-
-									object.skeleton.update();
-									object.skeleton.frame = info.render.frame;
-
-								}
-
-							}
 
 							const geometry = objects.update( object );
 							const material = object.material;
@@ -31633,8 +31641,6 @@ var THREE = (function (exports) {
 
 			this.boneTexture = null;
 			this.boneTextureSize = 0;
-
-			this.frame = - 1;
 
 			this.init();
 
@@ -51489,11 +51495,9 @@ var THREE = (function (exports) {
 
 	let id$3 = 0;
 
-	class RenderObject extends EventDispatcher {
+	class RenderObject {
 
 		constructor( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
-
-			super();
 
 			this._nodes = nodes;
 			this._geometries = geometries;
@@ -51516,15 +51520,15 @@ var THREE = (function (exports) {
 			this._materialVersion = - 1;
 			this._materialCacheKey = '';
 
-			const onDispose = () => {
+			this.onDispose = null;
 
-				this.material.removeEventListener( 'dispose', onDispose );
+			this.onMaterialDispose = () => {
 
 				this.dispose();
 
 			};
 
-			this.material.addEventListener( 'dispose', onDispose );
+			this.material.addEventListener( 'dispose', this.onMaterialDispose );
 
 		}
 
@@ -51595,7 +51599,9 @@ var THREE = (function (exports) {
 
 		dispose() {
 
-			this.dispatchEvent( { type: 'dispose' } );
+			this.material.removeEventListener( 'dispose', this.onMaterialDispose );
+
+			this.onDispose();
 
 		}
 
@@ -51625,9 +51631,7 @@ var THREE = (function (exports) {
 
 			if ( renderObject === undefined ) {
 
-				renderObject = new RenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
-
-				this._initRenderObject( renderObject );
+				renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
 
 				this.set( chainArray, renderObject );
 
@@ -51658,29 +51662,25 @@ var THREE = (function (exports) {
 
 		}
 
-		_initRenderObject( renderObject ) {
+		createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
+
+			const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode );
 
 			const data = this.dataMap.get( renderObject );
+			data.cacheKey = renderObject.getCacheKey();
 
-			if ( data.initialized !== true ) {
+			renderObject.onDispose = () => {
 
-				data.initialized = true;
-				data.cacheKey = renderObject.getCacheKey();
+				this.dataMap.delete( renderObject );
 
-				const onDispose = () => {
+				this.pipelines.delete( renderObject );
+				this.nodes.delete( renderObject );
 
-					renderObject.removeEventListener( 'dispose', onDispose );
+				this.delete( renderObject.getChainArray() );
 
-					this.pipelines.delete( renderObject );
-					this.nodes.delete( renderObject );
+			};
 
-					this.delete( renderObject.getChainArray() );
-
-				};
-
-				renderObject.addEventListener( 'dispose', onDispose );
-
-			}
+			return renderObject;
 
 		}
 
@@ -52135,7 +52135,7 @@ var THREE = (function (exports) {
 
 				// release previous cache
 
-				this._releasePipeline( computeNode );
+				const previousPipeline = this._releasePipeline( computeNode );
 
 				// get shader
 
@@ -52146,6 +52146,8 @@ var THREE = (function (exports) {
 				let stageCompute = this.programs.compute.get( nodeBuilder.computeShader );
 
 				if ( stageCompute === undefined ) {
+
+					if ( previousPipeline ) this._releaseProgram( previousPipeline.computeShader );
 
 					stageCompute = new ProgrammableStage( nodeBuilder.computeShader, 'compute' );
 					this.programs.compute.set( nodeBuilder.computeShader, stageCompute );
@@ -52183,7 +52185,7 @@ var THREE = (function (exports) {
 
 				// release previous cache
 
-				this._releasePipeline( renderObject );
+				const previousPipeline = this._releasePipeline( renderObject );
 
 				// get shader
 
@@ -52195,6 +52197,8 @@ var THREE = (function (exports) {
 
 				if ( stageVertex === undefined ) {
 
+					if ( previousPipeline ) this._releaseProgram( previousPipeline.vertexProgram );
+
 					stageVertex = new ProgrammableStage( nodeBuilder.vertexShader, 'vertex' );
 					this.programs.vertex.set( nodeBuilder.vertexShader, stageVertex );
 
@@ -52205,6 +52209,8 @@ var THREE = (function (exports) {
 				let stageFragment = this.programs.fragment.get( nodeBuilder.fragmentShader );
 
 				if ( stageFragment === undefined ) {
+
+					if ( previousPipeline ) this._releaseProgram( previousPipeline.fragmentShader );
 
 					stageFragment = new ProgrammableStage( nodeBuilder.fragmentShader, 'fragment' );
 					this.programs.fragment.set( nodeBuilder.fragmentShader, stageFragment );
@@ -52235,7 +52241,18 @@ var THREE = (function (exports) {
 
 		delete( object ) {
 
-			this._releasePipeline( object );
+			const pipeline = this._releasePipeline( object );
+
+			if ( pipeline.isComputePipeline ) {
+
+				this._releaseProgram( pipeline.computeProgram );
+
+			} else {
+
+				this._releaseProgram( pipeline.vertexProgram );
+				this._releaseProgram( pipeline.fragmentProgram );
+
+			}
 
 			super.delete( object );
 
@@ -52338,18 +52355,9 @@ var THREE = (function (exports) {
 
 				this.caches.delete( pipeline.cacheKey );
 
-				if ( pipeline.isComputePipeline ) {
-
-					this._releaseProgram( pipeline.computeProgram );
-
-				} else {
-
-					this._releaseProgram( pipeline.vertexProgram );
-					this._releaseProgram( pipeline.fragmentProgram );
-
-				}
-
 			}
+
+			return pipeline;
 
 		}
 
@@ -55438,7 +55446,6 @@ var THREE = (function (exports) {
 			super( 'vec4' );
 
 			this.method = method;
-
 			this.node = node;
 
 		}
@@ -67205,7 +67212,7 @@ fn threejs_repeatWrapping( uv : vec2<f32>, dimension : vec2<u32> ) -> vec2<u32> 
 
 		needsColorSpaceToLinear( texture ) {
 
-			return texture.isVideoTexture === true;
+			return texture.isVideoTexture === true && texture.colorSpace !== NoColorSpace;
 
 		}
 
@@ -68281,6 +68288,7 @@ var<${access}> ${name} : ${structName};`;
 
 				let arrayStride = geometryAttribute.itemSize * bytesPerElement;
 				let offset = 0;
+				let stepMode = geometryAttribute.isInstancedBufferAttribute ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
 
 				if ( geometryAttribute.isInterleavedBufferAttribute === true ) {
 
@@ -68288,12 +68296,14 @@ var<${access}> ${name} : ${structName};`;
 
 					arrayStride = geometryAttribute.data.stride * bytesPerElement;
 					offset = geometryAttribute.offset * bytesPerElement;
+					if ( geometryAttribute.data.isInstancedInterleavedBuffer ) stepMode = GPUInputStepMode.Instance;
 
 				}
 
 				shaderAttributes.push( {
 					geometryAttribute,
 					arrayStride,
+					stepMode,
 					offset,
 					format,
 					slot
@@ -68586,13 +68596,10 @@ var<${access}> ${name} : ${structName};`;
 
 			for ( const attribute of shaderAttributes ) {
 
-				const geometryAttribute = attribute.geometryAttribute;
-				const stepMode = ( geometryAttribute !== undefined && geometryAttribute.isInstancedBufferAttribute ) ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
-
 				vertexBuffers.push( {
 					arrayStride: attribute.arrayStride,
 					attributes: [ { shaderLocation: attribute.slot, offset: attribute.offset, format: attribute.format } ],
-					stepMode: stepMode
+					stepMode: attribute.stepMode
 				} );
 
 			}

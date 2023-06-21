@@ -17817,11 +17817,31 @@ function WebGLObjects( gl, geometries, attributes, info ) {
 
 			}
 
-			attributes.update( object.instanceMatrix, gl.ARRAY_BUFFER );
+			if ( updateMap.get( object ) !== frame ) {
 
-			if ( object.instanceColor !== null ) {
+				attributes.update( object.instanceMatrix, gl.ARRAY_BUFFER );
 
-				attributes.update( object.instanceColor, gl.ARRAY_BUFFER );
+				if ( object.instanceColor !== null ) {
+
+					attributes.update( object.instanceColor, gl.ARRAY_BUFFER );
+
+				}
+
+				updateMap.set( object, frame );
+
+			}
+
+		}
+
+		if ( object.isSkinnedMesh ) {
+
+			const skeleton = object.skeleton;
+
+			if ( updateMap.get( skeleton ) !== frame ) {
+
+				skeleton.update();
+
+				updateMap.set( skeleton, frame );
 
 			}
 
@@ -28146,7 +28166,7 @@ class WebGLRenderer {
 
 			}
 
-			if ( _gl instanceof WebGLRenderingContext ) { // @deprecated, r153
+			if ( typeof WebGLRenderingContext !== 'undefined' && _gl instanceof WebGLRenderingContext ) { // @deprecated, r153
 
 				console.warn( 'THREE.WebGLRenderer: WebGL 1 support was deprecated in r153 and will be removed in r163.' );
 
@@ -28946,6 +28966,8 @@ class WebGLRenderer {
 
 			//
 
+			this.info.render.frame ++;
+
 			if ( _clippingEnabled === true ) clipping.beginShadows();
 
 			const shadowsArray = currentRenderState.state.shadowsArray;
@@ -28958,7 +28980,6 @@ class WebGLRenderer {
 
 			if ( this.info.autoReset === true ) this.info.reset();
 
-			this.info.render.frame ++;
 
 			//
 
@@ -29087,19 +29108,6 @@ class WebGLRenderer {
 				} else if ( object.isMesh || object.isLine || object.isPoints ) {
 
 					if ( ! object.frustumCulled || _frustum.intersectsObject( object ) ) {
-
-						if ( object.isSkinnedMesh ) {
-
-							// update skeleton only once in a frame
-
-							if ( object.skeleton.frame !== info.render.frame ) {
-
-								object.skeleton.update();
-								object.skeleton.frame = info.render.frame;
-
-							}
-
-						}
 
 						const geometry = objects.update( object );
 						const material = object.material;
@@ -31630,8 +31638,6 @@ class Skeleton {
 
 		this.boneTexture = null;
 		this.boneTextureSize = 0;
-
-		this.frame = - 1;
 
 		this.init();
 
@@ -51486,11 +51492,9 @@ class ChainMap {
 
 let id$3 = 0;
 
-class RenderObject extends EventDispatcher {
+class RenderObject {
 
 	constructor( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
-
-		super();
 
 		this._nodes = nodes;
 		this._geometries = geometries;
@@ -51513,15 +51517,15 @@ class RenderObject extends EventDispatcher {
 		this._materialVersion = - 1;
 		this._materialCacheKey = '';
 
-		const onDispose = () => {
+		this.onDispose = null;
 
-			this.material.removeEventListener( 'dispose', onDispose );
+		this.onMaterialDispose = () => {
 
 			this.dispose();
 
 		};
 
-		this.material.addEventListener( 'dispose', onDispose );
+		this.material.addEventListener( 'dispose', this.onMaterialDispose );
 
 	}
 
@@ -51592,7 +51596,9 @@ class RenderObject extends EventDispatcher {
 
 	dispose() {
 
-		this.dispatchEvent( { type: 'dispose' } );
+		this.material.removeEventListener( 'dispose', this.onMaterialDispose );
+
+		this.onDispose();
 
 	}
 
@@ -51622,9 +51628,7 @@ class RenderObjects extends ChainMap {
 
 		if ( renderObject === undefined ) {
 
-			renderObject = new RenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
-
-			this._initRenderObject( renderObject );
+			renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
 
 			this.set( chainArray, renderObject );
 
@@ -51655,29 +51659,25 @@ class RenderObjects extends ChainMap {
 
 	}
 
-	_initRenderObject( renderObject ) {
+	createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
+
+		const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode );
 
 		const data = this.dataMap.get( renderObject );
+		data.cacheKey = renderObject.getCacheKey();
 
-		if ( data.initialized !== true ) {
+		renderObject.onDispose = () => {
 
-			data.initialized = true;
-			data.cacheKey = renderObject.getCacheKey();
+			this.dataMap.delete( renderObject );
 
-			const onDispose = () => {
+			this.pipelines.delete( renderObject );
+			this.nodes.delete( renderObject );
 
-				renderObject.removeEventListener( 'dispose', onDispose );
+			this.delete( renderObject.getChainArray() );
 
-				this.pipelines.delete( renderObject );
-				this.nodes.delete( renderObject );
+		};
 
-				this.delete( renderObject.getChainArray() );
-
-			};
-
-			renderObject.addEventListener( 'dispose', onDispose );
-
-		}
+		return renderObject;
 
 	}
 
@@ -52132,7 +52132,7 @@ class Pipelines extends DataMap {
 
 			// release previous cache
 
-			this._releasePipeline( computeNode );
+			const previousPipeline = this._releasePipeline( computeNode );
 
 			// get shader
 
@@ -52143,6 +52143,8 @@ class Pipelines extends DataMap {
 			let stageCompute = this.programs.compute.get( nodeBuilder.computeShader );
 
 			if ( stageCompute === undefined ) {
+
+				if ( previousPipeline ) this._releaseProgram( previousPipeline.computeShader );
 
 				stageCompute = new ProgrammableStage( nodeBuilder.computeShader, 'compute' );
 				this.programs.compute.set( nodeBuilder.computeShader, stageCompute );
@@ -52180,7 +52182,7 @@ class Pipelines extends DataMap {
 
 			// release previous cache
 
-			this._releasePipeline( renderObject );
+			const previousPipeline = this._releasePipeline( renderObject );
 
 			// get shader
 
@@ -52192,6 +52194,8 @@ class Pipelines extends DataMap {
 
 			if ( stageVertex === undefined ) {
 
+				if ( previousPipeline ) this._releaseProgram( previousPipeline.vertexProgram );
+
 				stageVertex = new ProgrammableStage( nodeBuilder.vertexShader, 'vertex' );
 				this.programs.vertex.set( nodeBuilder.vertexShader, stageVertex );
 
@@ -52202,6 +52206,8 @@ class Pipelines extends DataMap {
 			let stageFragment = this.programs.fragment.get( nodeBuilder.fragmentShader );
 
 			if ( stageFragment === undefined ) {
+
+				if ( previousPipeline ) this._releaseProgram( previousPipeline.fragmentShader );
 
 				stageFragment = new ProgrammableStage( nodeBuilder.fragmentShader, 'fragment' );
 				this.programs.fragment.set( nodeBuilder.fragmentShader, stageFragment );
@@ -52232,7 +52238,18 @@ class Pipelines extends DataMap {
 
 	delete( object ) {
 
-		this._releasePipeline( object );
+		const pipeline = this._releasePipeline( object );
+
+		if ( pipeline.isComputePipeline ) {
+
+			this._releaseProgram( pipeline.computeProgram );
+
+		} else {
+
+			this._releaseProgram( pipeline.vertexProgram );
+			this._releaseProgram( pipeline.fragmentProgram );
+
+		}
 
 		super.delete( object );
 
@@ -52335,18 +52352,9 @@ class Pipelines extends DataMap {
 
 			this.caches.delete( pipeline.cacheKey );
 
-			if ( pipeline.isComputePipeline ) {
-
-				this._releaseProgram( pipeline.computeProgram );
-
-			} else {
-
-				this._releaseProgram( pipeline.vertexProgram );
-				this._releaseProgram( pipeline.fragmentProgram );
-
-			}
-
 		}
+
+		return pipeline;
 
 	}
 
@@ -55435,7 +55443,6 @@ class ColorSpaceNode extends TempNode {
 		super( 'vec4' );
 
 		this.method = method;
-
 		this.node = node;
 
 	}
@@ -67202,7 +67209,7 @@ class WGSLNodeBuilder extends NodeBuilder {
 
 	needsColorSpaceToLinear( texture ) {
 
-		return texture.isVideoTexture === true;
+		return texture.isVideoTexture === true && texture.colorSpace !== NoColorSpace;
 
 	}
 
@@ -68278,6 +68285,7 @@ class WebGPUAttributeUtils {
 
 			let arrayStride = geometryAttribute.itemSize * bytesPerElement;
 			let offset = 0;
+			let stepMode = geometryAttribute.isInstancedBufferAttribute ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
 
 			if ( geometryAttribute.isInterleavedBufferAttribute === true ) {
 
@@ -68285,12 +68293,14 @@ class WebGPUAttributeUtils {
 
 				arrayStride = geometryAttribute.data.stride * bytesPerElement;
 				offset = geometryAttribute.offset * bytesPerElement;
+				if ( geometryAttribute.data.isInstancedInterleavedBuffer ) stepMode = GPUInputStepMode.Instance;
 
 			}
 
 			shaderAttributes.push( {
 				geometryAttribute,
 				arrayStride,
+				stepMode,
 				offset,
 				format,
 				slot
@@ -68583,13 +68593,10 @@ class WebGPUPipelineUtils {
 
 		for ( const attribute of shaderAttributes ) {
 
-			const geometryAttribute = attribute.geometryAttribute;
-			const stepMode = ( geometryAttribute !== undefined && geometryAttribute.isInstancedBufferAttribute ) ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
-
 			vertexBuffers.push( {
 				arrayStride: attribute.arrayStride,
 				attributes: [ { shaderLocation: attribute.slot, offset: attribute.offset, format: attribute.format } ],
-				stepMode: stepMode
+				stepMode: attribute.stepMode
 			} );
 
 		}

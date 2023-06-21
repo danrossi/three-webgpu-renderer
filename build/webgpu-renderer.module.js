@@ -3,7 +3,7 @@
  * Copyright 2010-2023 Three.js Authors
  * SPDX-License-Identifier: MIT
  */
-import { EventDispatcher, DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, MathUtils, LinearSRGBColorSpace, SRGBColorSpace, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, DepthTexture, NearestFilter, ShaderMaterial, NoColorSpace, Material, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, LinearMipmapLinearFilter, UnsignedIntType, DepthFormat, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, BackSide, Mesh, SphereGeometry, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Frustum, WebGLRenderTarget, WebGLCubeRenderTarget, BoxGeometry, NoBlending, Scene, LinearFilter, CubeCamera, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, DoubleSide, FrontSide, SrcAlphaSaturateFactor, OneMinusDstAlphaFactor, DstAlphaFactor, OneMinusDstColorFactor, DstColorFactor, OneMinusSrcAlphaFactor, SrcAlphaFactor, OneMinusSrcColorFactor, SrcColorFactor, OneFactor, ZeroFactor, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, ReverseSubtractEquation, SubtractEquation, AddEquation, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, CubeReflectionMapping, CubeRefractionMapping, Texture, CubeTexture, FloatType, RGFormat, RedFormat, RGBAFormat, NeverCompare, AlwaysCompare, LessCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, RepeatWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, RGBA_ASTC_12x12_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_4x4_Format, RGBA_ETC2_EAC_Format, RGB_ETC2_Format, RGBA_S3TC_DXT5_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, UnsignedShortType, HalfFloatType, UnsignedByteType, WebGPUCoordinateSystem } from 'three';
+import { DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, MathUtils, LinearSRGBColorSpace, SRGBColorSpace, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, DepthTexture, NearestFilter, ShaderMaterial, NoColorSpace, Material, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, LinearMipmapLinearFilter, UnsignedIntType, DepthFormat, EventDispatcher, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, BackSide, Mesh, SphereGeometry, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Frustum, WebGLRenderTarget, WebGLCubeRenderTarget, BoxGeometry, NoBlending, Scene, LinearFilter, CubeCamera, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, DoubleSide, FrontSide, SrcAlphaSaturateFactor, OneMinusDstAlphaFactor, DstAlphaFactor, OneMinusDstColorFactor, DstColorFactor, OneMinusSrcAlphaFactor, SrcAlphaFactor, OneMinusSrcColorFactor, SrcColorFactor, OneFactor, ZeroFactor, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, ReverseSubtractEquation, SubtractEquation, AddEquation, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, CubeReflectionMapping, CubeRefractionMapping, Texture, CubeTexture, FloatType, RGFormat, RedFormat, RGBAFormat, NeverCompare, AlwaysCompare, LessCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, RepeatWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, RGBA_ASTC_12x12_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_4x4_Format, RGBA_ETC2_EAC_Format, RGB_ETC2_Format, RGBA_S3TC_DXT5_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, UnsignedShortType, HalfFloatType, UnsignedByteType, WebGPUCoordinateSystem } from 'three';
 
 class WebGPU {
 
@@ -234,11 +234,9 @@ class ChainMap {
 
 let id$3 = 0;
 
-class RenderObject extends EventDispatcher {
+class RenderObject {
 
 	constructor( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
-
-		super();
 
 		this._nodes = nodes;
 		this._geometries = geometries;
@@ -261,15 +259,15 @@ class RenderObject extends EventDispatcher {
 		this._materialVersion = - 1;
 		this._materialCacheKey = '';
 
-		const onDispose = () => {
+		this.onDispose = null;
 
-			this.material.removeEventListener( 'dispose', onDispose );
+		this.onMaterialDispose = () => {
 
 			this.dispose();
 
 		};
 
-		this.material.addEventListener( 'dispose', onDispose );
+		this.material.addEventListener( 'dispose', this.onMaterialDispose );
 
 	}
 
@@ -340,7 +338,9 @@ class RenderObject extends EventDispatcher {
 
 	dispose() {
 
-		this.dispatchEvent( { type: 'dispose' } );
+		this.material.removeEventListener( 'dispose', this.onMaterialDispose );
+
+		this.onDispose();
 
 	}
 
@@ -370,9 +370,7 @@ class RenderObjects extends ChainMap {
 
 		if ( renderObject === undefined ) {
 
-			renderObject = new RenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
-
-			this._initRenderObject( renderObject );
+			renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
 
 			this.set( chainArray, renderObject );
 
@@ -403,29 +401,25 @@ class RenderObjects extends ChainMap {
 
 	}
 
-	_initRenderObject( renderObject ) {
+	createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
+
+		const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode );
 
 		const data = this.dataMap.get( renderObject );
+		data.cacheKey = renderObject.getCacheKey();
 
-		if ( data.initialized !== true ) {
+		renderObject.onDispose = () => {
 
-			data.initialized = true;
-			data.cacheKey = renderObject.getCacheKey();
+			this.dataMap.delete( renderObject );
 
-			const onDispose = () => {
+			this.pipelines.delete( renderObject );
+			this.nodes.delete( renderObject );
 
-				renderObject.removeEventListener( 'dispose', onDispose );
+			this.delete( renderObject.getChainArray() );
 
-				this.pipelines.delete( renderObject );
-				this.nodes.delete( renderObject );
+		};
 
-				this.delete( renderObject.getChainArray() );
-
-			};
-
-			renderObject.addEventListener( 'dispose', onDispose );
-
-		}
+		return renderObject;
 
 	}
 
@@ -880,7 +874,7 @@ class Pipelines extends DataMap {
 
 			// release previous cache
 
-			this._releasePipeline( computeNode );
+			const previousPipeline = this._releasePipeline( computeNode );
 
 			// get shader
 
@@ -891,6 +885,8 @@ class Pipelines extends DataMap {
 			let stageCompute = this.programs.compute.get( nodeBuilder.computeShader );
 
 			if ( stageCompute === undefined ) {
+
+				if ( previousPipeline ) this._releaseProgram( previousPipeline.computeShader );
 
 				stageCompute = new ProgrammableStage( nodeBuilder.computeShader, 'compute' );
 				this.programs.compute.set( nodeBuilder.computeShader, stageCompute );
@@ -928,7 +924,7 @@ class Pipelines extends DataMap {
 
 			// release previous cache
 
-			this._releasePipeline( renderObject );
+			const previousPipeline = this._releasePipeline( renderObject );
 
 			// get shader
 
@@ -940,6 +936,8 @@ class Pipelines extends DataMap {
 
 			if ( stageVertex === undefined ) {
 
+				if ( previousPipeline ) this._releaseProgram( previousPipeline.vertexProgram );
+
 				stageVertex = new ProgrammableStage( nodeBuilder.vertexShader, 'vertex' );
 				this.programs.vertex.set( nodeBuilder.vertexShader, stageVertex );
 
@@ -950,6 +948,8 @@ class Pipelines extends DataMap {
 			let stageFragment = this.programs.fragment.get( nodeBuilder.fragmentShader );
 
 			if ( stageFragment === undefined ) {
+
+				if ( previousPipeline ) this._releaseProgram( previousPipeline.fragmentShader );
 
 				stageFragment = new ProgrammableStage( nodeBuilder.fragmentShader, 'fragment' );
 				this.programs.fragment.set( nodeBuilder.fragmentShader, stageFragment );
@@ -980,7 +980,18 @@ class Pipelines extends DataMap {
 
 	delete( object ) {
 
-		this._releasePipeline( object );
+		const pipeline = this._releasePipeline( object );
+
+		if ( pipeline.isComputePipeline ) {
+
+			this._releaseProgram( pipeline.computeProgram );
+
+		} else {
+
+			this._releaseProgram( pipeline.vertexProgram );
+			this._releaseProgram( pipeline.fragmentProgram );
+
+		}
 
 		super.delete( object );
 
@@ -1083,18 +1094,9 @@ class Pipelines extends DataMap {
 
 			this.caches.delete( pipeline.cacheKey );
 
-			if ( pipeline.isComputePipeline ) {
-
-				this._releaseProgram( pipeline.computeProgram );
-
-			} else {
-
-				this._releaseProgram( pipeline.vertexProgram );
-				this._releaseProgram( pipeline.fragmentProgram );
-
-			}
-
 		}
+
+		return pipeline;
 
 	}
 
@@ -4183,7 +4185,6 @@ class ColorSpaceNode extends TempNode {
 		super( 'vec4' );
 
 		this.method = method;
-
 		this.node = node;
 
 	}
@@ -15950,7 +15951,7 @@ class WGSLNodeBuilder extends NodeBuilder {
 
 	needsColorSpaceToLinear( texture ) {
 
-		return texture.isVideoTexture === true;
+		return texture.isVideoTexture === true && texture.colorSpace !== NoColorSpace;
 
 	}
 
@@ -17026,6 +17027,7 @@ class WebGPUAttributeUtils {
 
 			let arrayStride = geometryAttribute.itemSize * bytesPerElement;
 			let offset = 0;
+			let stepMode = geometryAttribute.isInstancedBufferAttribute ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
 
 			if ( geometryAttribute.isInterleavedBufferAttribute === true ) {
 
@@ -17033,12 +17035,14 @@ class WebGPUAttributeUtils {
 
 				arrayStride = geometryAttribute.data.stride * bytesPerElement;
 				offset = geometryAttribute.offset * bytesPerElement;
+				if ( geometryAttribute.data.isInstancedInterleavedBuffer ) stepMode = GPUInputStepMode.Instance;
 
 			}
 
 			shaderAttributes.push( {
 				geometryAttribute,
 				arrayStride,
+				stepMode,
 				offset,
 				format,
 				slot
@@ -17331,13 +17335,10 @@ class WebGPUPipelineUtils {
 
 		for ( const attribute of shaderAttributes ) {
 
-			const geometryAttribute = attribute.geometryAttribute;
-			const stepMode = ( geometryAttribute !== undefined && geometryAttribute.isInstancedBufferAttribute ) ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
-
 			vertexBuffers.push( {
 				arrayStride: attribute.arrayStride,
 				attributes: [ { shaderLocation: attribute.slot, offset: attribute.offset, format: attribute.format } ],
-				stepMode: stepMode
+				stepMode: attribute.stepMode
 			} );
 
 		}
