@@ -119,7 +119,7 @@
 
 
 			const texture = new CustomVideoTexture(video);
-			
+
 			//texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
@@ -136,7 +136,7 @@
 				texture.colorSpace = THREE.LinearSRGBColorSpace;
 
 				//use shader material for performance srgb decode fix
-				material = new THREE.ShaderMaterial( {
+				/*material = new THREE.ShaderMaterial( {
 					uniforms: { map: { value: texture }, color: new THREE.Color( 0xffffff ) },
 					vertexShader: `
 						#define attribute in
@@ -169,14 +169,39 @@
 					`
 				});
 
-				material.color = new THREE.Color( 0xffffff );
+				material.color = new THREE.Color( 0xffffff );*/
+
+
+				material = new THREE.MeshBasicMaterial({ map: texture });
+
+				material.onBeforeCompile = function (shader) {
+
+					shader.fragmentShader = shader.fragmentShader.replace(
+						'#include <map_fragment>',
+						`
+						#ifdef USE_MAP
+						
+							vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+						
+							// inline sRGB decode
+							sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.a );
+
+							diffuseColor *= sampledDiffuseColor;
+
+						#endif
+
+						`
+					);
+
+				};
+
 			}
 
 
 			const mesh = new THREE.Mesh(geometry, material);
 			scene.add(mesh);
 
-			
+
 
 			//renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 			//renderer.colorSpace = THREE.LinearSRGBColorSpace;
