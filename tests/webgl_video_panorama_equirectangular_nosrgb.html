@@ -128,7 +128,7 @@
 
 
 
-            /*const material = new THREE.RawShaderMaterial( {
+			/*const material = new THREE.RawShaderMaterial( {
 				uniforms: { map: { value: texture } },
 				vertexShader: `
 					attribute vec2 uv;
@@ -153,7 +153,7 @@
 				`
 			});*/
 
-			const material = new THREE.ShaderMaterial( {
+			/*const material = new THREE.ShaderMaterial( {
 				uniforms: { map: { value: texture }, color: new THREE.Color( 0xffffff ) },
 				vertexShader: `
 					#define attribute in
@@ -184,9 +184,34 @@
 						gl_FragColor.rgb *= gl_FragColor.a;
 					}
 				`
-			});
+			});*/
 
 			//material1.color = new THREE.Color( 0xffffff );
+
+
+			const material = new THREE.MeshBasicMaterial({ map: texture });
+
+			material.onBeforeCompile = function (shader) {
+
+				shader.fragmentShader = shader.fragmentShader.replace(
+					'#include <map_fragment>',
+					`
+					#ifdef USE_MAP
+					
+						vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+					
+						// inline sRGB decode
+						sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.a );
+
+						diffuseColor *= sampledDiffuseColor;
+
+					#endif
+
+									`
+				);
+
+			};
+
 
 
 			const mesh = new THREE.Mesh(geometry, material);
