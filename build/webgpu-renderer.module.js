@@ -982,14 +982,18 @@ class Pipelines extends DataMap {
 
 		const pipeline = this._releasePipeline( object );
 
-		if ( pipeline.isComputePipeline ) {
+		if ( pipeline && pipeline.usedTimes === 0 ) {
 
-			this._releaseProgram( pipeline.computeProgram );
+			if ( pipeline.isComputePipeline ) {
 
-		} else {
+				this._releaseProgram( pipeline.computeProgram );
 
-			this._releaseProgram( pipeline.vertexProgram );
-			this._releaseProgram( pipeline.fragmentProgram );
+			} else {
+
+				this._releaseProgram( pipeline.vertexProgram );
+				this._releaseProgram( pipeline.fragmentProgram );
+
+			}
 
 		}
 
@@ -1587,23 +1591,12 @@ class Node {
 
 		for ( const { property, index, childNode } of getNodeChildren( this ) ) {
 
-			if ( index !== undefined ) {
+			yield { childNode, replaceNode( node ) {
 
-				yield { childNode, replaceNode( node ) {
+				if ( index === undefined ) self[ property ] = node;
+				else self[ property ][ index ] = node;
 
-					self[ property ][ index ] = node;
-
-				} };
-
-			} else {
-
-				yield { childNode, replaceNode( node ) {
-
-					self[ property ] = node;
-
-				} };
-
-			}
+			} };
 
 		}
 
@@ -1748,8 +1741,16 @@ class Node {
 
 			if ( properties.initialized !== true || builder.context.tempRead === false ) {
 
+				const stackNodesBeforeConstruct = builder.stack.nodes.length;
+
 				properties.initialized = true;
 				properties.outputNode = this.construct( builder );
+
+				if ( properties.outputNode !== null && builder.stack.nodes.length !== stackNodesBeforeConstruct ) {
+
+					properties.outputNode = builder.stack;
+
+				}
 
 				for ( const childNode of Object.values( properties ) ) {
 
@@ -2471,7 +2472,7 @@ const ShaderNodeObject = function ( obj, altType = null ) {
 
 	} else if ( type === 'shader' ) {
 
-		return shader( obj );
+		return tslFn( obj );
 
 	}
 
@@ -2685,10 +2686,28 @@ function ShaderNode( jsFunc ) {
 const nodeObject = ( val, altType = null ) => /* new */ ShaderNodeObject( val, altType );
 const nodeObjects = ( val, altType = null ) => new ShaderNodeObjects( val, altType );
 const nodeArray = ( val, altType = null ) => new ShaderNodeArray( val, altType );
-const nodeProxy = ( ...val ) => new ShaderNodeProxy( ...val );
-const nodeImmutable = ( ...val ) => new ShaderNodeImmutable( ...val );
+const nodeProxy = ( ...params ) => new ShaderNodeProxy( ...params );
+const nodeImmutable = ( ...params ) => new ShaderNodeImmutable( ...params );
 
-const shader = ( ...val ) => new ShaderNode( ...val );
+const shader = ( jsFunc ) => { // @deprecated, r154
+
+	return new ShaderNode( jsFunc );
+
+};
+
+const tslFn = ( jsFunc ) => {
+
+	let shaderNode = null;
+
+	return ( ...params ) => {
+
+		if ( shaderNode === null ) shaderNode = new ShaderNode( jsFunc );
+
+		return shaderNode.call( ...params );
+
+	};
+
+};
 
 addNodeClass( ShaderNode );
 
@@ -3022,7 +3041,7 @@ class BypassNode extends Node {
 
 	}
 
-	generate( builder, output ) {
+	generate( builder ) {
 
 		const snippet = this.callNode.build( builder, 'void' );
 
@@ -3032,7 +3051,7 @@ class BypassNode extends Node {
 
 		}
 
-		return this.outputNode.build( builder, output );
+		return this.outputNode.build( builder );
 
 	}
 
@@ -4124,7 +4143,7 @@ addNodeElement( 'saturate', saturate );
 
 addNodeClass( MathNode );
 
-const sRGBToLinearShader = new ShaderNode( ( inputs ) => {
+const sRGBToLinearShader = tslFn( ( inputs ) => {
 
 	const { value } = inputs;
 	const { rgb } = value;
@@ -4139,7 +4158,7 @@ const sRGBToLinearShader = new ShaderNode( ( inputs ) => {
 
 } );
 
-const LinearTosRGBShader = new ShaderNode( ( inputs ) => {
+const LinearTosRGBShader = tslFn( ( inputs ) => {
 
 	const { value } = inputs;
 	const { rgb } = value;
@@ -4196,7 +4215,7 @@ class ColorSpaceNode extends TempNode {
 		if ( method === ColorSpaceNode.LINEAR_TO_LINEAR )
 			return node;
 
-		return Methods[ method ].call( { value: node } );
+		return Methods[ method ]( { value: node } );
 
 	}
 
@@ -5578,7 +5597,7 @@ addNodeClass( FrontFacingNode );
 // Normal Mapping Without Precomputed Tangents
 // http://www.thetenthplanet.de/archives/1180
 
-const perturbNormal2ArbNode = new ShaderNode( ( inputs ) => {
+const perturbNormal2ArbNode = tslFn( ( inputs ) => {
 
 	const { eye_pos, surf_norm, mapN, uv } = inputs;
 
@@ -5643,7 +5662,7 @@ class NormalMapNode extends TempNode {
 
 			} else {
 
-				outputNode = perturbNormal2ArbNode.call( {
+				outputNode = perturbNormal2ArbNode( {
 					eye_pos: positionView,
 					surf_norm: normalView,
 					mapN: normalMap,
@@ -5878,8 +5897,6 @@ class InstanceNode extends Node {
 		builder.stack.assign( positionLocal, instancePosition );
 		builder.stack.assign( normalLocal, instanceNormal );
 
-		return builder.stack;
-
 	}
 
 }
@@ -5913,54 +5930,6 @@ const buffer = ( value, type, count ) => nodeObject( new BufferNode( value, type
 
 addNodeClass( BufferNode );
 
-const Skinning = new ShaderNode( ( inputs, {}, builder ) => {
-
-	const { index, weight, bindMatrix, bindMatrixInverse, boneMatrices } = inputs;
-
-	const boneMatX = boneMatrices.element( index.x );
-	const boneMatY = boneMatrices.element( index.y );
-	const boneMatZ = boneMatrices.element( index.z );
-	const boneMatW = boneMatrices.element( index.w );
-
-	// POSITION
-
-	const skinVertex = bindMatrix.mul( positionLocal );
-
-	const skinned = add(
-		boneMatX.mul( weight.x ).mul( skinVertex ),
-		boneMatY.mul( weight.y ).mul( skinVertex ),
-		boneMatZ.mul( weight.z ).mul( skinVertex ),
-		boneMatW.mul( weight.w ).mul( skinVertex )
-	);
-
-	const skinPosition = bindMatrixInverse.mul( skinned ).xyz;
-
-	// NORMAL
-
-	let skinMatrix = add(
-		weight.x.mul( boneMatX ),
-		weight.y.mul( boneMatY ),
-		weight.z.mul( boneMatZ ),
-		weight.w.mul( boneMatW )
-	);
-
-	skinMatrix = bindMatrixInverse.mul( skinMatrix ).mul( bindMatrix );
-
-	const skinNormal = skinMatrix.transformDirection( normalLocal ).xyz;
-
-	// ASSIGNS
-
-	positionLocal.assign( skinPosition ).build( builder ); // @TODO: For some reason this doesn't work as stack.assign( positionLocal, skinPosition )?
-	normalLocal.assign( skinNormal ).build( builder );
-
-	if ( builder.hasGeometryAttribute( 'tangent' ) ) {
-
-		tangentLocal.assign( skinNormal ).build( builder );
-
-	}
-
-} );
-
 class SkinningNode extends Node {
 
 	constructor( skinnedMesh ) {
@@ -5982,22 +5951,51 @@ class SkinningNode extends Node {
 
 	}
 
-	generate( builder ) {
+	construct( builder ) {
 
-		/*return new ShaderNode( ( {}, stack, builder ) => Skinning.call( {
-			index: this.skinIndexNode,
-			weight: this.skinWeightNode,
-			bindMatrix: this.bindMatrixNode,
-			bindMatrixInverse: this.bindMatrixInverseNode,
-			boneMatrices: this.boneMatricesNode
-		}, stack, builder ) ).build( builder );*/
-		Skinning.call( {
-			index: this.skinIndexNode,
-			weight: this.skinWeightNode,
-			bindMatrix: this.bindMatrixNode,
-			bindMatrixInverse: this.bindMatrixInverseNode,
-			boneMatrices: this.boneMatricesNode
-		}, {}, builder );
+		const { skinIndexNode, skinWeightNode, bindMatrixNode, bindMatrixInverseNode, boneMatricesNode } = this;
+
+		const boneMatX = boneMatricesNode.element( skinIndexNode.x );
+		const boneMatY = boneMatricesNode.element( skinIndexNode.y );
+		const boneMatZ = boneMatricesNode.element( skinIndexNode.z );
+		const boneMatW = boneMatricesNode.element( skinIndexNode.w );
+
+		// POSITION
+
+		const skinVertex = bindMatrixNode.mul( positionLocal );
+
+		const skinned = add(
+			boneMatX.mul( skinWeightNode.x ).mul( skinVertex ),
+			boneMatY.mul( skinWeightNode.y ).mul( skinVertex ),
+			boneMatZ.mul( skinWeightNode.z ).mul( skinVertex ),
+			boneMatW.mul( skinWeightNode.w ).mul( skinVertex )
+		);
+
+		const skinPosition = bindMatrixInverseNode.mul( skinned ).xyz;
+
+		// NORMAL
+
+		let skinMatrix = add(
+			skinWeightNode.x.mul( boneMatX ),
+			skinWeightNode.y.mul( boneMatY ),
+			skinWeightNode.z.mul( boneMatZ ),
+			skinWeightNode.w.mul( boneMatW )
+		);
+
+		skinMatrix = bindMatrixInverseNode.mul( skinMatrix ).mul( bindMatrixNode );
+
+		const skinNormal = skinMatrix.transformDirection( normalLocal ).xyz;
+
+		// ASSIGNS
+
+		builder.stack.assign( positionLocal, skinPosition );
+		builder.stack.assign( normalLocal, skinNormal );
+
+		if ( builder.hasGeometryAttribute( 'tangent' ) ) {
+
+			builder.stack.assign( tangentLocal, skinNormal );
+
+		}
 
 	}
 
@@ -6857,27 +6855,27 @@ class NodeMaterial extends ShaderMaterial {
 
 		const object = builder.object;
 
-		let vertex = positionLocal;
+		builder.addStack();
 
-		if ( this.positionNode !== null ) {
+		if ( object.isSkinnedMesh === true ) {
 
-			vertex = vertex.bypass( positionLocal.assign( this.positionNode ) );
+			builder.stack.add( skinning( object ) );
 
 		}
 
 		if ( ( object.instanceMatrix && object.instanceMatrix.isInstancedBufferAttribute === true ) && builder.isAvailable( 'instance' ) === true ) {
 
-			vertex = vertex.bypass( instance( object ) );
+			builder.stack.add( instance( object ) );
 
 		}
 
-		if ( object.isSkinnedMesh === true ) {
+		if ( this.positionNode !== null ) {
 
-			vertex = vertex.bypass( skinning( object ) );
+			builder.stack.assign( positionLocal, this.positionNode );
 
 		}
 
-		builder.context.vertex = vertex;
+		builder.context.vertex = builder.removeStack();
 
 		return modelViewProjection();
 
@@ -6906,9 +6904,9 @@ class NodeMaterial extends ShaderMaterial {
 
 		// ALPHA TEST
 
-		if ( this.alphaTestNode || this.alphaTest > 0 ) {
+		if ( this.alphaTestNode !== null || this.alphaTest > 0 ) {
 
-			const alphaTestNode = this.alphaTestNode ? float( this.alphaTestNode ) : materialAlphaTest;
+			const alphaTestNode = this.alphaTestNode !== null ? float( this.alphaTestNode ) : materialAlphaTest;
 
 			stack.add( diffuseColor.a.lessThanEqual( alphaTestNode ).discard() );
 
@@ -7280,7 +7278,7 @@ class LoopNode extends Node {
 
 		}
 
-		properties.returnsNode = this.params[ this.params.length - 1 ].call( inputs, builder.addStack(), builder );
+		properties.returnsNode = this.params[ this.params.length - 1 ]( inputs, builder.addStack(), builder );
 		properties.stackNode = builder.removeStack();
 
 		return properties;
@@ -7501,7 +7499,7 @@ class StackNode extends Node {
 
 		for ( const node of this.nodes ) {
 
-			node.build( builder );
+			node.build( builder, 'void' );
 
 		}
 
@@ -9026,7 +9024,7 @@ class TriplanarTexturesNode extends Node {
 }
 
 const triplanarTextures = nodeProxy( TriplanarTexturesNode );
-const triplanarTexture = ( texture, ...params ) => triplanarTextures( texture, texture, texture, ...params );
+const triplanarTexture = ( ...params ) => triplanarTextures( ...params );
 
 addNodeElement( 'triplanarTexture', triplanarTexture );
 
@@ -9183,7 +9181,7 @@ class UserDataNode extends ReferenceNode {
 
 addNodeClass( UserDataNode );
 
-const BurnNode = new ShaderNode( ( { base, blend } ) => {
+const BurnNode = tslFn( ( { base, blend } ) => {
 
 	const fn = ( c ) => blend[ c ].lessThan( EPSILON ).cond( blend[ c ], base[ c ].oneMinus().div( blend[ c ] ).oneMinus().max( 0 ) );
 
@@ -9191,7 +9189,7 @@ const BurnNode = new ShaderNode( ( { base, blend } ) => {
 
 } );
 
-const DodgeNode = new ShaderNode( ( { base, blend } ) => {
+const DodgeNode = tslFn( ( { base, blend } ) => {
 
 	const fn = ( c ) => blend[ c ].equal( 1.0 ).cond( blend[ c ], base[ c ].div( blend[ c ].oneMinus() ).max( 0 ) );
 
@@ -9199,7 +9197,7 @@ const DodgeNode = new ShaderNode( ( { base, blend } ) => {
 
 } );
 
-const ScreenNode = new ShaderNode( ( { base, blend } ) => {
+const ScreenNode = tslFn( ( { base, blend } ) => {
 
 	const fn = ( c ) => base[ c ].oneMinus().mul( blend[ c ].oneMinus() ).oneMinus();
 
@@ -9207,7 +9205,7 @@ const ScreenNode = new ShaderNode( ( { base, blend } ) => {
 
 } );
 
-const OverlayNode = new ShaderNode( ( { base, blend } ) => {
+const OverlayNode = tslFn( ( { base, blend } ) => {
 
 	const fn = ( c ) => base[ c ].lessThan( 0.5 ).cond( base[ c ].mul( blend[ c ], 2.0 ), base[ c ].oneMinus().mul( blend[ c ].oneMinus() ).oneMinus() );
 
@@ -9237,19 +9235,19 @@ class BlendModeNode extends TempNode {
 
 		if ( blendMode === BlendModeNode.BURN ) {
 
-			outputNode = BurnNode.call( params );
+			outputNode = BurnNode( params );
 
 		} else if ( blendMode === BlendModeNode.DODGE ) {
 
-			outputNode = DodgeNode.call( params );
+			outputNode = DodgeNode( params );
 
 		} else if ( blendMode === BlendModeNode.SCREEN ) {
 
-			outputNode = ScreenNode.call( params );
+			outputNode = ScreenNode( params );
 
 		} else if ( blendMode === BlendModeNode.OVERLAY ) {
 
-			outputNode = OverlayNode.call( params );
+			outputNode = OverlayNode( params );
 
 		}
 
@@ -9276,13 +9274,13 @@ addNodeElement( 'screen', screen );
 
 addNodeClass( BlendModeNode );
 
-const saturationNode = new ShaderNode( ( { color, adjustment } ) => {
+const saturationNode = tslFn( ( { color, adjustment } ) => {
 
 	return adjustment.mix( luminance( color ), color );
 
 } );
 
-const vibranceNode = new ShaderNode( ( { color, adjustment } ) => {
+const vibranceNode = tslFn( ( { color, adjustment } ) => {
 
 	const average = add( color.r, color.g, color.b ).div( 3.0 );
 
@@ -9293,7 +9291,7 @@ const vibranceNode = new ShaderNode( ( { color, adjustment } ) => {
 
 } );
 
-const hueNode = new ShaderNode( ( { color, adjustment } ) => {
+const hueNode = tslFn( ( { color, adjustment } ) => {
 
 	const RGBtoYIQ = mat3( 0.299, 0.587, 0.114, 0.595716, - 0.274453, - 0.321263, 0.211456, - 0.522591, 0.311135 );
 	const YIQtoRGB = mat3( 1.0, 0.9563, 0.6210, 1.0, - 0.2721, - 0.6474, 1.0, - 1.107, 1.7046 );
@@ -9330,15 +9328,15 @@ class ColorAdjustmentNode extends TempNode {
 
 		if ( method === ColorAdjustmentNode.SATURATION ) {
 
-			outputNode = saturationNode.call( callParams );
+			outputNode = saturationNode( callParams );
 
 		} else if ( method === ColorAdjustmentNode.VIBRANCE ) {
 
-			outputNode = vibranceNode.call( callParams );
+			outputNode = vibranceNode( callParams );
 
 		} else if ( method === ColorAdjustmentNode.HUE ) {
 
-			outputNode = hueNode.call( callParams );
+			outputNode = hueNode( callParams );
 
 		} else ;
 
@@ -9393,14 +9391,14 @@ addNodeElement( 'posterize', posterize );
 addNodeClass( PosterizeNode );
 
 // exposure only
-const LinearToneMappingNode = new ShaderNode( ( { color, exposure } ) => {
+const LinearToneMappingNode = tslFn( ( { color, exposure } ) => {
 
 	return color.mul( exposure ).clamp();
 
 } );
 
 // source: https://www.cs.utah.edu/docs/techreports/2002/pdf/UUCS-02-001.pdf
-const ReinhardToneMappingNode = new ShaderNode( ( { color, exposure } ) => {
+const ReinhardToneMappingNode = tslFn( ( { color, exposure } ) => {
 
 	color = color.mul( exposure );
 
@@ -9409,7 +9407,7 @@ const ReinhardToneMappingNode = new ShaderNode( ( { color, exposure } ) => {
 } );
 
 // source: http://filmicworlds.com/blog/filmic-tonemapping-operators/
-const OptimizedCineonToneMappingNode = new ShaderNode( ( { color, exposure } ) => {
+const OptimizedCineonToneMappingNode = tslFn( ( { color, exposure } ) => {
 
 	// optimized filmic operator by Jim Hejl and Richard Burgess-Dawson
 	color = color.mul( exposure );
@@ -9423,7 +9421,7 @@ const OptimizedCineonToneMappingNode = new ShaderNode( ( { color, exposure } ) =
 } );
 
 // source: https://github.com/selfshadow/ltc_code/blob/master/webgl/shaders/ltc/ltc_blit.fs
-const RRTAndODTFit = new ShaderNode( ( { color } ) => {
+const RRTAndODTFit = tslFn( ( { color } ) => {
 
 	const a = color.mul( color.add( 0.0245786 ) ).sub( 0.000090537 );
 	const b = color.mul( color.add( 0.4329510 ).mul( 0.983729 ) ).add( 0.238081 );
@@ -9433,7 +9431,7 @@ const RRTAndODTFit = new ShaderNode( ( { color } ) => {
 } );
 
 // source: https://github.com/selfshadow/ltc_code/blob/master/webgl/shaders/ltc/ltc_blit.fs
-const ACESFilmicToneMappingNode = new ShaderNode( ( { color, exposure } ) => {
+const ACESFilmicToneMappingNode = tslFn( ( { color, exposure } ) => {
 
 	// sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT
 	const ACESInputMat = mat3(
@@ -9454,7 +9452,7 @@ const ACESFilmicToneMappingNode = new ShaderNode( ( { color, exposure } ) => {
 	color = ACESInputMat.mul( color );
 
 	// Apply RRT and ODT
-	color = RRTAndODTFit.call( { color } );
+	color = RRTAndODTFit( { color } );
 
 	color = ACESOutputMat.mul( color );
 
@@ -9506,7 +9504,7 @@ class ToneMappingNode extends TempNode {
 
 		if ( toneMappingNode ) {
 
-			outputNode = toneMappingNode.call( toneMappingParams );
+			outputNode = toneMappingNode( toneMappingParams );
 
 		} else {
 
@@ -9870,6 +9868,7 @@ class CodeNode extends Node {
 }
 
 const code = nodeProxy( CodeNode );
+const glsl = ( src, includes ) => code( src, includes, 'glsl' );
 
 addNodeClass( CodeNode );
 
@@ -9966,9 +9965,9 @@ addNodeClass( FunctionCallNode );
 
 class FunctionNode extends CodeNode {
 
-	constructor( code = '', includes = [] ) {
+	constructor( code = '', includes = [], language = '' ) {
 
-		super( code, includes );
+		super( code, includes, language );
 
 		this.keywords = {};
 
@@ -10058,10 +10057,6 @@ class FunctionNode extends CodeNode {
 	}
 
 }
-
-const func = ( code, includes ) => nodeObject( new FunctionNode( code, includes ) );
-
-const fn = ( code, includes ) => func( code, includes ).call;
 
 addNodeClass( FunctionNode );
 
@@ -11010,7 +11005,7 @@ const lightTargetDirection = nodeProxy( LightNode, LightNode.TARGET_DIRECTION );
 
 addNodeClass( LightNode );
 
-const getDistanceAttenuation = new ShaderNode( ( inputs ) => {
+const getDistanceAttenuation = tslFn( ( inputs ) => {
 
 	const { lightDistance, cutoffDistance, decayExponent } = inputs;
 
@@ -11057,7 +11052,7 @@ class PointLightNode extends AnalyticLightNode {
 		const lightDirection = lVector.normalize();
 		const lightDistance = lVector.length();
 
-		const lightAttenuation = getDistanceAttenuation.call( {
+		const lightAttenuation = getDistanceAttenuation( {
 			lightDistance,
 			cutoffDistance: cutoffDistanceNode,
 			decayExponent: decayExponentNode
@@ -11070,7 +11065,7 @@ class PointLightNode extends AnalyticLightNode {
 
 		if ( lightingModelFunctionNode && lightingModelFunctionNode.direct ) {
 
-			lightingModelFunctionNode.direct.call( {
+			lightingModelFunctionNode.direct( {
 				lightDirection,
 				lightColor,
 				reflectedLight
@@ -11105,7 +11100,7 @@ class DirectionalLightNode extends AnalyticLightNode {
 
 		if ( lightingModelFunctionNode && lightingModelFunctionNode.direct ) {
 
-			lightingModelFunctionNode.direct.call( {
+			lightingModelFunctionNode.direct( {
 				lightDirection,
 				lightColor,
 				reflectedLight
@@ -11171,7 +11166,7 @@ class SpotLightNode extends AnalyticLightNode {
 
 		const lightDistance = lVector.length();
 
-		const lightAttenuation = getDistanceAttenuation.call( {
+		const lightAttenuation = getDistanceAttenuation( {
 			lightDistance,
 			cutoffDistance: cutoffDistanceNode,
 			decayExponent: decayExponentNode
@@ -11184,7 +11179,7 @@ class SpotLightNode extends AnalyticLightNode {
 
 		if ( lightingModelFunctionNode && lightingModelFunctionNode.direct ) {
 
-			lightingModelFunctionNode.direct.call( {
+			lightingModelFunctionNode.direct( {
 				lightDirection,
 				lightColor,
 				reflectedLight
@@ -11335,11 +11330,11 @@ class LightingContextNode extends ContextNode {
 		Object.assign( context, lighting );
 
 		// @TODO: Call needed return a new node ( or rename the ShaderNodeInternal.call() function ), it's not moment to run
-		if ( lightingModelNode && lightingModelNode.init ) lightingModelNode.init.call( context, builder.stack, builder );
+		if ( lightingModelNode && lightingModelNode.init ) lightingModelNode.init( context, builder.stack, builder );
 
-		if ( lightingModelNode && lightingModelNode.indirectDiffuse ) lightingModelNode.indirectDiffuse.call( context, builder.stack, builder );
-		if ( lightingModelNode && lightingModelNode.indirectSpecular ) lightingModelNode.indirectSpecular.call( context, builder.stack, builder );
-		if ( lightingModelNode && lightingModelNode.ambientOcclusion ) lightingModelNode.ambientOcclusion.call( context, builder.stack, builder );
+		if ( lightingModelNode && lightingModelNode.indirectDiffuse ) lightingModelNode.indirectDiffuse( context, builder.stack, builder );
+		if ( lightingModelNode && lightingModelNode.indirectSpecular ) lightingModelNode.indirectSpecular( context, builder.stack, builder );
+		if ( lightingModelNode && lightingModelNode.ambientOcclusion ) lightingModelNode.ambientOcclusion( context, builder.stack, builder );
 
 		return super.construct( builder );
 
@@ -11408,7 +11403,7 @@ addLightNode( HemisphereLight, HemisphereLightNode );
 
 addNodeClass( HemisphereLightNode );
 
-const checkerShaderNode = new ShaderNode( ( inputs ) => {
+const checkerShaderNode = tslFn( ( inputs ) => {
 
 	const uv = inputs.uv.mul( 2.0 );
 
@@ -11432,7 +11427,7 @@ class CheckerNode extends TempNode {
 
 	generate( builder ) {
 
-		return checkerShaderNode.call( { uv: this.uvNode } ).build( builder );
+		return checkerShaderNode( { uv: this.uvNode } ).build( builder );
 
 	}
 
@@ -11517,15 +11512,13 @@ class MeshBasicNodeMaterial extends NodeMaterial {
 
 addNodeMaterial( MeshBasicNodeMaterial );
 
-const BRDF_Lambert = new ShaderNode( ( inputs ) => {
+const BRDF_Lambert = tslFn( ( inputs ) => {
 
 	return inputs.diffuseColor.mul( 1 / Math.PI ); // punctual light
 
 } ); // validated
 
-const F_Schlick = new ShaderNode( ( inputs ) => {
-
-	const { f0, f90, dotVH } = inputs;
+const F_Schlick = tslFn( ( { f0, f90, dotVH } ) => {
 
 	// Original approximation by Christophe Schlick '94
 	// float fresnel = pow( 1.0 - dotVH, 5.0 );
@@ -11540,41 +11533,41 @@ const F_Schlick = new ShaderNode( ( inputs ) => {
 
 const G_BlinnPhong_Implicit = () => float( 0.25 );
 
-const D_BlinnPhong = new ShaderNode( ( { dotNH } ) => {
+const D_BlinnPhong = tslFn( ( { dotNH } ) => {
 
 	return shininess.mul( 0.5 / Math.PI ).add( 1.0 ).mul( dotNH.pow( shininess ) );
 
 } );
 
-const BRDF_BlinnPhong = new ShaderNode( ( { lightDirection } ) => {
+const BRDF_BlinnPhong = tslFn( ( { lightDirection } ) => {
 
 	const halfDir = lightDirection.add( positionViewDirection ).normalize();
 
 	const dotNH = transformedNormalView.dot( halfDir ).clamp();
 	const dotVH = positionViewDirection.dot( halfDir ).clamp();
 
-	const F = F_Schlick.call( { f0: specularColor, f90: 1.0, dotVH } );
+	const F = F_Schlick( { f0: specularColor, f90: 1.0, dotVH } );
 	const G = G_BlinnPhong_Implicit();
-	const D = D_BlinnPhong.call( { dotNH } );
+	const D = D_BlinnPhong( { dotNH } );
 
 	return F.mul( G ).mul( D );
 
 } );
 
-const RE_Direct_BlinnPhong = new ShaderNode( ( { lightDirection, lightColor, reflectedLight } ) => {
+const RE_Direct_BlinnPhong = tslFn( ( { lightDirection, lightColor, reflectedLight } ) => {
 
 	const dotNL = transformedNormalView.dot( lightDirection ).clamp();
 	const irradiance = dotNL.mul( lightColor );
 
-	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert.call( { diffuseColor: diffuseColor.rgb } ) ) );
+	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
 
-	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_BlinnPhong.call( { lightDirection } ) ).mul( materialReflectivity ) );
+	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_BlinnPhong( { lightDirection } ) ).mul( materialReflectivity ) );
 
 } );
 
-const RE_IndirectDiffuse_BlinnPhong = new ShaderNode( ( { irradiance, reflectedLight } ) => {
+const RE_IndirectDiffuse_BlinnPhong = tslFn( ( { irradiance, reflectedLight } ) => {
 
-	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert.call( { diffuseColor } ) ) );
+	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
 
 } );
 
@@ -11636,7 +11629,7 @@ class MeshPhongNodeMaterial extends NodeMaterial {
 
 addNodeMaterial( MeshPhongNodeMaterial );
 
-const getGeometryRoughness = new ShaderNode( () => {
+const getGeometryRoughness = tslFn( () => {
 
 	const dxy = normalGeometry.dFdx().abs().max( normalGeometry.dFdy().abs() );
 	const geometryRoughness = dxy.x.max( dxy.y ).max( dxy.z );
@@ -11645,11 +11638,11 @@ const getGeometryRoughness = new ShaderNode( () => {
 
 } );
 
-const getRoughness = new ShaderNode( ( inputs ) => {
+const getRoughness = tslFn( ( inputs ) => {
 
 	const { roughness } = inputs;
 
-	const geometryRoughness = getGeometryRoughness.call();
+	const geometryRoughness = getGeometryRoughness();
 
 	let roughnessFactor = roughness.max( 0.0525 ); // 0.0525 corresponds to the base mip of a 256 cubemap.
 	roughnessFactor = roughnessFactor.add( geometryRoughness );
@@ -11661,7 +11654,7 @@ const getRoughness = new ShaderNode( ( inputs ) => {
 
 // Moving Frostbite to Physically Based Rendering 3.0 - page 12, listing 2
 // https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
-const V_GGX_SmithCorrelated = new ShaderNode( ( inputs ) => {
+const V_GGX_SmithCorrelated = tslFn( ( inputs ) => {
 
 	const { alpha, dotNL, dotNV } = inputs;
 
@@ -11677,7 +11670,7 @@ const V_GGX_SmithCorrelated = new ShaderNode( ( inputs ) => {
 // Microfacet Models for Refraction through Rough Surfaces - equation (33)
 // http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
 // alpha is "roughness squared" in Disney’s reparameterization
-const D_GGX = new ShaderNode( ( inputs ) => {
+const D_GGX = tslFn( ( inputs ) => {
 
 	const { alpha, dotNH } = inputs;
 
@@ -11690,7 +11683,7 @@ const D_GGX = new ShaderNode( ( inputs ) => {
 } ); // validated
 
 // GGX Distribution, Schlick Fresnel, GGX_SmithCorrelated Visibility
-const BRDF_GGX = new ShaderNode( ( inputs ) => {
+const BRDF_GGX = tslFn( ( inputs ) => {
 
 	const { lightDirection, f0, f90, roughness } = inputs;
 
@@ -11705,9 +11698,9 @@ const BRDF_GGX = new ShaderNode( ( inputs ) => {
 	const dotNH = normalView.dot( halfDir ).clamp();
 	const dotVH = positionViewDirection.dot( halfDir ).clamp();
 
-	const F = F_Schlick.call( { f0, f90, dotVH } );
-	const V = V_GGX_SmithCorrelated.call( { alpha, dotNL, dotNV } );
-	const D = D_GGX.call( { alpha, dotNH } );
+	const F = F_Schlick( { f0, f90, dotVH } );
+	const V = V_GGX_SmithCorrelated( { alpha, dotNL, dotNV } );
+	const D = D_GGX( { alpha, dotNH } );
 
 	return F.mul( V ).mul( D );
 
@@ -11717,7 +11710,7 @@ const BRDF_GGX = new ShaderNode( ( inputs ) => {
 // split-sum approximation used in indirect specular lighting.
 // via 'environmentBRDF' from "Physically Based Shading on Mobile"
 // https://www.unrealengine.com/blog/physically-based-shading-on-mobile
-const DFGApprox = new ShaderNode( ( inputs ) => {
+const DFGApprox = tslFn( ( inputs ) => {
 
 	const { roughness } = inputs;
 
@@ -11737,11 +11730,11 @@ const DFGApprox = new ShaderNode( ( inputs ) => {
 
 } );
 
-const EnvironmentBRDF = new ShaderNode( ( inputs ) => {
+const EnvironmentBRDF = tslFn( ( inputs ) => {
 
 	const { dotNV, specularColor, specularF90, roughness } = inputs;
 
-	const fab = DFGApprox.call( { dotNV, roughness } );
+	const fab = DFGApprox( { dotNV, roughness } );
 	return specularColor.mul( fab.x ).add( specularF90.mul( fab.y ) );
 
 } );
@@ -11754,7 +11747,7 @@ const clearcoatF90 = vec3( 1 );
 // http://www.jcgt.org/published/0008/01/03/
 const computeMultiscattering = ( singleScatter, multiScatter, specularF90 = float( 1 ) ) => {
 
-	const fab = DFGApprox.call( { roughness } );
+	const fab = DFGApprox( { roughness } );
 
 	const FssEss = specularColor.mul( fab.x ).add( specularF90.mul( fab.y ) );
 
@@ -11769,7 +11762,7 @@ const computeMultiscattering = ( singleScatter, multiScatter, specularF90 = floa
 
 };
 
-const LM_Init = new ShaderNode( ( context, stack, builder ) => {
+const LM_Init = tslFn( ( context, stack, builder ) => {
 
 	if ( builder.includes( clearcoat ) ) {
 
@@ -11778,7 +11771,7 @@ const LM_Init = new ShaderNode( ( context, stack, builder ) => {
 
 		const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
 
-		const Fcc = F_Schlick.call( {
+		const Fcc = F_Schlick( {
 			dotVH: dotNVcc,
 			f0: clearcoatF0,
 			f90: clearcoatF90
@@ -11793,7 +11786,7 @@ const LM_Init = new ShaderNode( ( context, stack, builder ) => {
 
 } );
 
-const RE_IndirectSpecular_Physical = new ShaderNode( ( context ) => {
+const RE_IndirectSpecular_Physical = tslFn( ( context ) => {
 
 	const { radiance, iblIrradiance, reflectedLight } = context;
 
@@ -11801,7 +11794,7 @@ const RE_IndirectSpecular_Physical = new ShaderNode( ( context ) => {
 
 		const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
 
-		const clearcoatEnv = EnvironmentBRDF.call( {
+		const clearcoatEnv = EnvironmentBRDF( {
 			dotNV: dotNVcc,
 			specularColor: clearcoatF0,
 			specularF90: clearcoatF90,
@@ -11831,15 +11824,15 @@ const RE_IndirectSpecular_Physical = new ShaderNode( ( context ) => {
 
 } );
 
-const RE_IndirectDiffuse_Physical = new ShaderNode( ( context ) => {
+const RE_IndirectDiffuse_Physical = tslFn( ( context ) => {
 
 	const { irradiance, reflectedLight } = context;
 
-	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert.call( { diffuseColor } ) ) );
+	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
 
 } );
 
-const RE_Direct_Physical = new ShaderNode( ( inputs ) => {
+const RE_Direct_Physical = tslFn( ( inputs ) => {
 
 	const { lightDirection, lightColor, reflectedLight } = inputs;
 
@@ -11851,17 +11844,17 @@ const RE_Direct_Physical = new ShaderNode( ( inputs ) => {
 		const dotNLcc = transformedClearcoatNormalView.dot( lightDirection ).clamp();
 		const ccIrradiance = dotNLcc.mul( lightColor );
 
-		reflectedLight.clearcoatSpecular.addAssign( ccIrradiance.mul( BRDF_GGX.call( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
+		reflectedLight.clearcoatSpecular.addAssign( ccIrradiance.mul( BRDF_GGX( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
 
 	}
 
-	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert.call( { diffuseColor: diffuseColor.rgb } ) ) );
+	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
 
-	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_GGX.call( { lightDirection, f0: specularColor, f90: 1, roughness } ) ) );
+	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_GGX( { lightDirection, f0: specularColor, f90: 1, roughness } ) ) );
 
 } );
 
-const RE_AmbientOcclusion_Physical = new ShaderNode( ( context ) => {
+const RE_AmbientOcclusion_Physical = tslFn( ( context ) => {
 
 	const { ambientOcclusion, reflectedLight } = context;
 
@@ -11919,7 +11912,7 @@ class MeshStandardNodeMaterial extends NodeMaterial {
 		// ROUGHNESS
 
 		let roughnessNode = this.roughnessNode ? float( this.roughnessNode ) : materialRoughness;
-		roughnessNode = getRoughness.call( { roughness: roughnessNode } );
+		roughnessNode = getRoughness( { roughness: roughnessNode } );
 
 		stack.assign( roughness, roughnessNode );
 
@@ -12224,7 +12217,7 @@ NodeFunction.isNodeFunction = true;
 // Original shader code from:
 // https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_noise.glsl
 
-const mx_noise = code( `float mx_select(bool b, float t, float f)
+glsl( `float mx_select(bool b, float t, float f)
 {
     return b ? t : f;
 }
@@ -12820,82 +12813,10 @@ vec3 mx_worley_noise_vec3(vec3 p, float jitter, int metric)
     return sqdist;
 }` );
 
-const includes$1 = [ mx_noise ];
-
-fn( 'float mx_perlin_noise_float( any p )', includes$1 );
-fn( 'vec2 mx_perlin_noise_vec2( any p )', includes$1 );
-fn( 'vec3 mx_perlin_noise_vec3( any p )', includes$1 );
-
-fn( 'float mx_cell_noise_float( vec3 p )', includes$1 );
-
-fn( 'float mx_worley_noise_float( any p, float jitter, int metric )', includes$1 );
-fn( 'float mx_worley_noise_vec2( any p, float jitter, int metric )', includes$1 );
-fn( 'float mx_worley_noise_vec3( any p, float jitter, int metric )', includes$1 );
-
-fn( 'float mx_fractal_noise_float( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-fn( 'float mx_fractal_noise_vec2( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-fn( 'float mx_fractal_noise_vec3( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-fn( 'float mx_fractal_noise_vec4( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-
-// Original shader code from:
-// https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_hsv.glsl
-
-fn( `vec3 mx_hsvtorgb(vec3 hsv)
-{
-    // Reference for this technique: Foley & van Dam
-    float h = hsv.x; float s = hsv.y; float v = hsv.z;
-    if (s < 0.0001f) {
-      return vec3 (v, v, v);
-    } else {
-        h = 6.0f * (h - floor(h));  // expand to [0..6)
-        int hi = int(trunc(h));
-        float f = h - float(hi);
-        float p = v * (1.0f-s);
-        float q = v * (1.0f-s*f);
-        float t = v * (1.0f-s*(1.0f-f));
-        if (hi == 0)
-            return vec3 (v, t, p);
-        else if (hi == 1)
-            return vec3 (q, v, p);
-        else if (hi == 2)
-            return vec3 (p, v, t);
-        else if (hi == 3)
-            return vec3 (p, q, v);
-        else if (hi == 4)
-            return vec3 (t, p, v);
-        return vec3 (v, p, q);
-    }
-}` );
-
-fn( `vec3 mx_rgbtohsv(vec3 c)
-{
-    // See Foley & van Dam
-    float r = c.x; float g = c.y; float b = c.z;
-    float mincomp = min (r, min(g, b));
-    float maxcomp = max (r, max(g, b));
-    float delta = maxcomp - mincomp;  // chroma
-    float h, s, v;
-    v = maxcomp;
-    if (maxcomp > 0.0f)
-        s = delta / maxcomp;
-    else s = 0.0f;
-    if (s <= 0.0f)
-        h = 0.0f;
-    else {
-        if      (r >= maxcomp) h = (g-b) / delta;
-        else if (g >= maxcomp) h = 2.0f + (b-r) / delta;
-        else                   h = 4.0f + (r-g) / delta;
-        h *= (1.0f/6.0f);
-        if (h < 0.0f)
-            h += 1.0f;
-    }
-    return vec3(h, s, v);
-}` );
-
 // Original shader code from:
 // https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_transform_color.glsl
 
-const mx_transform_color = code( `#define M_AP1_TO_REC709 mat3(1.705079555511475, -0.1297005265951157, -0.02416634373366833, -0.6242334842681885, 1.138468623161316, -0.1246141716837883, -0.0808461606502533, -0.008768022060394287, 1.148780584335327)
+glsl( `#define M_AP1_TO_REC709 mat3(1.705079555511475, -0.1297005265951157, -0.02416634373366833, -0.6242334842681885, 1.138468623161316, -0.1246141716837883, -0.0808461606502533, -0.008768022060394287, 1.148780584335327)
 
 vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 {
@@ -12904,10 +12825,6 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
     vec3 powSeg = pow(max(color + vec3(0.055), vec3(0.0)) / 1.055, vec3(2.4));
     return mix(linSeg, powSeg, isAbove);
 }` );
-
-const includes = [ mx_transform_color ];
-
-fn( 'vec3 mx_srgb_texture_to_lin_rec709( vec3 color )', includes );
 
 function painterSortStable( a, b ) {
 
@@ -19679,4 +19596,72 @@ class WebGPURenderer extends Renderer {
 
 }
 
-export { WebGPU, WebGPURenderer, equirectUV, texture };
+const supportsFrameCallback = 'requestVideoFrameCallback' in HTMLVideoElement.prototype,
+requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                            window.webkitRequestAnimationFrame || window.msRequestAnimationFrame,
+cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
+let lastTime;
+
+class VideoAnimation {
+    constructor(callback, video) {
+        this.callback = callback,
+        this.video = video,
+        this.animationID = null,
+        this.running = false;
+    }
+
+    setCallback(callback) {
+        this.callback = callback;
+    }
+
+    async animateLegacy() {
+        const now = this.video.currentTime;
+        if (now > lastTime){
+            (1/(now-lastTime)).toFixed();
+            await this.callback(now, { width: this.video.videoWidth, height: this.video.videoHeight });
+        }
+
+        lastTime = now;
+        this.animationID = requestAnimationFrame(async() => await this.animateLegacy());
+    }
+
+    async animate(now, metadata) {
+        await this.callback(now, metadata);
+        this.video.requestVideoFrameCallback(this.animateRef);
+    }
+
+    initAnimate() {
+        this.animateRef = async(now, metadata) => await this.animate(now, metadata);
+        this.video.requestVideoFrameCallback(this.animateRef);
+    }
+
+    initLegacyAnimate() {
+        this.animateLegacy();
+    }
+
+    start() {
+        this.stop();
+
+        if (supportsFrameCallback) {
+            this.initAnimate();
+        } else {
+            lastTime = new Date();
+            this.initLegacyAnimate();
+        }
+        
+        this.running = true;
+    }
+
+    stop() {
+        this.running = false;
+
+        if (supportsFrameCallback) {
+            this.animateRef = () => {};
+        } else {
+            cancelAnimationFrame(this.animationID && this.animationID.data && this.animationID.data.handleId || this.animationID);
+        }
+    }
+}
+
+export { VideoAnimation, WebGPU, WebGPURenderer, equirectUV, texture };

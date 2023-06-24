@@ -41,10 +41,11 @@
 	<script type="module">
 
 		import * as THREE from 'three';
-		
+
+		import { VideoAnimation } from 'three-webgpu';
 
 
-		let _requestVideoFrameCallback = false;
+		let _requestVideoFrameCallback = false, animation;
 
 		class CustomVideoTexture extends THREE.Texture {
 
@@ -151,7 +152,10 @@
 
 			//window.addEventListener( 'resize', onWindowResize );
 
-			animate();
+			animation = new VideoAnimation(update, video);
+
+			animation.start();
+			//animate();
 
 		}
 
