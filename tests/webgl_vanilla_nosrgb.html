@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>three.js webgl - equirectangular video panorama</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="../three.js/examples/main.css">
+	<style>
+		body {
+			touch-action: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="info">
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - video panorama
+	</div>
+
+	<div id="container"><canvas id="renderer"></canvas></div>
+
+	<video id="video" loop muted autoplay crossOrigin="anonymous" preload="metadata" playsinline style="display:none"></video>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "../three.js/build/three.module.js",
+                "three/addons/": "../three.js/examples/jsm/",
+                "three-webgpu": "../build/webgpu-renderer.module.js"
+            }
+        }
+    </script>
+	<script type="module">
+
+        import { VideoAnimation } from 'three-webgpu';
+
+        let gl, canvas, animation, frameTexLoc, texWidthLoc, texHeightLoc, paused = true;
+
+		const video = document.getElementById('video');
+		video.src = "//videos.electroteque.org/360/ultra_light_flight_720p.mp4";
+		video.play();
+
+		video.addEventListener("loadedmetadata", () => {
+			console.log("loadedmetadata");
+			init();
+		});
+
+
+
+
+		async function init() {
+
+			canvas = document.getElementById('renderer');
+
+		
+
+			//window.addEventListener( 'resize', onWindowResize );
+
+            initCanvas();
+
+			//animate();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+        function initCanvas() {
+            const config = {
+                premultipliedAlpha: false
+            };
+
+            gl = canvas.getContext('webgl2', config) || canvas.getContext("webgl", config) || canvas.getContext("experimental-webgl", config);
+
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, 'attribute vec2 c; void main(void) { gl_Position=vec4(c, 0.0, 1.0); }');
+            gl.compileShader(vs);
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, `
+                precision mediump float;
+
+                uniform sampler2D frame;
+
+                uniform float texWidth;
+                uniform float texHeight;
+
+                void main(void) {
+                    vec2 texCoord = vec2(gl_FragCoord.x/texWidth, 1.0 - (gl_FragCoord.y/texHeight));
+                    gl_FragColor = texture2D(frame, texCoord);
+                }`);
+            gl.compileShader(fs);
+            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(fs));
+            }
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vs);
+            gl.attachShader(prog, fs);
+            gl.linkProgram(prog);
+            gl.useProgram(prog);
+            const vb = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+            const coordLoc = gl.getAttribLocation(prog, 'c');
+            gl.vertexAttribPointer(coordLoc, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(coordLoc);
+            gl.activeTexture(gl.TEXTURE0);
+            const frame = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, frame);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+            frameTexLoc = gl.getUniformLocation(prog, "frame");
+            texWidthLoc = gl.getUniformLocation(prog, "texWidth");
+            texHeightLoc = gl.getUniformLocation(prog, "texHeight");
+
+            animation = new VideoAnimation(async (now, metadata) => await render(now, metadata), video);
+
+            const onResize = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                gl.viewport(0, 0, video.videoWidth, video.videoHeight);
+                gl.uniform1f(texWidthLoc, video.videoWidth);
+                gl.uniform1f(texHeightLoc, video.videoHeight);
+            };
+
+            video.addEventListener("resize", onResize);
+
+            onResize();
+
+            animation.start();
+
+           //animate();
+        }
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+            render(null, { width: video.videoWidth, height: video.videoHeight});
+
+        }
+
+        async function render(now, metadata) {
+
+            gl.viewport(0, 0, metadata.width, metadata.height);
+            gl.activeTexture(gl.TEXTURE0);
+
+            gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+            //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+
+            //_gl.SRGB8_ALPHA8 : _gl.RGBA8;
+            gl.uniform1i(frameTexLoc, 0);
+            gl.uniform1f(texWidthLoc, metadata.width);
+            gl.uniform1f(texHeightLoc, metadata.height);
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+
+            //requestAnimationFrame(animate);
+        }
+
+	</script>
+</body>
+
+</html>
