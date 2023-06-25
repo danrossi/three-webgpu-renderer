@@ -5,12 +5,22 @@ cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationF
 
 let lastTime;
 
-export default class VideoAnimation {
+export default class WebGPUVideoAnimation {
     constructor(callback, video) {
         this._callback = callback,
         this.video = video,
         this.animationID = null,
         this.running = false;
+        this.updateNodesRef = () => {};
+    }
+
+    set nodes(nodes) {
+        this._nodes = nodes;
+        if (nodes) {
+            this.updateNodesRef = () => {
+                this._nodes.nodeFrame.update();
+            };
+        }
     }
 
     set callback(callback) {
@@ -21,6 +31,7 @@ export default class VideoAnimation {
         const now = this.video.currentTime;
         if (now > lastTime){
             const fps = (1/(now-lastTime)).toFixed();
+            this.updateNodesRef();
             await this._callback(now, { width: this.video.videoWidth, height: this.video.videoHeight });
         }
 
@@ -29,6 +40,7 @@ export default class VideoAnimation {
     }
 
     async animate(now, metadata) {
+        this.updateNodesRef();
         await this._callback(now, metadata);
         this.video.requestVideoFrameCallback(this.animateRef);
     }

@@ -19724,6 +19724,74 @@ class WebGPURenderer extends Renderer {
 
 }
 
+const supportsFrameCallback$1 = 'requestVideoFrameCallback' in HTMLVideoElement.prototype,
+requestAnimationFrame$1 = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                            window.webkitRequestAnimationFrame || window.msRequestAnimationFrame,
+cancelAnimationFrame$1 = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
+let lastTime$1;
+
+class VideoAnimation {
+    constructor(callback, video) {
+        this._callback = callback,
+        this.video = video,
+        this.animationID = null,
+        this.running = false;
+    }
+
+    set callback(callback) {
+        this._callback = callback;
+    }
+
+    async animateLegacy() {
+        const now = this.video.currentTime;
+        if (now > lastTime$1){
+            (1/(now-lastTime$1)).toFixed();
+            await this._callback(now, { width: this.video.videoWidth, height: this.video.videoHeight });
+        }
+
+        lastTime$1 = now;
+        this.animationID = requestAnimationFrame$1(async() => await this.animateLegacy());
+    }
+
+    async animate(now, metadata) {
+        await this._callback(now, metadata);
+        this.video.requestVideoFrameCallback(this.animateRef);
+    }
+
+    initAnimate() {
+        this.animateRef = async(now, metadata) => await this.animate(now, metadata);
+        this.video.requestVideoFrameCallback(this.animateRef);
+    }
+
+    initLegacyAnimate() {
+        this.animateLegacy();
+    }
+
+    start() {
+        this.stop();
+
+        if (supportsFrameCallback$1) {
+            this.initAnimate();
+        } else {
+            lastTime$1 = new Date();
+            this.initLegacyAnimate();
+        }
+        
+        this.running = true;
+    }
+
+    stop() {
+        this.running = false;
+
+        if (supportsFrameCallback$1) {
+            this.animateRef = () => {};
+        } else {
+            cancelAnimationFrame$1(this.animationID && this.animationID.data && this.animationID.data.handleId || this.animationID);
+        }
+    }
+}
+
 const supportsFrameCallback = 'requestVideoFrameCallback' in HTMLVideoElement.prototype,
 requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
                             window.webkitRequestAnimationFrame || window.msRequestAnimationFrame,
@@ -19731,23 +19799,34 @@ cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationF
 
 let lastTime;
 
-class VideoAnimation {
+class WebGPUVideoAnimation {
     constructor(callback, video) {
-        this.callback = callback,
+        this._callback = callback,
         this.video = video,
         this.animationID = null,
         this.running = false;
+        this.updateNodesRef = () => {};
     }
 
-    setCallback(callback) {
-        this.callback = callback;
+    set nodes(nodes) {
+        this._nodes = nodes;
+        if (nodes) {
+            this.updateNodesRef = () => {
+                this._nodes.nodeFrame.update();
+            };
+        }
+    }
+
+    set callback(callback) {
+        this._callback = callback;
     }
 
     async animateLegacy() {
         const now = this.video.currentTime;
         if (now > lastTime){
             (1/(now-lastTime)).toFixed();
-            await this.callback(now, { width: this.video.videoWidth, height: this.video.videoHeight });
+            this.updateNodesRef();
+            await this._callback(now, { width: this.video.videoWidth, height: this.video.videoHeight });
         }
 
         lastTime = now;
@@ -19755,7 +19834,8 @@ class VideoAnimation {
     }
 
     async animate(now, metadata) {
-        await this.callback(now, metadata);
+        this.updateNodesRef();
+        await this._callback(now, metadata);
         this.video.requestVideoFrameCallback(this.animateRef);
     }
 
@@ -19792,4 +19872,4 @@ class VideoAnimation {
     }
 }
 
-export { VideoAnimation, WebGPU, WebGPURenderer, equirectUV, texture };
+export { VideoAnimation, WebGPU, WebGPURenderer, WebGPUVideoAnimation, equirectUV, texture };

@@ -41,7 +41,7 @@
 	<script type="module">
 
 		import * as THREE from 'three';
-		import { WebGPU, WebGPURenderer, VideoAnimation } from 'three-webgpu';
+		import { WebGPU, WebGPURenderer, WebGPUVideoAnimation } from 'three-webgpu';
 
 		let _requestVideoFrameCallback = false;
 
@@ -167,8 +167,10 @@
 
 			//window.addEventListener( 'resize', onWindowResize );
 
-			const animation = new VideoAnimation(update, video);
+			await renderer.render(scene, camera);
 
+			const animation = new WebGPUVideoAnimation(update, video);
+			animation.nodes = renderer._nodes;
 			animation.start();
 
 		}
