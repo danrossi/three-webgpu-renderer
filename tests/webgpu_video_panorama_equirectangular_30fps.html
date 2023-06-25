@@ -41,11 +41,9 @@
 	<script type="module">
 
 		import * as THREE from 'three';
+		import { WebGPU, WebGPURenderer, VideoAnimation } from 'three-webgpu';
 
-		import { VideoAnimation } from 'three-webgpu';
-
-
-		let _requestVideoFrameCallback = false, animation;
+		let _requestVideoFrameCallback = false;
 
 		class CustomVideoTexture extends THREE.Texture {
 
@@ -53,8 +51,7 @@
 				super(video, THREE.Texture.DEFAULT_MAPPING, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter, THREE.RGBAFormat);
 
 				this.generateMipmaps = false;
-				this.needsUpdate = true;
-
+                this.needsUpdate = true;
 				/*const updateVideo = () => {
 
 					this.needsUpdate = true;
@@ -78,7 +75,7 @@
 
 			update() {
 				this.needsUpdate = true;
-				//if (!_requestVideoFrameCallback) this.needsUpdate = true;
+                //if (!_requestVideoFrameCallback) this.needsUpdate = true;
 			}
 
 		}
@@ -123,16 +120,32 @@
 
 
 			const texture = new CustomVideoTexture(video);
-			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-			texture.colorSpace = THREE.SRGBColorSpace;
+
+			//texture.colorSpace = THREE.SRGBColorSpace;
 
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-			const material = new THREE.MeshBasicMaterial({ map: texture });
+			let material;
+
+			if (await WebGPU.isAvailable()) {
+				console.log("Using WebGPU");
+				renderer = new WebGPURenderer();
+				texture.colorSpace = THREE.SRGBColorSpace;
+				material = new THREE.MeshBasicMaterial({ map: texture });
+			} else {
+				console.log("Using WebGL");
+				renderer = new THREE.WebGLRenderer();
+		
+                texture.colorSpace = THREE.SRGBColorSpace;
+
+			    //texture.colorSpace = THREE.LinearSRGBColorSpace;
+			    material = new THREE.MeshBasicMaterial({ map: texture });
+			}
+
 
 			const mesh = new THREE.Mesh(geometry, material);
 			scene.add(mesh);
 
-			renderer = new THREE.WebGLRenderer();
+
 
 			//renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 			//renderer.colorSpace = THREE.LinearSRGBColorSpace;
@@ -154,10 +167,9 @@
 
 			//window.addEventListener( 'resize', onWindowResize );
 
-			animation = new VideoAnimation(update, video);
+			const animation = new VideoAnimation(update, video);
 
 			animation.start();
-			//animate();
 
 		}
 
@@ -196,13 +208,6 @@
 		function onPointerUp() {
 
 			isUserInteracting = false;
-
-		}
-
-		function animate() {
-
-			requestAnimationFrame(animate);
-			update();
 
 		}
 
