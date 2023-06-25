@@ -3186,11 +3186,13 @@ addNodeElement( 'label', label );
 
 addNodeClass( ContextNode );
 
-class InstanceIndexNode extends Node {
+class IndexNode extends Node {
 
-	constructor() {
+	constructor( scope ) {
 
 		super( 'uint' );
+
+		this.scope = scope;
 
 		this.isInstanceIndexNode = true;
 
@@ -3199,10 +3201,25 @@ class InstanceIndexNode extends Node {
 	generate( builder ) {
 
 		const nodeType = this.getNodeType( builder );
+		const scope = this.scope;
 
-		const propertyName = builder.getInstanceIndex();
+		let propertyName;
 
-		let output = null;
+		if ( scope === IndexNode.VERTEX ) {
+
+			propertyName = builder.getVertexIndex();
+
+		} else if ( scope === IndexNode.INSTANCE ) {
+
+			propertyName = builder.getInstanceIndex();
+
+		} else {
+
+			throw new Error( 'THREE.IndexNode: Unknown scope: ' + scope );
+
+		}
+
+		let output;
 
 		if ( builder.shaderStage === 'vertex' || builder.shaderStage === 'compute' ) {
 
@@ -3222,9 +3239,13 @@ class InstanceIndexNode extends Node {
 
 }
 
-const instanceIndex = nodeImmutable( InstanceIndexNode );
+IndexNode.VERTEX = 'vertex';
+IndexNode.INSTANCE = 'instance';
 
-addNodeClass( InstanceIndexNode );
+nodeImmutable( IndexNode, IndexNode.VERTEX );
+const instanceIndex = nodeImmutable( IndexNode, IndexNode.INSTANCE );
+
+addNodeClass( IndexNode );
 
 class LightingModel {
 
@@ -5776,6 +5797,7 @@ class BufferAttributeNode extends InputNode {
 		this.bufferOffset = bufferOffset;
 
 		this.usage = StaticDrawUsage;
+		this.instanced = false;
 
 	}
 
@@ -5793,7 +5815,7 @@ class BufferAttributeNode extends InputNode {
 		buffer.setUsage( this.usage );
 
 		this.attribute = bufferAttribute;
-		this.attribute.isInstancedBufferAttribute = true; // @TODO: Add a possible: InstancedInterleavedBufferAttribute
+		this.attribute.isInstancedBufferAttribute = this.instanced; // @TODO: Add a possible: InstancedInterleavedBufferAttribute
 
 	}
 
@@ -5828,17 +5850,29 @@ class BufferAttributeNode extends InputNode {
 
 	}
 
+	setUsage( value ) {
+
+		this.usage = value;
+
+		return this;
+
+	}
+
+	setInstanced( value ) {
+
+		this.instanced = value;
+
+		return this;
+
+	}
+
 }
 
 const bufferAttribute = ( array, type, stride, offset ) => nodeObject( new BufferAttributeNode( array, type, stride, offset ) );
-const dynamicBufferAttribute = ( array, type, stride, offset ) => {
+const dynamicBufferAttribute = ( array, type, stride, offset ) => bufferAttribute( array, type, stride, offset ).setUsage( DynamicDrawUsage );
 
-	const node = bufferAttribute( array, type, stride, offset );
-	node.usage = DynamicDrawUsage;
-
-	return node;
-
-};
+const instancedBufferAttribute = ( array, type, stride, offset ) => bufferAttribute( array, type, stride, offset ).setInstanced( true );
+const instancedDynamicBufferAttribute = ( array, type, stride, offset ) => dynamicBufferAttribute( array, type, stride, offset ).setInstanced( true );
 
 addNodeClass( BufferAttributeNode );
 
@@ -5864,7 +5898,7 @@ class InstanceNode extends Node {
 			const instaceAttribute = instanceMesh.instanceMatrix;
 			const array = instaceAttribute.array;
 
-			const bufferFn = instaceAttribute.usage === DynamicDrawUsage ? dynamicBufferAttribute : bufferAttribute;
+			const bufferFn = instaceAttribute.usage === DynamicDrawUsage ? instancedDynamicBufferAttribute : instancedBufferAttribute;
 
 			const instanceBuffers = [
 				// F.Signature -> bufferAttribute( array, type, stride, offset )
@@ -6010,6 +6044,67 @@ class SkinningNode extends Node {
 const skinning = nodeProxy( SkinningNode );
 
 addNodeClass( SkinningNode );
+
+class MorphNode extends Node {
+
+	constructor( mesh ) {
+
+		super( 'void' );
+
+		this.mesh = mesh;
+		this.morphBaseInfluence = uniform( 1 );
+
+		this.updateType = NodeUpdateType.OBJECT;
+
+	}
+
+	constructAttribute( builder, name, assignNode = positionLocal ) {
+
+		const mesh = this.mesh;
+		const attributes = mesh.geometry.morphAttributes[ name ];
+
+		builder.stack.assign( assignNode, assignNode.mul( this.morphBaseInfluence ) );
+
+		for ( let i = 0; i < attributes.length; i ++ ) {
+
+			const attribute = attributes[ i ];
+
+			const bufferAttrib = bufferAttribute( attribute.array, 'vec3' );
+			const influence = reference( i, 'float', mesh.morphTargetInfluences );
+
+			builder.stack.assign( assignNode, assignNode.add( bufferAttrib.mul( influence ) ) );
+
+		}
+
+	}
+
+	construct( builder ) {
+
+		this.constructAttribute( builder, 'position' );
+
+	}
+
+	update() {
+
+		const morphBaseInfluence = this.morphBaseInfluence;
+
+		if ( this.mesh.geometry.morphTargetsRelative ) {
+
+			morphBaseInfluence.value = 1;
+
+		} else {
+
+			morphBaseInfluence.value = 1 - this.mesh.morphTargetInfluences.reduce( ( a, b ) => a + b, 0 );
+
+		}
+
+	}
+
+}
+
+const morph = nodeProxy( MorphNode );
+
+addNodeClass( MorphNode );
 
 class ReflectVectorNode extends Node {
 
@@ -6854,8 +6949,15 @@ class NodeMaterial extends ShaderMaterial {
 	constructPosition( builder ) {
 
 		const object = builder.object;
+		const geometry = object.geometry;
 
 		builder.addStack();
+
+		if ( geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color ) {
+
+			builder.stack.add( morph( object ) );
+
+		}
 
 		if ( object.isSkinnedMesh === true ) {
 
@@ -6924,11 +7026,21 @@ class NodeMaterial extends ShaderMaterial {
 
 		// NORMAL VIEW
 
-		const normalNode = this.normalNode ? vec3( this.normalNode ) : materialNormal;
+		if ( this.flatShading === true ) {
 
-		stack.assign( transformedNormalView, normalNode );
+			const fdx = dFdx( positionView );
+			const fdy = dFdy( positionView.negate() ); // use -positionView ?
+			const normalNode = fdx.cross( fdy ).normalize();
 
-		return normalNode;
+			stack.assign( transformedNormalView, normalNode );
+
+		} else {
+
+			const normalNode = this.normalNode ? vec3( this.normalNode ) : materialNormal;
+
+			stack.assign( transformedNormalView, normalNode );
+
+		}
 
 	}
 
@@ -7731,6 +7843,10 @@ class NodeBuilder {
 	isAvailable( /*name*/ ) {
 
 		return false;
+
+	}
+
+	getVertexIndex() {
 
 	}
 
@@ -13325,14 +13441,14 @@ class Background extends DataMap {
 
 			// no background settings, use clear color configuration from the renderer
 
-			_clearColor.copy( renderer._clearColor );
+			_clearColor.copyLinearToSRGB( renderer._clearColor );
 			_clearAlpha = renderer._clearAlpha;
 
 		} else if ( background.isColor === true ) {
 
 			// background is an opaque color
 
-			_clearColor.copy( background );
+			_clearColor.copyLinearToSRGB( background );
 			_clearAlpha = 1;
 			forceClear = true;
 
@@ -16126,6 +16242,18 @@ class WGSLNodeBuilder extends NodeBuilder {
 		}
 
 		return property;
+
+	}
+
+	getVertexIndex() {
+
+		if ( this.shaderStage === 'vertex' ) {
+
+			return this.getBuiltin( 'vertex_index', 'vertexIndex', 'u32', 'attribute' );
+
+		}
+
+		return 'vertexIndex';
 
 	}
 
