@@ -29212,7 +29212,7 @@ var THREE = (function (exports) {
 						generateMipmaps: true,
 						type: extensions.has( 'EXT_color_buffer_half_float' ) ? HalfFloatType : UnsignedByteType,
 						minFilter: LinearMipmapLinearFilter,
-						samples: ( isWebGL2 && antialias === true ) ? 4 : 0
+						samples: ( isWebGL2 ) ? 4 : 0
 					} );
 
 					// debug
@@ -54731,6 +54731,8 @@ var THREE = (function (exports) {
 	const metalness = nodeImmutable( PropertyNode, 'float', 'Metalness' );
 	const clearcoat = nodeImmutable( PropertyNode, 'float', 'Clearcoat' );
 	const clearcoatRoughness = nodeImmutable( PropertyNode, 'float', 'ClearcoatRoughness' );
+	const sheen = nodeImmutable( PropertyNode, 'vec3', 'Sheen' );
+	const sheenRoughness = nodeImmutable( PropertyNode, 'float', 'SheenRoughness' );
 	const specularColor = nodeImmutable( PropertyNode, 'color', 'SpecularColor' );
 	const shininess = nodeImmutable( PropertyNode, 'float', 'Shininess' );
 
@@ -55558,8 +55560,6 @@ var THREE = (function (exports) {
 
 	addNodeClass( ExpressionNode );
 
-	let defaultUV;
-
 	class TextureNode extends UniformNode {
 
 		constructor( value, uvNode = null, levelNode = null ) {
@@ -55570,6 +55570,8 @@ var THREE = (function (exports) {
 
 			this.uvNode = uvNode;
 			this.levelNode = levelNode;
+
+			this.updateType = NodeUpdateType.FRAME;
 
 		}
 
@@ -55595,7 +55597,9 @@ var THREE = (function (exports) {
 
 		getDefaultUV() {
 
-			return defaultUV || ( defaultUV = uv() );
+			const texture = this.value;
+
+			return uniform( texture.matrix ).mul( vec3( uv( texture.channel ), 1 ) );
 
 		}
 
@@ -55745,6 +55749,18 @@ var THREE = (function (exports) {
 
 		}
 
+		update() {
+
+			const texture = this.value;
+
+			if ( texture.matrixAutoUpdate === true ) {
+
+				texture.updateMatrix();
+
+			}
+
+		}
+
 		clone() {
 
 			return new this.constructor( this.value, this.uvNode, this.levelNode );
@@ -55882,15 +55898,11 @@ var THREE = (function (exports) {
 
 				return 'float';
 
-			} else if ( scope === MaterialNode.UV ) {
-
-				return 'vec2';
-
-			} else if ( scope === MaterialNode.EMISSIVE ) {
+			} else if ( scope === MaterialNode.EMISSIVE || scope === MaterialNode.SHEEN ) {
 
 				return 'vec3';
 
-			} else if ( scope === MaterialNode.ROUGHNESS || scope === MaterialNode.METALNESS || scope === MaterialNode.SPECULAR || scope === MaterialNode.SHININESS ) {
+			} else if ( scope === MaterialNode.ROUGHNESS || scope === MaterialNode.METALNESS || scope === MaterialNode.SPECULAR || scope === MaterialNode.SHININESS || scope === MaterialNode.CLEARCOAT_ROUGHNESS || scope === MaterialNode.SHEEN_ROUGHNESS ) {
 
 				return 'float';
 
@@ -55919,7 +55931,6 @@ var THREE = (function (exports) {
 			//@TODO: Check if it can be cached by property name.
 
 			const textureRefNode = materialReference( property, 'texture' );
-			textureRefNode.node.uvNode = materialUV;
 
 			return textureRefNode;
 
@@ -56056,58 +56067,39 @@ var THREE = (function (exports) {
 
 				}
 
-			} else if ( scope === MaterialNode.ROTATION ) {
+			} else if ( scope === MaterialNode.SHEEN ) {
 
-				node = this.getFloat( 'rotation' );
+				const sheenNode = this.getColor( 'sheenColor' ).mul( this.getFloat( 'sheen' ) ); // Move this mul() to CPU
 
-			} else if ( scope === MaterialNode.UV ) {
+				if ( material.sheenColorMap && material.sheenColorMap.isTexture === true ) {
 
-				// uv repeat and offset setting priorities
-
-				let uvScaleMap =
-					material.map ||
-					material.specularMap ||
-					material.displacementMap ||
-					material.normalMap ||
-					material.bumpMap ||
-					material.roughnessMap ||
-					material.metalnessMap ||
-					material.alphaMap ||
-					material.emissiveMap ||
-					material.clearcoatMap ||
-					material.clearcoatNormalMap ||
-					material.clearcoatRoughnessMap ||
-					material.iridescenceMap ||
-					material.iridescenceThicknessMap ||
-					material.specularIntensityMap ||
-					material.specularColorMap ||
-					material.transmissionMap ||
-					material.thicknessMap ||
-					material.sheenColorMap ||
-					material.sheenRoughnessMap;
-
-				if ( uvScaleMap ) {
-
-					// backwards compatibility
-					if ( uvScaleMap.isWebGLRenderTarget ) {
-
-						uvScaleMap = uvScaleMap.texture;
-
-					}
-
-					if ( uvScaleMap.matrixAutoUpdate === true ) {
-
-						uvScaleMap.updateMatrix();
-
-					}
-
-					node = uniform( uvScaleMap.matrix ).mul( vec3( uv(), 1 ) );
+					node = sheenNode.mul( this.getTexture( 'sheenColorMap' ).rgb );
 
 				} else {
 
-					node = uv();
+					node = sheenNode;
 
 				}
+
+			} else if ( scope === MaterialNode.SHEEN_ROUGHNESS ) {
+
+				const sheenRoughnessNode = this.getFloat( 'sheenRoughness' );
+
+				if ( material.sheenRoughnessMap && material.sheenRoughnessMap.isTexture === true ) {
+
+					node = sheenRoughnessNode.mul( this.getTexture( 'sheenRoughnessMap' ).a );
+
+				} else {
+
+					node = sheenRoughnessNode;
+
+				}
+
+				node = node.clamp( 0.07, 1.0 );
+
+			} else if ( scope === MaterialNode.ROTATION ) {
+
+				node = this.getFloat( 'rotation' );
 
 			} else {
 
@@ -56135,9 +56127,9 @@ var THREE = (function (exports) {
 	MaterialNode.CLEARCOAT_ROUGHNESS = 'clearcoatRoughness';
 	MaterialNode.EMISSIVE = 'emissive';
 	MaterialNode.ROTATION = 'rotation';
-	MaterialNode.UV = 'uv';
+	MaterialNode.SHEEN = 'sheen';
+	MaterialNode.SHEEN_ROUGHNESS = 'sheenRoughness';
 
-	const materialUV = nodeImmutable( MaterialNode, MaterialNode.UV );
 	const materialAlphaTest = nodeImmutable( MaterialNode, MaterialNode.ALPHA_TEST );
 	const materialColor = nodeImmutable( MaterialNode, MaterialNode.COLOR );
 	const materialShininess = nodeImmutable( MaterialNode, MaterialNode.SHININESS );
@@ -56150,6 +56142,8 @@ var THREE = (function (exports) {
 	const materialClearcoat = nodeImmutable( MaterialNode, MaterialNode.CLEARCOAT );
 	const materialClearcoatRoughness = nodeImmutable( MaterialNode, MaterialNode.CLEARCOAT_ROUGHNESS );
 	const materialRotation = nodeImmutable( MaterialNode, MaterialNode.ROTATION );
+	const materialSheen = nodeImmutable( MaterialNode, MaterialNode.SHEEN );
+	const materialSheenRoughness = nodeImmutable( MaterialNode, MaterialNode.SHEEN_ROUGHNESS );
 
 	addNodeClass( MaterialNode );
 
@@ -58916,13 +58910,14 @@ var THREE = (function (exports) {
 
 	class NodeBuilder {
 
-		constructor( object, renderer, parser ) {
+		constructor( object, renderer, parser, scene = null ) {
 
 			this.object = object;
 			this.material = ( object && object.material ) || null;
 			this.geometry = ( object && object.geometry ) || null;
 			this.renderer = renderer;
 			this.parser = parser;
+			this.scene = scene;
 
 			this.nodes = [];
 			this.updateNodes = [];
@@ -60515,6 +60510,42 @@ var THREE = (function (exports) {
 	nodeImmutable( PointUVNode );
 
 	addNodeClass( PointUVNode );
+
+	class SceneNode extends Node {
+
+		constructor( scope = SceneNode.BACKGROUND_BLURRINESS, scene = null ) {
+
+			super();
+
+			this.scope = scope;
+			this.scene = scene;
+
+		}
+
+		construct( builder ) {
+
+			const scope = this.scope;
+			const scene = this.scene !== null ? this.scene : builder.scene;
+
+			let output;
+
+			if ( scope === SceneNode.BACKGROUND_BLURRINESS ) {
+
+				output = reference( 'backgroundBlurriness', 'float', scene );
+
+			}
+
+			return output;
+
+		}
+
+	}
+
+	SceneNode.BACKGROUND_BLURRINESS = 'backgroundBlurriness';
+
+	const backgroundBlurriness = nodeImmutable( SceneNode, SceneNode.BACKGROUND_BLURRINESS );
+
+	addNodeClass( SceneNode );
 
 	class StorageBufferNode extends BufferNode {
 
@@ -63116,8 +63147,72 @@ var THREE = (function (exports) {
 
 	} );
 
+	// https://github.com/google/filament/blob/master/shaders/src/brdf.fs
+	const D_Charlie = ( roughness, dotNH ) => {
+
+		const alpha = roughness.pow2();
+
+		// Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"
+		const invAlpha = float( 1.0 ).div( alpha );
+		const cos2h = dotNH.pow2();
+		const sin2h = cos2h.oneMinus().max( 0.0078125 ); // 2^(-14/2), so sin2h^2 > 0 in fp16
+
+		return float( 2.0 ).add( invAlpha ).mul( sin2h.pow( invAlpha.mul( 0.5 ) ) ).div( 2.0 * Math.PI );
+
+	};
+
+	// https://github.com/google/filament/blob/master/shaders/src/brdf.fs
+	const V_Neubelt = ( dotNV, dotNL ) => {
+
+		// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+		return float( 1.0 ).div( float( 4.0 ).mul( dotNL.add( dotNV ).sub( dotNL.mul( dotNV ) ) ) );
+
+	};
+
+	const BRDF_Sheen = tslFn( ( { lightDirection } ) => {
+
+		const halfDir = lightDirection.add( positionViewDirection ).normalize();
+
+		const dotNL = transformedNormalView.dot( lightDirection ).clamp();
+		const dotNV = transformedNormalView.dot( positionViewDirection ).clamp();
+		const dotNH = transformedNormalView.dot( halfDir ).clamp();
+
+		const D = D_Charlie( sheenRoughness, dotNH );
+		const V = V_Neubelt( dotNV, dotNL );
+
+		return sheen.mul( D ).mul( V );
+
+	} );
+
 	const clearcoatF0 = vec3( 0.04 );
 	const clearcoatF90 = vec3( 1 );
+
+	// This is a curve-fit approxmation to the "Charlie sheen" BRDF integrated over the hemisphere from
+	// Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF". The analysis can be found
+	// in the Sheen section of https://drive.google.com/file/d/1T0D1VSyR4AllqIJTQAraEIzjlb5h4FKH/view?usp=sharing
+	const IBLSheenBRDF = ( normal, viewDir, roughness ) => {
+
+		const dotNV = normal.dot( viewDir ).saturate();
+
+		const r2 = roughness.pow2();
+
+		const a = cond(
+			roughness.lessThan( 0.25 ),
+			float( - 339.2 ).mul( r2 ).add( float( 161.4 ).mul( roughness ) ).sub( 25.9 ),
+			float( - 8.48 ).mul( r2 ).add( float( 14.3 ).mul( roughness ) ).sub( 9.95 )
+		);
+
+		const b = cond(
+			roughness.lessThan( 0.25 ),
+			float( 44.0 ).mul( r2 ).sub( float( 23.7 ).mul( roughness ) ).add( 3.26 ),
+			float( 1.97 ).mul( r2 ).sub( float( 3.27 ).mul( roughness ) ).add( 0.72 )
+		);
+
+		const DG = cond( roughness.lessThan( 0.25 ), 0.0, float( 0.1 ).mul( roughness ).sub( 0.025 ) ).add( a.mul( dotNV ).add( b ).exp() );
+
+		return DG.mul( 1.0 / Math.PI ).saturate();
+
+	};
 
 	// Fdez-Agüera's "Multiple-Scattering Microfacet Model for Real-Time Image Based Lighting"
 	// Approximates multiscattering in order to preserve energy.
@@ -63161,11 +63256,33 @@ var THREE = (function (exports) {
 
 		}
 
+		if ( builder.includes( sheen ) ) {
+
+			context.reflectedLight.sheenSpecular = vec3().temp();
+
+			const outgoingLight = context.reflectedLight.total;
+
+			const sheenEnergyComp = sheen.r.max( sheen.g ).max( sheen.b ).mul( 0.157 ).oneMinus();
+			const sheenLight = outgoingLight.mul( sheenEnergyComp ).add( context.reflectedLight.sheenSpecular );
+
+			outgoingLight.assign( sheenLight );
+
+		}
+
 	} );
 
 	const RE_IndirectSpecular_Physical = tslFn( ( context ) => {
 
 		const { radiance, iblIrradiance, reflectedLight } = context;
+
+		if ( reflectedLight.sheenSpecular ) {
+
+			reflectedLight.sheenSpecular.addAssign( iblIrradiance.mul(
+				sheen,
+				IBLSheenBRDF( transformedNormalView, positionViewDirection, sheenRoughness )
+			) );
+
+		}
 
 		if ( reflectedLight.clearcoatSpecular ) {
 
@@ -63215,6 +63332,12 @@ var THREE = (function (exports) {
 
 		const dotNL = transformedNormalView.dot( lightDirection ).clamp();
 		const irradiance = dotNL.mul( lightColor );
+
+		if ( reflectedLight.sheenSpecular ) {
+
+			reflectedLight.sheenSpecular.addAssign( irradiance.mul( BRDF_Sheen( { lightDirection } ) ) );
+
+		}
 
 		if ( reflectedLight.clearcoatSpecular ) {
 
@@ -63368,6 +63491,14 @@ var THREE = (function (exports) {
 
 			stack.assign( clearcoat, clearcoatNode );
 			stack.assign( clearcoatRoughness, clearcoatRoughnessNode );
+
+			// SHEEN
+
+			const sheenNode = this.sheenNode ? vec3( this.sheenNode ) : materialSheen;
+			const sheenRoughnessNode = this.sheenRoughnessNode ? float( this.sheenRoughnessNode ) : materialSheenRoughness;
+
+			stack.assign( sheen, sheenNode );
+			stack.assign( sheenRoughness, sheenRoughnessNode );
 
 		}
 
@@ -64727,7 +64858,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 					this.boxMeshNode = context( backgroundNode, {
 						// @TODO: Add Texture2D support using node context
-						getUVNode: () => positionWorldDirection
+						getUVNode: () => positionWorldDirection,
+						getSamplerLevelNode: () => backgroundBlurriness
 					} );
 
 					const nodeMaterial = new MeshBasicNodeMaterial();
@@ -64818,7 +64950,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			if ( nodeBuilder === undefined ) {
 
-				nodeBuilder = this.backend.createNodeBuilder( renderObject.object, this.renderer );
+				nodeBuilder = this.backend.createNodeBuilder( renderObject.object, this.renderer, renderObject.scene );
 				nodeBuilder.material = renderObject.material;
 				nodeBuilder.lightsNode = renderObject.lightsNode;
 				nodeBuilder.environmentNode = this.getEnvironmentNode( renderObject.scene );
@@ -65720,6 +65852,12 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			this._textures.updateTexture( framebufferTexture );
 
 			this.backend.copyFramebufferToTexture( framebufferTexture, renderContext );
+
+		}
+
+		readRenderTargetPixelsAsync( renderTarget, x, y, width, height ) {
+
+			return this.backend.copyTextureToBuffer( renderTarget.texture, x, y, width, height );
 
 		}
 
@@ -67210,9 +67348,9 @@ fn threejs_repeatWrapping( uv : vec2<f32>, dimension : vec2<u32> ) -> vec2<u32> 
 
 	class WGSLNodeBuilder extends NodeBuilder {
 
-		constructor( object, renderer ) {
+		constructor( object, renderer, scene = null ) {
 
-			super( object, renderer, new WGSLNodeParser() );
+			super( object, renderer, new WGSLNodeParser(), scene );
 
 			this.uniformsGroup = {};
 
@@ -68048,6 +68186,8 @@ var<${access}> ${name} : ${structName};`;
 		createDefaultTexture( texture ) { }
 
 		createTexture( texture ) { }
+
+		copyTextureToBuffer( texture, x, y, width, height ) {}
 
 		// attributes
 
@@ -69533,6 +69673,52 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 		}
 
+		async copyTextureToBuffer( texture, x, y, width, height ) {
+
+			const device = this.backend.device;
+
+			const textureData = this.backend.get( texture );
+			const textureGPU = textureData.texture;
+			const format = textureData.textureDescriptorGPU.format;
+			const bytesPerTexel = this._getBytesPerTexel( format );
+
+			const readBuffer = device.createBuffer(
+				{
+					size: width * height * bytesPerTexel,
+					usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+				}
+			);
+
+			const encoder = device.createCommandEncoder();
+
+			encoder.copyTextureToBuffer(
+				{
+					texture: textureGPU,
+					origin: { x, y },
+				},
+				{
+					buffer: readBuffer,
+					bytesPerRow: width * bytesPerTexel
+				},
+				{
+					width: width,
+					height: height
+				}
+
+			);
+
+			const typedArrayType = this._getTypedArrayType( format );
+
+			device.queue.submit( [ encoder.finish() ] );
+
+			await readBuffer.mapAsync( GPUMapMode.READ );
+
+			const buffer = readBuffer.getMappedRange();
+
+			return new typedArrayType( buffer );
+
+		}
+
 		_isEnvironmentTexture( texture ) {
 
 			const mapping = texture.mapping;
@@ -69864,6 +70050,42 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 			if ( format === GPUTextureFormat.RG32Float ) return 8;
 			if ( format === GPUTextureFormat.RGBA16Float ) return 8;
 			if ( format === GPUTextureFormat.RGBA32Float ) return 16;
+
+		}
+
+		_getTypedArrayType( format ) {
+
+			if ( format === GPUTextureFormat.R8Uint ) return Uint8Array;
+			if ( format === GPUTextureFormat.R8Sint ) return Int8Array;
+			if ( format === GPUTextureFormat.R8Unorm ) return Uint8Array;
+			if ( format === GPUTextureFormat.R8Snorm ) return Int8Array;
+			if ( format === GPUTextureFormat.RG8Uint ) return Uint8Array;
+			if ( format === GPUTextureFormat.RG8Sint ) return Int8Array;
+			if ( format === GPUTextureFormat.RG8Unorm ) return Uint8Array;
+			if ( format === GPUTextureFormat.RG8Snorm ) return Int8Array;
+			if ( format === GPUTextureFormat.RGBA8Uint ) return Uint8Array;
+			if ( format === GPUTextureFormat.RGBA8Sint ) return Int8Array;
+			if ( format === GPUTextureFormat.RGBA8Unorm ) return Uint8Array;
+			if ( format === GPUTextureFormat.RGBA8Snorm ) return Int8Array;
+
+
+			if ( format === GPUTextureFormat.R16Uint ) return Uint16Array;
+			if ( format === GPUTextureFormat.R16Sint ) return Int16Array;
+			if ( format === GPUTextureFormat.RG16Uint ) return Uint16Array;
+			if ( format === GPUTextureFormat.RG16Sint ) return Int16Array;
+			if ( format === GPUTextureFormat.RGBA16Uint ) return Uint16Array;
+			if ( format === GPUTextureFormat.RGBA16Sint ) return Int16Array;
+
+
+			if ( format === GPUTextureFormat.R32Uint ) return Uint32Array;
+			if ( format === GPUTextureFormat.R32Sint ) return Int32Array;
+			if ( format === GPUTextureFormat.R32Float ) return Float32Array;
+			if ( format === GPUTextureFormat.RG32Uint ) return Uint32Array;
+			if ( format === GPUTextureFormat.RG32Sint ) return Int32Array;
+			if ( format === GPUTextureFormat.RG32Float ) return Float32Array;
+			if ( format === GPUTextureFormat.RGBA32Uint ) return Uint32Array;
+			if ( format === GPUTextureFormat.RGBA32Sint ) return Int32Array;
+			if ( format === GPUTextureFormat.RGBA32Float ) return Float32Array;
 
 		}
 

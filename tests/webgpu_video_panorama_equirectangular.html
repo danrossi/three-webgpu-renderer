@@ -130,6 +130,7 @@
 				renderer = new WebGPURenderer();
 				texture.colorSpace = THREE.SRGBColorSpace;
 				material = new THREE.MeshBasicMaterial({ map: texture });
+				
 			} else {
 				console.log("Using WebGL");
 				renderer = new THREE.WebGLRenderer();
@@ -220,6 +221,8 @@
 			document.addEventListener('pointerup', onPointerUp);
 
 			//
+
+			await renderer.init();
 
 			//window.addEventListener( 'resize', onWindowResize );
 
