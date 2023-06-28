@@ -1,0 +1,8 @@
+{
+  "name": "example-project",
+  "description": "Example project including webgpu renderer",
+  "version": "0.154.0",
+  "devDependencies": {
+    "three-webgpu-renderer": "github:danrossi/three-webgpu-renderer"
+  }
+}

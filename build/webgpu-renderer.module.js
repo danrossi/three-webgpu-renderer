@@ -3,7 +3,7 @@
  * Copyright 2010-2023 Three.js Authors
  * SPDX-License-Identifier: MIT
  */
-import { DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, MathUtils, LinearSRGBColorSpace, SRGBColorSpace, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, DepthTexture, NearestFilter, ShaderMaterial, NoColorSpace, Material, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, LinearMipmapLinearFilter, UnsignedIntType, DepthFormat, EventDispatcher, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, BackSide, Mesh, SphereGeometry, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Frustum, WebGLRenderTarget, WebGLCubeRenderTarget, BoxGeometry, NoBlending, Scene, LinearFilter, CubeCamera, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, DoubleSide, FrontSide, SrcAlphaSaturateFactor, OneMinusDstAlphaFactor, DstAlphaFactor, OneMinusDstColorFactor, DstColorFactor, OneMinusSrcAlphaFactor, SrcAlphaFactor, OneMinusSrcColorFactor, SrcColorFactor, OneFactor, ZeroFactor, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, ReverseSubtractEquation, SubtractEquation, AddEquation, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, CubeReflectionMapping, CubeRefractionMapping, Texture, CubeTexture, FloatType, RGFormat, RedFormat, RGBAFormat, NeverCompare, AlwaysCompare, LessCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, RepeatWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, RGBA_ASTC_12x12_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_4x4_Format, RGBA_ETC2_EAC_Format, RGB_ETC2_Format, RGBA_S3TC_DXT5_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, UnsignedShortType, HalfFloatType, UnsignedByteType, WebGPUCoordinateSystem } from 'three';
+import { DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, MathUtils, LinearSRGBColorSpace, SRGBColorSpace, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, DepthTexture, NearestFilter, ShaderMaterial, NoColorSpace, Material, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, LinearMipmapLinearFilter, UnsignedIntType, DepthFormat, EventDispatcher, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, BackSide, Mesh, SphereGeometry, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Frustum, DoubleSide, FrontSide, WebGLRenderTarget, WebGLCubeRenderTarget, BoxGeometry, NoBlending, Scene, LinearFilter, CubeCamera, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, SrcAlphaSaturateFactor, OneMinusDstAlphaFactor, DstAlphaFactor, OneMinusDstColorFactor, DstColorFactor, OneMinusSrcAlphaFactor, SrcAlphaFactor, OneMinusSrcColorFactor, SrcColorFactor, OneFactor, ZeroFactor, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, ReverseSubtractEquation, SubtractEquation, AddEquation, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, CubeReflectionMapping, CubeRefractionMapping, Texture, CubeTexture, FloatType, RGFormat, RedFormat, RGBAFormat, NeverCompare, AlwaysCompare, LessCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, RepeatWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, RGBA_ASTC_12x12_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_4x4_Format, RGBA_ETC2_EAC_Format, RGB_ETC2_Format, RGBA_S3TC_DXT5_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, UnsignedShortType, HalfFloatType, UnsignedByteType, WebGPUCoordinateSystem } from 'three';
 
 class WebGPU {
 
@@ -346,11 +346,9 @@ class RenderObject {
 
 }
 
-class RenderObjects extends ChainMap {
+class RenderObjects {
 
 	constructor( renderer, nodes, geometries, pipelines, info ) {
-
-		super();
 
 		this.renderer = renderer;
 		this.nodes = nodes;
@@ -358,21 +356,23 @@ class RenderObjects extends ChainMap {
 		this.pipelines = pipelines;
 		this.info = info;
 
+		this.chainMaps = {};
 		this.dataMap = new DataMap();
 
 	}
 
-	get( object, material, scene, camera, lightsNode ) {
+	get( object, material, scene, camera, lightsNode, passId ) {
 
+		const chainMap = this.getChainMap( passId );
 		const chainArray = [ object, material, scene, camera, lightsNode ];
 
-		let renderObject = super.get( chainArray );
+		let renderObject = chainMap.get( chainArray );
 
 		if ( renderObject === undefined ) {
 
-			renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode );
+			renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode, passId );
 
-			this.set( chainArray, renderObject );
+			chainMap.set( chainArray, renderObject );
 
 		} else {
 
@@ -393,29 +393,36 @@ class RenderObjects extends ChainMap {
 
 	}
 
-	dispose() {
+	getChainMap( passId = 'default' ) {
 
-		super.dispose();
-
-		this.dataMap.clear();
+		return this.chainMaps[ passId ] || ( this.chainMaps[ passId ] = new ChainMap() );
 
 	}
 
-	createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
+	dispose() {
 
+		this.chainMaps = {};
+		this.dataMap = new DataMap();
+
+	}
+
+	createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode, passId ) {
+
+		const chainMap = this.getChainMap( passId );
+		const dataMap = this.dataMap;
 		const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode );
 
-		const data = this.dataMap.get( renderObject );
+		const data = dataMap.get( renderObject );
 		data.cacheKey = renderObject.getCacheKey();
 
 		renderObject.onDispose = () => {
 
-			this.dataMap.delete( renderObject );
+			dataMap.delete( renderObject );
 
 			this.pipelines.delete( renderObject );
 			this.nodes.delete( renderObject );
 
-			this.delete( renderObject.getChainArray() );
+			chainMap.delete( renderObject.getChainArray() );
 
 		};
 
@@ -14758,17 +14765,47 @@ class Renderer {
 
 		//
 
-		const renderObject = this._objects.get( object, material, scene, camera, lightsNode );
+		object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
+		object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
+
+		//
+
+		material.onBeforeRender( this, scene, camera, geometry, material, group );
+
+		//
+
+		if ( material.transparent === true && material.side === DoubleSide && material.forceSinglePass === false ) {
+
+			material.side = BackSide;
+			this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode, 'backSide' ); // create backSide pass id
+
+			material.side = FrontSide;
+			this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode ); // use default pass id
+
+			material.side = DoubleSide;
+
+		} else {
+
+			this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode );
+
+		}
+
+		//
+
+		object.onAfterRender( this, scene, camera, geometry, material, group );
+
+	}
+
+	_renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode, passId ) {
+
+		//
+
+		const renderObject = this._objects.get( object, material, scene, camera, lightsNode, passId );
 		renderObject.context = this._currentRenderContext;
 
 		//
 
 		this._nodes.updateBefore( renderObject );
-
-		//
-
-		object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-		object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
 
 		//
 
