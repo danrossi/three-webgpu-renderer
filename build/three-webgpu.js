@@ -6,7 +6,7 @@ var THREE = (function (exports) {
 	 * Copyright 2010-2023 Three.js Authors
 	 * SPDX-License-Identifier: MIT
 	 */
-	const REVISION = '154dev';
+	const REVISION = '154';
 
 	const MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 	const TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -26223,8 +26223,6 @@ var THREE = (function (exports) {
 
 			//
 
-			let userCamera = null;
-
 			const cameraL = new PerspectiveCamera();
 			cameraL.layers.enable( 1 );
 			cameraL.viewport = new Vector4();
@@ -26244,18 +26242,10 @@ var THREE = (function (exports) {
 
 			//
 
-			this.cameraAutoUpdate = true; // @deprecated, r153
+			this.cameraAutoUpdate = true;
 			this.enabled = false;
 
 			this.isPresenting = false;
-
-			this.getCamera = function () {}; // @deprecated, r153
-
-			this.setUserCamera = function ( value ) {
-
-				userCamera = value;
-
-			};
 
 			this.getController = function ( index ) {
 
@@ -26693,15 +26683,9 @@ var THREE = (function (exports) {
 
 			}
 
-			this.updateCameraXR = function ( camera ) {
+			this.updateCamera = function ( camera ) {
 
-				if ( session === null ) return camera;
-
-				if ( userCamera ) {
-
-					camera = userCamera;
-
-				}
+				if ( session === null ) return;
 
 				cameraXR.near = cameraR.near = cameraL.near = camera.near;
 				cameraXR.far = cameraR.far = cameraL.far = camera.far;
@@ -26747,19 +26731,11 @@ var THREE = (function (exports) {
 
 				// update user camera and its children
 
-				if ( userCamera ) {
-
-					updateUserCamera( cameraXR, parent );
-
-				}
-
-				return cameraXR;
+				updateUserCamera( camera, cameraXR, parent );
 
 			};
 
-			function updateUserCamera( cameraXR, parent ) {
-
-				const camera = userCamera;
+			function updateUserCamera( camera, cameraXR, parent ) {
 
 				if ( parent === null ) {
 
@@ -26795,6 +26771,12 @@ var THREE = (function (exports) {
 				}
 
 			}
+
+			this.getCamera = function () {
+
+				return cameraXR;
+
+			};
 
 			this.getFoveation = function () {
 
@@ -28934,7 +28916,9 @@ var THREE = (function (exports) {
 
 				if ( xr.enabled === true && xr.isPresenting === true ) {
 
-					camera = xr.updateCameraXR( camera ); // use XR camera for rendering
+					if ( xr.cameraAutoUpdate === true ) xr.updateCamera( camera );
+
+					camera = xr.getCamera(); // use XR camera for rendering
 
 				}
 
@@ -51516,6 +51500,7 @@ var THREE = (function (exports) {
 			this.attributes = null;
 			this.context = null;
 			this.pipeline = null;
+			this.vertexBuffers = null;
 
 			this._materialVersion = - 1;
 			this._materialCacheKey = '';
@@ -51564,16 +51549,31 @@ var THREE = (function (exports) {
 			const geometry = this.geometry;
 
 			const attributes = [];
+			const vertexBuffers = new Set();
 
 			for ( const nodeAttribute of nodeAttributes ) {
 
-				attributes.push( nodeAttribute.node && nodeAttribute.node.attribute ? nodeAttribute.node.attribute : geometry.getAttribute( nodeAttribute.name ) );
+				const attribute = nodeAttribute.node && nodeAttribute.node.attribute ? nodeAttribute.node.attribute : geometry.getAttribute( nodeAttribute.name );
+
+				attributes.push( attribute );
+
+				const bufferAttribute = attribute.isInterleavedBufferAttribute ? attribute.data : attribute;
+				vertexBuffers.add( bufferAttribute );
 
 			}
 
 			this.attributes = attributes;
+			this.vertexBuffers = Array.from( vertexBuffers.values() );
 
 			return attributes;
+
+		}
+
+		getVertexBuffers() {
+
+			if ( this.vertexBuffers === null ) this.getAttributes();
+
+			return this.vertexBuffers;
 
 		}
 
@@ -57071,7 +57071,7 @@ var THREE = (function (exports) {
 			const stride = this.bufferStride || itemSize;
 			const offset = this.bufferOffset;
 
-			const buffer = new InterleavedBuffer( array, stride );
+			const buffer = array.isInterleavedBuffer === true ? array : new InterleavedBuffer( array, stride );
 			const bufferAttribute = new InterleavedBufferAttribute( buffer, itemSize, offset );
 
 			buffer.setUsage( this.usage );
@@ -57157,17 +57157,17 @@ var THREE = (function (exports) {
 			if ( instanceMatrixNode === null ) {
 
 				const instanceMesh = this.instanceMesh;
-				const instaceAttribute = instanceMesh.instanceMatrix;
-				const array = instaceAttribute.array;
+				const instanceAttribute = instanceMesh.instanceMatrix;
+				const buffer = new InstancedInterleavedBuffer( instanceAttribute.array, 16, 1 );
 
-				const bufferFn = instaceAttribute.usage === DynamicDrawUsage ? instancedDynamicBufferAttribute : instancedBufferAttribute;
+				const bufferFn = instanceAttribute.usage === DynamicDrawUsage ? instancedDynamicBufferAttribute : instancedBufferAttribute;
 
 				const instanceBuffers = [
 					// F.Signature -> bufferAttribute( array, type, stride, offset )
-					bufferFn( array, 'vec4', 16, 0 ),
-					bufferFn( array, 'vec4', 16, 4 ),
-					bufferFn( array, 'vec4', 16, 8 ),
-					bufferFn( array, 'vec4', 16, 12 )
+					bufferFn( buffer, 'vec4', 16, 0 ),
+					bufferFn( buffer, 'vec4', 16, 4 ),
+					bufferFn( buffer, 'vec4', 16, 8 ),
+					bufferFn( buffer, 'vec4', 16, 12 )
 				];
 
 				instanceMatrixNode = mat4( ...instanceBuffers );
@@ -68437,23 +68437,30 @@ var<${access}> ${name} : ${structName};`;
 			const bufferAttribute = this._getBufferAttribute( attribute );
 
 			const backend = this.backend;
-			const device = backend.device;
+			const bufferData = backend.get( bufferAttribute );
 
-			const array = bufferAttribute.array;
-			const size = array.byteLength + ( ( 4 - ( array.byteLength % 4 ) ) % 4 ); // ensure 4 byte alignment, see #20441
+			let buffer = bufferData.buffer;
 
-			const buffer = device.createBuffer( {
-				label: bufferAttribute.name,
-				size: size,
-				usage: usage,
-				mappedAtCreation: true
-			} );
+			if ( buffer === undefined ) {
 
-			new array.constructor( buffer.getMappedRange() ).set( array );
+				const device = backend.device;
 
-			buffer.unmap();
+				const array = bufferAttribute.array;
+				const size = array.byteLength + ( ( 4 - ( array.byteLength % 4 ) ) % 4 ); // ensure 4 byte alignment, see #20441
 
-			backend.get( attribute ).buffer = buffer;
+				buffer = device.createBuffer( {
+					label: bufferAttribute.name,
+					size: size,
+					usage: usage,
+					mappedAtCreation: true
+				} );
+
+				new array.constructor( buffer.getMappedRange() ).set( array );
+
+				buffer.unmap();
+
+				bufferData.buffer = buffer;
+			}
 
 		}
 
@@ -68464,7 +68471,7 @@ var<${access}> ${name} : ${structName};`;
 			const backend = this.backend;
 			const device = backend.device;
 
-			const buffer = backend.get( attribute ).buffer;
+			const buffer = backend.get( bufferAttribute ).buffer;
 
 			const array = bufferAttribute.array;
 			const updateRange = bufferAttribute.updateRange;
@@ -68496,51 +68503,64 @@ var<${access}> ${name} : ${structName};`;
 
 		}
 
-		createShaderAttributes( renderObject ) {
+		createShaderVertexBuffers( renderObject ) {
 
 			const attributes = renderObject.getAttributes();
-			const shaderAttributes = [];
+			const vertexBuffers = new Map();
 
 			for ( let slot = 0; slot < attributes.length; slot ++ ) {
 
 				const geometryAttribute = attributes[ slot ];
 				const bytesPerElement = geometryAttribute.array.BYTES_PER_ELEMENT;
+				const bufferAttribute = this._getBufferAttribute( geometryAttribute );
 
-				const format = this._getVertexFormat( geometryAttribute );
+				let vertexBufferLayout = vertexBuffers.get( bufferAttribute );
 
-				let arrayStride = geometryAttribute.itemSize * bytesPerElement;
-				let offset = 0;
-				let stepMode = geometryAttribute.isInstancedBufferAttribute ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
+				if ( vertexBufferLayout === undefined ) {
 
-				if ( geometryAttribute.isInterleavedBufferAttribute === true ) {
+					let arrayStride, stepMode;
 
-					// @TODO: It can be optimized for "vertexBuffers" on RenderPipeline
+					if ( geometryAttribute.isInterleavedBufferAttribute === true ) {
 
-					arrayStride = geometryAttribute.data.stride * bytesPerElement;
-					offset = geometryAttribute.offset * bytesPerElement;
-					if ( geometryAttribute.data.isInstancedInterleavedBuffer ) stepMode = GPUInputStepMode.Instance;
+						arrayStride = geometryAttribute.data.stride * bytesPerElement;
+						stepMode = geometryAttribute.data.isInstancedInterleavedBuffer ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
+
+					} else {
+
+						arrayStride = geometryAttribute.itemSize * bytesPerElement;
+						stepMode = geometryAttribute.isInstancedBufferAttribute ? GPUInputStepMode.Instance : GPUInputStepMode.Vertex;
+
+					}
+
+					vertexBufferLayout = {
+						arrayStride,
+						attributes: [],
+						stepMode
+					};
+
+					vertexBuffers.set( bufferAttribute, vertexBufferLayout );
 
 				}
 
-				shaderAttributes.push( {
-					geometryAttribute,
-					arrayStride,
-					stepMode,
+				const format = this._getVertexFormat( geometryAttribute );
+				const offset = ( geometryAttribute.isInterleavedBufferAttribute === true ) ? geometryAttribute.offset * bytesPerElement : 0;
+
+				vertexBufferLayout.attributes.push( {
+					shaderLocation: slot,
 					offset,
-					format,
-					slot
+					format
 				} );
 
 			}
 
-			return shaderAttributes;
+			return Array.from( vertexBuffers.values() );
 
 		}
 
 		destroyAttribute( attribute ) {
 
 			const backend = this.backend;
-			const data = backend.get( attribute );
+			const data = backend.get( this._getBufferAttribute( attribute ) );
 
 			data.buffer.destroy();
 
@@ -68553,9 +68573,7 @@ var<${access}> ${name} : ${structName};`;
 			const backend = this.backend;
 			const device = backend.device;
 
-			const data = backend.get( attribute );
-
-			//const bufferAttribute = this._getBufferAttribute( attribute );
+			const data = backend.get( this._getBufferAttribute( attribute ) );
 
 			const bufferGPU = data.buffer;
 			const size = bufferGPU.size;
@@ -68808,23 +68826,9 @@ var<${access}> ${name} : ${structName};`;
 
 			const pipelineData = backend.get( pipeline );
 
-			// determine shader attributes
-
-			const shaderAttributes = backend.attributeUtils.createShaderAttributes( renderObject );
-
 			// vertex buffers
 
-			const vertexBuffers = [];
-
-			for ( const attribute of shaderAttributes ) {
-
-				vertexBuffers.push( {
-					arrayStride: attribute.arrayStride,
-					attributes: [ { shaderLocation: attribute.slot, offset: attribute.offset, format: attribute.format } ],
-					stepMode: attribute.stepMode
-				} );
-
-			}
+			const vertexBuffers = backend.attributeUtils.createShaderVertexBuffers( renderObject );
 
 			// blending
 
@@ -70944,6 +70948,12 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 		destroyTexture( texture ) {
 
 			this.textureUtils.destroyTexture( texture );
+
+		}
+
+		copyTextureToBuffer( texture, x, y, width, height ) {
+
+			return this.textureUtils.copyTextureToBuffer( texture, x, y, width, height );
 
 		}
 
