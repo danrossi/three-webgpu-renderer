@@ -106,6 +106,30 @@ export default [
 		plugins: [
 		
 			includePaths({
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes","./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
+				include: {
+				  'three': './three.js/build/three.module.js'
+				}
+		  	}),
+			strip({
+				debugger: true
+			}),
+			terser({
+                keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
+            }),
+		],
+		output: [
+			{
+				format: 'esm',
+				file: 'build/three-webgpu.module.min.js'
+			}
+		]
+	},
+	{
+		input: './three-webgpu-renderer.js',
+		plugins: [
+		
+			includePaths({
 				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes", "./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
 				include: {
 				  'three': './three.js/build/three.module.js'
