@@ -6,7 +6,7 @@ var THREE = (function (exports) {
 	 * Copyright 2010-2023 Three.js Authors
 	 * SPDX-License-Identifier: MIT
 	 */
-	const REVISION = '154';
+	const REVISION = '155dev';
 
 	const MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 	const TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -20307,6 +20307,18 @@ var THREE = (function (exports) {
 			const HAS_ATTRIBUTE_UV2 = !! geometry.attributes.uv2;
 			const HAS_ATTRIBUTE_UV3 = !! geometry.attributes.uv3;
 
+			let toneMapping = NoToneMapping;
+
+			if ( material.toneMapped ) {
+
+				if ( currentRenderTarget === null || currentRenderTarget.isXRRenderTarget === true ) {
+
+					toneMapping = renderer.toneMapping;
+
+				}
+
+			}
+
 			const parameters = {
 
 				isWebGL2: IS_WEBGL2,
@@ -20467,7 +20479,7 @@ var THREE = (function (exports) {
 				shadowMapEnabled: renderer.shadowMap.enabled && shadows.length > 0,
 				shadowMapType: renderer.shadowMap.type,
 
-				toneMapping: material.toneMapped ? renderer.toneMapping : NoToneMapping,
+				toneMapping: toneMapping,
 				useLegacyLights: renderer.useLegacyLights,
 
 				premultipliedAlpha: material.premultipliedAlpha,
@@ -29491,7 +29503,18 @@ var THREE = (function (exports) {
 				const morphTargets = !! geometry.morphAttributes.position;
 				const morphNormals = !! geometry.morphAttributes.normal;
 				const morphColors = !! geometry.morphAttributes.color;
-				const toneMapping = material.toneMapped ? _this.toneMapping : NoToneMapping;
+
+				let toneMapping = NoToneMapping;
+
+				if ( material.toneMapped ) {
+
+					if ( _currentRenderTarget === null || _currentRenderTarget.isXRRenderTarget === true ) {
+
+						toneMapping = _this.toneMapping;
+
+					}
+
+				}
 
 				const morphAttribute = geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color;
 				const morphTargetsCount = ( morphAttribute !== undefined ) ? morphAttribute.length : 0;
@@ -32750,6 +32773,21 @@ var THREE = (function (exports) {
 			this.isCompressedArrayTexture = true;
 			this.image.depth = depth;
 			this.wrapR = ClampToEdgeWrapping;
+
+		}
+
+	}
+
+	class CompressedCubeTexture extends CompressedTexture {
+
+		constructor( images, format, type ) {
+
+			super( undefined, images[ 0 ].width, images[ 0 ].height, format, type, CubeReflectionMapping );
+
+			this.isCompressedCubeTexture = true;
+			this.isCubeTexture = true;
+
+			this.image = images;
 
 		}
 
@@ -69712,6 +69750,8 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 			textureData.version = texture.version;
 
+			if ( texture.onUpdate ) texture.onUpdate( texture );
+
 		}
 
 		async copyTextureToBuffer( texture, x, y, width, height ) {
@@ -71308,6 +71348,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 	exports.ColorKeyframeTrack = ColorKeyframeTrack;
 	exports.ColorManagement = ColorManagement;
 	exports.CompressedArrayTexture = CompressedArrayTexture;
+	exports.CompressedCubeTexture = CompressedCubeTexture;
 	exports.CompressedTexture = CompressedTexture;
 	exports.CompressedTextureLoader = CompressedTextureLoader;
 	exports.ConeGeometry = ConeGeometry;

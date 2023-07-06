@@ -18467,6 +18467,8 @@ class WebGPUTextureUtils {
 
 		textureData.version = texture.version;
 
+		if ( texture.onUpdate ) texture.onUpdate( texture );
+
 	}
 
 	async copyTextureToBuffer( texture, x, y, width, height ) {

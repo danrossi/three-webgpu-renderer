@@ -54,6 +54,33 @@ export default [
 		]
 	},
 	{
+		input: './webgpu-renderer.js',
+		external: ['three'],
+		plugins: [
+		
+			includePaths({
+				paths: ["./src", "./three.js/examples/jsm/", "./three.js/examples/jsm/nodes","./three.js/examples/jsm/nodes/materials", "./three.js/examples/jsm/renderers/webgpu"],
+				//include: {
+				 // 'three': './three.js/build/three.module.js'
+				//}
+		  	}),
+			strip({
+				debugger: true
+			}),
+			terser({
+                keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
+            }),
+			header(),
+			
+		],
+		output: [
+			{
+				format: 'esm',
+				file: 'build/webgpu-renderer.module.min.js'
+			}
+		]
+	},
+	{
 		input: './three-webgpu-renderer.js',
 		plugins: [
 		
