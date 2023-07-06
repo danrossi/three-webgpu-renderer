@@ -4,6 +4,10 @@ import MagicString from 'magic-string';
 
 import includePaths from 'rollup-plugin-includepaths';
 
+import gzipPlugin from 'rollup-plugin-gzip';
+import { gzipAsync } from '@gfx/zopfli'
+
+
 function header() {
 
 	return {
@@ -71,7 +75,10 @@ export default [
                 keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
             }),
 			header(),
-			
+			gzipPlugin({
+				customCompression: content =>
+				  gzipAsync(Buffer.from(content), { numiterations: 15 }),
+			})
 		],
 		output: [
 			{
@@ -117,6 +124,11 @@ export default [
 			terser({
                 keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
             }),
+			header(),
+			gzipPlugin({
+				customCompression: content =>
+				  gzipAsync(Buffer.from(content), { numiterations: 15 }),
+			})
 		],
 		output: [
 			{
@@ -140,7 +152,8 @@ export default [
 			}),
 			terser({
                 keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
-            })
+            }),
+			header()
 		],
 		output: [
 			{
@@ -162,7 +175,8 @@ export default [
 		  	}),
 			strip({
 				debugger: true
-			})
+			}),
+			header()
 		],
 		output: [
 			{
