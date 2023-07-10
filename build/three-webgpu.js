@@ -51524,7 +51524,7 @@ var THREE = (function (exports) {
 
 	class RenderObject {
 
-		constructor( nodes, geometries, renderer, object, material, scene, camera, lightsNode ) {
+		constructor( nodes, geometries, renderer, object, material, scene, camera, lightsNode, renderContext ) {
 
 			this._nodes = nodes;
 			this._geometries = geometries;
@@ -51537,11 +51537,11 @@ var THREE = (function (exports) {
 			this.scene = scene;
 			this.camera = camera;
 			this.lightsNode = lightsNode;
+			this.context = renderContext;
 
 			this.geometry = object.geometry;
 
 			this.attributes = null;
-			this.context = null;
 			this.pipeline = null;
 			this.vertexBuffers = null;
 
@@ -51580,7 +51580,7 @@ var THREE = (function (exports) {
 
 		getChainArray() {
 
-			return [ this.object, this.material, this.scene, this.camera, this.lightsNode ];
+			return [ this.object, this.material, this.context, this.lightsNode ];
 
 		}
 
@@ -51652,12 +51652,13 @@ var THREE = (function (exports) {
 
 	class RenderObjects {
 
-		constructor( renderer, nodes, geometries, pipelines, info ) {
+		constructor( renderer, nodes, geometries, pipelines, bindings, info ) {
 
 			this.renderer = renderer;
 			this.nodes = nodes;
 			this.geometries = geometries;
 			this.pipelines = pipelines;
+			this.bindings = bindings;
 			this.info = info;
 
 			this.chainMaps = {};
@@ -51665,16 +51666,16 @@ var THREE = (function (exports) {
 
 		}
 
-		get( object, material, scene, camera, lightsNode, passId ) {
+		get( object, material, scene, camera, lightsNode, renderContext, passId ) {
 
 			const chainMap = this.getChainMap( passId );
-			const chainArray = [ object, material, scene, camera, lightsNode ];
+			const chainArray = [ object, material, renderContext, lightsNode ];
 
 			let renderObject = chainMap.get( chainArray );
 
 			if ( renderObject === undefined ) {
 
-				renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode, passId );
+				renderObject = this.createRenderObject( this.nodes, this.geometries, this.renderer, object, material, scene, camera, lightsNode, renderContext, passId );
 
 				chainMap.set( chainArray, renderObject );
 
@@ -51687,7 +51688,7 @@ var THREE = (function (exports) {
 
 					renderObject.dispose();
 
-					renderObject = this.get( object, material, scene, camera, lightsNode );
+					renderObject = this.get( object, material, scene, camera, lightsNode, renderContext, passId );
 
 				}
 
@@ -51710,11 +51711,12 @@ var THREE = (function (exports) {
 
 		}
 
-		createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode, passId ) {
+		createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode, renderContext, passId ) {
 
 			const chainMap = this.getChainMap( passId );
 			const dataMap = this.dataMap;
-			const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode );
+
+			const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode, renderContext );
 
 			const data = dataMap.get( renderObject );
 			data.cacheKey = renderObject.getCacheKey();
@@ -51724,6 +51726,7 @@ var THREE = (function (exports) {
 				dataMap.delete( renderObject );
 
 				this.pipelines.delete( renderObject );
+				this.bindings.delete( renderObject );
 				this.nodes.delete( renderObject );
 
 				chainMap.delete( renderObject.getChainArray() );
@@ -51908,7 +51911,7 @@ var THREE = (function (exports) {
 
 		}
 
-		update( renderObject ) {
+		updateForRender( renderObject ) {
 
 			if ( this.has( renderObject ) === false ) this.initGeometry( renderObject );
 
@@ -52181,11 +52184,16 @@ var THREE = (function (exports) {
 
 			const data = this.get( computeNode );
 
-			if ( data.pipeline === undefined ) {
+			if ( this._needsComputeUpdate( computeNode ) ) {
 
-				// release previous cache
+				const previousPipeline = data.pipeline;
 
-				const previousPipeline = this._releasePipeline( computeNode );
+				if ( previousPipeline ) {
+
+					previousPipeline.usedTimes --;
+					previousPipeline.computeProgram.usedTimes --;
+
+				}
 
 				// get shader
 
@@ -52197,7 +52205,7 @@ var THREE = (function (exports) {
 
 				if ( stageCompute === undefined ) {
 
-					if ( previousPipeline ) this._releaseProgram( previousPipeline.computeShader );
+					if ( previousPipeline && previousPipeline.computeProgram.usedTimes === 0 ) this._releaseProgram( previousPipeline.computeProgram );
 
 					stageCompute = new ProgrammableStage( nodeBuilder.computeShader, 'compute' );
 					this.programs.compute.set( nodeBuilder.computeShader, stageCompute );
@@ -52208,7 +52216,17 @@ var THREE = (function (exports) {
 
 				// determine compute pipeline
 
-				const pipeline = this._getComputePipeline( stageCompute );
+				const cacheKey = this._getComputeCacheKey( computeNode, stageCompute );
+
+				let pipeline = this.caches.get( cacheKey );
+
+				if ( pipeline === undefined ) {
+
+					if ( previousPipeline && previousPipeline.usedTimes === 0 ) this._releasePipeline( computeNode );
+
+					pipeline = this._getComputePipeline( computeNode, stageCompute, cacheKey );
+
+				}
 
 				// keep track of all used times
 
@@ -52217,6 +52235,7 @@ var THREE = (function (exports) {
 
 				//
 
+				data.version = computeNode.version;
 				data.pipeline = pipeline;
 
 			}
@@ -52231,11 +52250,17 @@ var THREE = (function (exports) {
 
 			const data = this.get( renderObject );
 
-			if ( this._needsUpdate( renderObject ) ) {
+			if ( this._needsRenderUpdate( renderObject ) ) {
 
-				// release previous cache
+				const previousPipeline = data.pipeline;
 
-				const previousPipeline = this._releasePipeline( renderObject );
+				if ( previousPipeline ) {
+
+					previousPipeline.usedTimes --;
+					previousPipeline.vertexProgram.usedTimes --;
+					previousPipeline.fragmentProgram.usedTimes --;
+
+				}
 
 				// get shader
 
@@ -52247,7 +52272,7 @@ var THREE = (function (exports) {
 
 				if ( stageVertex === undefined ) {
 
-					if ( previousPipeline ) this._releaseProgram( previousPipeline.vertexProgram );
+					if ( previousPipeline && previousPipeline.vertexProgram.usedTimes === 0 ) this._releaseProgram( previousPipeline.vertexProgram );
 
 					stageVertex = new ProgrammableStage( nodeBuilder.vertexShader, 'vertex' );
 					this.programs.vertex.set( nodeBuilder.vertexShader, stageVertex );
@@ -52260,7 +52285,7 @@ var THREE = (function (exports) {
 
 				if ( stageFragment === undefined ) {
 
-					if ( previousPipeline ) this._releaseProgram( previousPipeline.fragmentShader );
+					if ( previousPipeline && previousPipeline.fragmentProgram.usedTimes === 0 ) this._releaseProgram( previousPipeline.fragmentProgram );
 
 					stageFragment = new ProgrammableStage( nodeBuilder.fragmentShader, 'fragment' );
 					this.programs.fragment.set( nodeBuilder.fragmentShader, stageFragment );
@@ -52271,7 +52296,21 @@ var THREE = (function (exports) {
 
 				// determine render pipeline
 
-				const pipeline = this._getRenderPipeline( renderObject, stageVertex, stageFragment );
+				const cacheKey = this._getRenderCacheKey( renderObject, stageVertex, stageFragment );
+
+				let pipeline = this.caches.get( cacheKey );
+
+				if ( pipeline === undefined ) {
+
+					if ( previousPipeline && previousPipeline.usedTimes === 0 ) this._releasePipeline( previousPipeline );
+
+					pipeline = this._getRenderPipeline( renderObject, stageVertex, stageFragment, cacheKey );
+
+				} else {
+
+					renderObject.pipeline = pipeline;
+
+				}
 
 				// keep track of all used times
 
@@ -52291,18 +52330,31 @@ var THREE = (function (exports) {
 
 		delete( object ) {
 
-			const pipeline = this._releasePipeline( object );
+			const pipeline = this.get( object ).pipeline;
 
-			if ( pipeline && pipeline.usedTimes === 0 ) {
+			if ( pipeline ) {
+
+				// pipeline
+
+				pipeline.usedTimes --;
+
+				if ( pipeline.usedTimes === 0 ) this._releasePipeline( pipeline );
+
+				// programs
 
 				if ( pipeline.isComputePipeline ) {
 
-					this._releaseProgram( pipeline.computeProgram );
+					pipeline.computeProgram.usedTimes --;
+
+					if ( pipeline.computeProgram.usedTimes === 0 ) this._releaseProgram( pipeline.computeProgram );
 
 				} else {
 
-					this._releaseProgram( pipeline.vertexProgram );
-					this._releaseProgram( pipeline.fragmentProgram );
+					pipeline.fragmentProgram.usedTimes --;
+					pipeline.vertexProgram.usedTimes --;
+
+					if ( pipeline.vertexProgram.usedTimes === 0 ) this._releaseProgram( pipeline.vertexProgram );
+					if ( pipeline.fragmentProgram.usedTimes === 0 ) this._releaseProgram( pipeline.fragmentProgram );
 
 				}
 
@@ -52325,11 +52377,11 @@ var THREE = (function (exports) {
 
 		}
 
-		_getComputePipeline( stageCompute ) {
+		_getComputePipeline( computeNode, stageCompute, cacheKey ) {
 
 			// check for existing pipeline
 
-			const cacheKey = 'compute:' + stageCompute.id;
+			cacheKey = cacheKey || this._getComputeCacheKey( computeNode, stageCompute );
 
 			let pipeline = this.caches.get( cacheKey );
 
@@ -52347,11 +52399,11 @@ var THREE = (function (exports) {
 
 		}
 
-		_getRenderPipeline( renderObject, stageVertex, stageFragment ) {
+		_getRenderPipeline( renderObject, stageVertex, stageFragment, cacheKey ) {
 
 			// check for existing pipeline
 
-			const cacheKey = this._getRenderCacheKey( renderObject, stageVertex, stageFragment );
+			cacheKey = cacheKey || this._getRenderCacheKey( renderObject, stageVertex, stageFragment );
 
 			let pipeline = this.caches.get( cacheKey );
 
@@ -52365,15 +52417,15 @@ var THREE = (function (exports) {
 
 				this.backend.createRenderPipeline( renderObject );
 
-			} else {
-
-				// assign a shared pipeline to renderObject
-
-				renderObject.pipeline = pipeline;
-
 			}
 
 			return pipeline;
+
+		}
+
+		_getComputeCacheKey( computeNode, stageCompute ) {
+
+			return 'compute' + computeNode.id + stageCompute.id;
 
 		}
 
@@ -52399,36 +52451,30 @@ var THREE = (function (exports) {
 
 		}
 
-		_releasePipeline( object ) {
+		_releasePipeline( pipeline ) {
 
-			const pipeline = this.get( object ).pipeline;
-
-			//this.bindings.delete( object );
-
-			if ( pipeline && -- pipeline.usedTimes === 0 ) {
-
-				this.caches.delete( pipeline.cacheKey );
-
-			}
-
-			return pipeline;
+			this.caches.delete( pipeline.cacheKey );
 
 		}
 
 		_releaseProgram( program ) {
 
-			if ( -- program.usedTimes === 0 ) {
+			const code = program.code;
+			const stage = program.stage;
 
-				const code = program.code;
-				const stage = program.stage;
-
-				this.programs[ stage ].delete( code );
-
-			}
+			this.programs[ stage ].delete( code );
 
 		}
 
-		_needsUpdate( renderObject ) {
+		_needsComputeUpdate( computeNode ) {
+
+			const data = this.get( computeNode );
+
+			return data.pipeline === undefined || data.version !== computeNode.version;
+
+		}
+
+		_needsRenderUpdate( renderObject ) {
 
 			const data = this.get( renderObject );
 			const material = renderObject.material;
@@ -52464,7 +52510,7 @@ var THREE = (function (exports) {
 
 			}
 
-			return needsUpdate || data.pipeline !== undefined;
+			return needsUpdate || data.pipeline === undefined;
 
 		}
 
@@ -52867,11 +52913,11 @@ var THREE = (function (exports) {
 
 	let _nodeId = 0;
 
-	class Node {
+	class Node extends EventDispatcher {
 
 		constructor( nodeType = null ) {
 
-			this.isNode = true;
+			super();
 
 			this.nodeType = nodeType;
 
@@ -52879,6 +52925,8 @@ var THREE = (function (exports) {
 			this.updateBeforeType = NodeUpdateType.NONE;
 
 			this.uuid = MathUtils.generateUUID();
+
+			this.isNode = true;
 
 			Object.defineProperty( this, 'id', { value: _nodeId ++ } );
 
@@ -52910,6 +52958,12 @@ var THREE = (function (exports) {
 				} };
 
 			}
+
+		}
+
+		dispose() {
+
+			this.dispatchEvent( { type: 'dispose' } );
 
 		}
 
@@ -62359,9 +62413,22 @@ var THREE = (function (exports) {
 			this.workgroupSize = workgroupSize;
 			this.dispatchCount = 0;
 
+			this.version = 1;
 			this.updateType = NodeUpdateType.OBJECT;
 
 			this.updateDispatchCount();
+
+		}
+
+		dispose() {
+
+			this.dispatchEvent( { type: 'dispose' } );
+
+		}
+
+		set needsUpdate( value ) {
+
+			if ( value === true ) this.version ++;
 
 		}
 
@@ -64631,21 +64698,24 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		constructor() {
 
-			this.renderStates = new ChainMap();
+			this.chainMaps = {};
 
 		}
 
-		get( scene, camera ) {
+		get( scene, camera, renderTarget = null ) {
 
 			const chainKey = [ scene, camera ];
+			const attachmentState = renderTarget === null ? 'default' : `${renderTarget.texture.format}:${renderTarget.samples}:${renderTarget.depthBuffer}:${renderTarget.stencilBuffer}`;
 
-			let renderState = this.renderStates.get( chainKey );
+			const chainMap = this.getChainMap( attachmentState );
+
+			let renderState = chainMap.get( chainKey );
 
 			if ( renderState === undefined ) {
 
 				renderState = new RenderContext();
 
-				this.renderStates.set( chainKey, renderState );
+				chainMap.set( chainKey, renderState );
 
 			}
 
@@ -64653,9 +64723,15 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		}
 
+		getChainMap( attachmentState ) {
+
+			return this.chainMaps[ attachmentState ] || ( this.chainMaps[ attachmentState ] = new ChainMap() );
+
+		}
+
 		dispose() {
 
-			this.renderStates = new ChainMap();
+			this.chainMaps = {};
 
 		}
 
@@ -65407,7 +65483,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 				this._textures = new Textures( backend, this._info );
 				this._pipelines = new Pipelines( backend, this._nodes );
 				this._bindings = new Bindings( backend, this._nodes, this._textures, this._attributes, this._pipelines, this._info );
-				this._objects = new RenderObjects( this, this._nodes, this._geometries, this._pipelines, this._info );
+				this._objects = new RenderObjects( this, this._nodes, this._geometries, this._pipelines, this._bindings, this._info );
 				this._renderLists = new RenderLists();
 				this._renderContexts = new RenderContexts();
 
@@ -65449,8 +65525,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
-			const renderContext = this._renderContexts.get( scene, camera );
 			const renderTarget = this._renderTarget;
+			const renderContext = this._renderContexts.get( scene, camera, renderTarget );
 			const activeCubeFace = this._activeCubeFace;
 
 			this._currentRenderContext = renderContext;
@@ -65597,9 +65673,15 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		}
 
-		async getArrayBuffer( attribute ) {
+		getArrayBuffer( attribute ) { // @deprecated, r155
 
-			return await this.backend.getArrayBuffer( attribute );
+			return this.getArrayBufferAsync( attribute );
+
+		}
+
+		async getArrayBufferAsync( attribute ) {
+
+			return await this.backend.getArrayBufferAsync( attribute );
 
 		}
 
@@ -65855,31 +65937,47 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			const backend = this.backend;
 			const pipelines = this._pipelines;
-			const computeGroup = Array.isArray( computeNodes ) ? computeNodes : [ computeNodes ];
+			const bindings = this._bindings;
+			const nodes = this._nodes;
+			const computeList = Array.isArray( computeNodes ) ? computeNodes : [ computeNodes ];
 
-			backend.beginCompute( computeGroup );
+			backend.beginCompute( computeNodes );
 
-			for ( const computeNode of computeGroup ) {
+			for ( const computeNode of computeList ) {
 
 				// onInit
 
 				if ( pipelines.has( computeNode ) === false ) {
 
+					const dispose = () => {
+
+						computeNode.removeEventListener( 'dispose', dispose );
+
+						pipelines.delete( computeNode );
+						bindings.delete( computeNode );
+						nodes.delete( computeNode );
+
+					};
+
+					computeNode.addEventListener( 'dispose', dispose );
+
+					//
+
 					computeNode.onInit( { renderer: this } );
 
 				}
 
-				this._nodes.updateForCompute( computeNode );
-				this._bindings.updateForCompute( computeNode );
+				nodes.updateForCompute( computeNode );
+				bindings.updateForCompute( computeNode );
 
 				const computePipeline = pipelines.getForCompute( computeNode );
-				const computeBindings = this._bindings.getForCompute( computeNode );
+				const computeBindings = bindings.getForCompute( computeNode );
 
-				backend.compute( computeGroup, computeNode, computeBindings, computePipeline );
+				backend.compute( computeNodes, computeNode, computeBindings, computePipeline );
 
 			}
 
-			backend.finishCompute( computeGroup );
+			backend.finishCompute( computeNodes );
 
 		}
 
@@ -66069,6 +66167,12 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
+			const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext );
+
+			this._nodes.updateBefore( renderObject );
+
+			//
+
 			object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
 			object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
 
@@ -66104,17 +66208,12 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
-			const renderObject = this._objects.get( object, material, scene, camera, lightsNode, passId );
-			renderObject.context = this._currentRenderContext;
-
-			//
-
-			this._nodes.updateBefore( renderObject );
+			const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext, passId );
 
 			//
 
 			this._nodes.updateForRender( renderObject );
-			this._geometries.update( renderObject );
+			this._geometries.updateForRender( renderObject );
 			this._bindings.updateForRender( renderObject );
 
 			//
@@ -68611,7 +68710,7 @@ var<${access}> ${name} : ${structName};`;
 
 		}
 
-		async getArrayBuffer( attribute ) {
+		async getArrayBufferAsync( attribute ) {
 
 			const backend = this.backend;
 			const device = backend.device;
@@ -70428,8 +70527,8 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 	//*/
 
 	// statics
-
-	/*let _staticAdapter = null;
+	/*
+	let _staticAdapter = null;
 
 	if ( navigator.gpu !== undefined ) {
 
@@ -70437,8 +70536,8 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 	}*/
 
-	let _deferFeatures = [];
 	//
+	let _deferFeatures = [];
 
 	class WebGPUBackend extends Backend {
 
@@ -70467,7 +70566,8 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 			this.context = null;
 			this.colorBuffer = null;
 
-			this.depthBuffers = new WeakMap();
+			this.defaultDepthTexture = new DepthTexture();
+			this.defaultDepthTexture.name = 'depthBuffer';
 
 			this.utils = new WebGPUUtils( this );
 			this.attributeUtils = new WebGPUAttributeUtils( this );
@@ -70479,10 +70579,9 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 		async init( renderer ) {
 
-			//console.log("INIT1", _staticAdapter);
-
 			await super.init( renderer );
 
+			//
 
 			const parameters = this.parameters;
 
@@ -70497,8 +70596,6 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 				throw new Error( 'WebGPUBackend: Unable to create WebGPU adapter.' );
 
 			}
-
-		
 
 			// feature support
 
@@ -70529,7 +70626,6 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 			this.device = device;
 			this.context = context;
 
-			
 			//resolve deferred adapter features
 			//https://github.com/mrdoob/three.js/pull/26242
 			if (_deferFeatures.length) {	
@@ -70547,9 +70643,9 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 		}
 
-		async getArrayBuffer( attribute ) {
+		async getArrayBufferAsync( attribute ) {
 
-			return await this.attributeUtils.getArrayBuffer( attribute );
+			return await this.attributeUtils.getArrayBufferAsync( attribute );
 
 		}
 
@@ -70862,18 +70958,18 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 			// vertex buffers
 
-			const attributes = renderObject.getAttributes();
+			const vertexBuffers = renderObject.getVertexBuffers();
 
-			for ( let i = 0, l = attributes.length; i < l; i ++ ) {
+			for ( let i = 0, l = vertexBuffers.length; i < l; i ++ ) {
 
-				const attribute = attributes[ i ];
+				const vertexBuffer = vertexBuffers[ i ];
 
-				if ( attributesSet[ i ] !== attribute ) {
+				if ( attributesSet[ i ] !== vertexBuffer ) {
 
-					const buffer = this.get( attribute ).buffer;
+					const buffer = this.get( vertexBuffer ).buffer;
 					passEncoderGPU.setVertexBuffer( i, buffer );
 
-					attributesSet[ i ] = attribute;
+					attributesSet[ i ] = vertexBuffer;
 
 				}
 
@@ -71004,9 +71100,9 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 		// node builder
 
-		createNodeBuilder( object, renderer ) {
+		createNodeBuilder( object, renderer, scene = null ) {
 
-			return new WGSLNodeBuilder( object, renderer );
+			return new WGSLNodeBuilder( object, renderer, scene );
 
 		}
 
@@ -71110,17 +71206,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 			return new Promise((resolve, reject) => {
 				
 				if (this.adapter) {
-					//const adapter = this.adapter || _staticAdapter;
-					//const features = Object.values( GPUFeatureName );
-
-					//if ( features.includes( name ) === false ) {
-
-					//	resolve(false);
-
-						//reject( 'THREE.WebGPURenderer: Unknown WebGPU GPU feature: ' + name );
-						//throw new Error( 'THREE.WebGPURenderer: Unknown WebGPU GPU feature: ' + name );
-
-					//}
+					
 					resolve(this.adapter.features.has( name ));
 				} else {
 					_deferFeatures.push(() => resolve(this.hasFeature(name)));
@@ -71179,60 +71265,46 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 		_getDepthBufferGPU( renderContext ) {
 
-			const { depthBuffers } = this;
 			const { width, height } = this.getDrawingBufferSize();
 
-			let depthTexture = depthBuffers.get( renderContext );
+			const depthTexture = this.defaultDepthTexture;
+			const depthTextureGPU = this.get( depthTexture ).texture;
 
-			if ( depthTexture !== undefined && depthTexture.image.width === width && depthTexture.image.height === height ) {
+			let format, type;
 
-				return this.get( depthTexture ).texture;
+			if ( renderContext.stencil ) {
 
-			}
-
-			this._destroyDepthBufferGPU( renderContext );
-
-			depthTexture = new DepthTexture();
-			depthTexture.name = 'depthBuffer';
-
-			if ( renderContext.stencil  ) {
-
-				depthTexture = new DepthTexture();
-				depthTexture.format = DepthStencilFormat;
-				depthTexture.type = UnsignedInt248Type;
+				format = DepthStencilFormat;
+				type = UnsignedInt248Type;
 
 			} else if ( renderContext.depth ) {
 
-				depthTexture = new DepthTexture();
-				depthTexture.format = DepthFormat;
-				depthTexture.type = UnsignedIntType;
+				format = DepthFormat;
+				type = UnsignedIntType;
 
 			}
 
+			if ( depthTextureGPU !== undefined ) {
+
+				if ( depthTexture.image.width === width && depthTexture.image.height === height && depthTexture.format === format && depthTexture.type === type ) {
+
+					return depthTextureGPU;
+
+				}
+
+				this.textureUtils.destroyTexture( depthTexture );
+
+			}
+
+			depthTexture.name = 'depthBuffer';
+			depthTexture.format = format;
+			depthTexture.type = type;
 			depthTexture.image.width = width;
 			depthTexture.image.height = height;
 
 			this.textureUtils.createTexture( depthTexture, { sampleCount: this.parameters.sampleCount } );
 
-			depthBuffers.set( renderContext, depthTexture );
-
 			return this.get( depthTexture ).texture;
-
-		}
-
-		_destroyDepthBufferGPU( renderContext ) {
-
-			const { depthBuffers } = this;
-
-			const depthTexture = depthBuffers.get( renderContext );
-
-			if ( depthTexture !== undefined ) {
-
-				this.textureUtils.destroyTexture( depthTexture );
-
-				depthBuffers.delete( renderContext );
-
-			}
 
 		}
 
