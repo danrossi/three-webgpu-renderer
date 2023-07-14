@@ -20485,7 +20485,7 @@ var THREE = (function (exports) {
 				shadowMapType: renderer.shadowMap.type,
 
 				toneMapping: toneMapping,
-				useLegacyLights: renderer.useLegacyLights,
+				useLegacyLights: renderer._useLegacyLights,
 
 				premultipliedAlpha: material.premultipliedAlpha,
 
@@ -27192,7 +27192,7 @@ var THREE = (function (exports) {
 				uniforms.lightMap.value = material.lightMap;
 
 				// artist-friendly light intensity scaling factor
-				const scaleFactor = ( renderer.useLegacyLights === true ) ? Math.PI : 1;
+				const scaleFactor = ( renderer._useLegacyLights === true ) ? Math.PI : 1;
 
 				uniforms.lightMapIntensity.value = material.lightMapIntensity * scaleFactor;
 
@@ -28031,7 +28031,7 @@ var THREE = (function (exports) {
 
 			// physical lights
 
-			this.useLegacyLights = true;
+			this._useLegacyLights = false;
 
 			// tone mapping
 
@@ -28838,7 +28838,7 @@ var THREE = (function (exports) {
 
 				} );
 
-				currentRenderState.setupLights( _this.useLegacyLights );
+				currentRenderState.setupLights( _this._useLegacyLights );
 
 				scene.traverse( function ( object ) {
 
@@ -28991,7 +28991,7 @@ var THREE = (function (exports) {
 
 				// render scene
 
-				currentRenderState.setupLights( _this.useLegacyLights );
+				currentRenderState.setupLights( _this._useLegacyLights );
 
 				if ( camera.isArrayCamera ) {
 
@@ -30297,14 +30297,14 @@ var THREE = (function (exports) {
 
 		get physicallyCorrectLights() { // @deprecated, r150
 
-			console.warn( 'THREE.WebGLRenderer: the property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
+			console.warn( 'THREE.WebGLRenderer: The property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
 			return ! this.useLegacyLights;
 
 		}
 
 		set physicallyCorrectLights( value ) { // @deprecated, r150
 
-			console.warn( 'THREE.WebGLRenderer: the property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
+			console.warn( 'THREE.WebGLRenderer: The property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
 			this.useLegacyLights = ! value;
 
 		}
@@ -30320,6 +30320,20 @@ var THREE = (function (exports) {
 
 			console.warn( 'THREE.WebGLRenderer: Property .outputEncoding has been removed. Use .outputColorSpace instead.' );
 			this.outputColorSpace = encoding === sRGBEncoding ? SRGBColorSpace : LinearSRGBColorSpace;
+
+		}
+
+		get useLegacyLights() { // @deprecated, r155
+
+			console.warn( 'THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: TODO.' );
+			return this._useLegacyLights;
+
+		}
+
+		set useLegacyLights( value ) { // @deprecated, r155
+
+			console.warn( 'THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: TODO.' );
+			this._useLegacyLights = value;
 
 		}
 
@@ -34908,7 +34922,7 @@ var THREE = (function (exports) {
 
 			this.parameters = {
 				radius: radius,
-				height: length,
+				length: length,
 				capSegments: capSegments,
 				radialSegments: radialSegments,
 			};
@@ -46882,7 +46896,7 @@ var THREE = (function (exports) {
 			// ensure there is a value node
 			if ( ! targetObject ) {
 
-				console.error( 'THREE.PropertyBinding: Trying to update node for track: ' + this.path + ' but it wasn\'t found.' );
+				console.warn( 'THREE.PropertyBinding: No target node found for track: ' + this.path + '.' );
 				return;
 
 			}
@@ -53995,7 +54009,7 @@ var THREE = (function (exports) {
 
 			return node.getNodeType();
 
-		} catch {
+		} catch ( _ ) {
 
 			return undefined;
 
@@ -54839,6 +54853,7 @@ var THREE = (function (exports) {
 	const sheenRoughness = nodeImmutable( PropertyNode, 'float', 'SheenRoughness' );
 	const specularColor = nodeImmutable( PropertyNode, 'color', 'SpecularColor' );
 	const shininess = nodeImmutable( PropertyNode, 'float', 'Shininess' );
+	const output = nodeImmutable( PropertyNode, 'vec4', 'Output' );
 
 	addNodeClass( PropertyNode );
 
@@ -58284,6 +58299,8 @@ var THREE = (function (exports) {
 
 			builder.addStack();
 
+			let outputNode;
+
 			if ( this.isUnlit === false ) {
 
 				if ( this.normals === true ) this.constructNormal( builder );
@@ -58293,13 +58310,17 @@ var THREE = (function (exports) {
 
 				const outgoingLightNode = this.constructLighting( builder );
 
-				builder.stack.outputNode = this.constructOutput( builder, vec4( outgoingLightNode, diffuseColor.a ) );
+				outputNode = this.constructOutput( builder, vec4( outgoingLightNode, diffuseColor.a ) );
+
+				if ( this.outputNode !== null ) outputNode = this.outputNode;
 
 			} else {
 
-				builder.stack.outputNode = this.constructOutput( builder, this.outputNode || vec4( 0, 0, 0, 1 ) );
+				outputNode = this.constructOutput( builder, this.outputNode || vec4( 0, 0, 0, 1 ) );
 
 			}
+
+			builder.stack.outputNode = outputNode;
 
 			builder.addFlow( 'fragment', builder.removeStack() );
 
@@ -58537,6 +58558,10 @@ var THREE = (function (exports) {
 			const fogNode = builder.fogNode;
 
 			if ( fogNode ) outputNode = vec4( fogNode.mixAssign( outputNode.rgb ), outputNode.a );
+
+			// OUTPUT NODE
+
+			builder.stack.assign( output, outputNode );
 
 			return outputNode;
 
@@ -62342,8 +62367,8 @@ var THREE = (function (exports) {
 
 			if ( object.isInstancedMesh === true ) {
 
-				let minValue = this.minNode.value;
-				let maxValue = this.maxNode.value;
+				const minValue = this.minNode.value;
+				const maxValue = this.maxNode.value;
 
 				const minLength = builder.getTypeLength( getValueType( minValue ) );
 				const maxLength = builder.getTypeLength( getValueType( maxValue ) );
@@ -64951,7 +64976,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 		update( scene, renderList, renderContext ) {
 
 			const renderer = this.renderer;
-			const background = ( scene.isScene === true ) ? this.nodes.getBackgroundNode( scene ) || scene.background : null;
+			const background = this.nodes.getBackgroundNode( scene ) || scene.background;
 
 			let forceClear = false;
 
@@ -65358,6 +65383,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 	}
 
+	const _scene = new Scene();
 	const _drawingBufferSize = new Vector2();
 	const _screen = new Vector4();
 	const _frustum = new Frustum();
@@ -65525,6 +65551,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
+			const sceneRef = ( scene.isScene === true ) ? scene : _scene;
+
 			const renderTarget = this._renderTarget;
 			const renderContext = this._renderContexts.get( scene, camera, renderTarget );
 			const activeCubeFace = this._activeCubeFace;
@@ -65591,6 +65619,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
+			sceneRef.onBeforeRender( this, scene, camera, renderTarget );
+
+			//
+
 			_projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
 			_frustum.setFromProjectionMatrix( _projScreenMatrix, coordinateSystem );
 
@@ -65629,11 +65661,11 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
-			this._nodes.updateScene( scene );
+			this._nodes.updateScene( sceneRef );
 
 			//
 
-			this._background.update( scene, renderList, renderContext );
+			this._background.update( sceneRef, renderList, renderContext );
 
 			//
 
@@ -65645,8 +65677,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			const transparentObjects = renderList.transparent;
 			const lightsNode = renderList.lightsNode;
 
-			if ( opaqueObjects.length > 0 ) this._renderObjects( opaqueObjects, camera, scene, lightsNode );
-			if ( transparentObjects.length > 0 ) this._renderObjects( transparentObjects, camera, scene, lightsNode );
+			if ( opaqueObjects.length > 0 ) this._renderObjects( opaqueObjects, camera, sceneRef, lightsNode );
+			if ( transparentObjects.length > 0 ) this._renderObjects( transparentObjects, camera, sceneRef, lightsNode );
 
 			// finish render pass
 
@@ -65658,6 +65690,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			this._currentRenderContext = previousRenderState;
 
 			this._lastRenderContext = renderContext;
+
+			//
+
+			sceneRef.onAfterRender( this, scene, camera, renderTarget );
 
 		}
 
@@ -66165,19 +66201,6 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			object.onBeforeRender( this, scene, camera, geometry, material, group );
 
-			//
-
-			const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext );
-
-			this._nodes.updateBefore( renderObject );
-
-			//
-
-			object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-			object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
-
-			//
-
 			material.onBeforeRender( this, scene, camera, geometry, material, group );
 
 			//
@@ -66185,16 +66208,16 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			if ( material.transparent === true && material.side === DoubleSide && material.forceSinglePass === false ) {
 
 				material.side = BackSide;
-				this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode, 'backSide' ); // create backSide pass id
+				this._renderObjectDirect( object, material, scene, camera, lightsNode, 'backSide' ); // create backSide pass id
 
 				material.side = FrontSide;
-				this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode ); // use default pass id
+				this._renderObjectDirect( object, material, scene, camera, lightsNode ); // use default pass id
 
 				material.side = DoubleSide;
 
 			} else {
 
-				this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode );
+				this._renderObjectDirect( object, material, scene, camera, lightsNode );
 
 			}
 
@@ -66204,11 +66227,18 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		}
 
-		_renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode, passId ) {
+		_renderObjectDirect( object, material, scene, camera, lightsNode, passId ) {
+
+			const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext, passId );
 
 			//
 
-			const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext, passId );
+			this._nodes.updateBefore( renderObject );
+
+			//
+
+			object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
+			object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
 
 			//
 
@@ -68602,6 +68632,7 @@ var<${access}> ${name} : ${structName};`;
 				buffer.unmap();
 
 				bufferData.buffer = buffer;
+
 			}
 
 		}

@@ -20477,7 +20477,7 @@ function WebGLPrograms( renderer, cubemaps, cubeuvmaps, extensions, capabilities
 			shadowMapType: renderer.shadowMap.type,
 
 			toneMapping: toneMapping,
-			useLegacyLights: renderer.useLegacyLights,
+			useLegacyLights: renderer._useLegacyLights,
 
 			premultipliedAlpha: material.premultipliedAlpha,
 
@@ -27184,7 +27184,7 @@ function WebGLMaterials( renderer, properties ) {
 			uniforms.lightMap.value = material.lightMap;
 
 			// artist-friendly light intensity scaling factor
-			const scaleFactor = ( renderer.useLegacyLights === true ) ? Math.PI : 1;
+			const scaleFactor = ( renderer._useLegacyLights === true ) ? Math.PI : 1;
 
 			uniforms.lightMapIntensity.value = material.lightMapIntensity * scaleFactor;
 
@@ -28023,7 +28023,7 @@ class WebGLRenderer {
 
 		// physical lights
 
-		this.useLegacyLights = true;
+		this._useLegacyLights = false;
 
 		// tone mapping
 
@@ -28830,7 +28830,7 @@ class WebGLRenderer {
 
 			} );
 
-			currentRenderState.setupLights( _this.useLegacyLights );
+			currentRenderState.setupLights( _this._useLegacyLights );
 
 			scene.traverse( function ( object ) {
 
@@ -28983,7 +28983,7 @@ class WebGLRenderer {
 
 			// render scene
 
-			currentRenderState.setupLights( _this.useLegacyLights );
+			currentRenderState.setupLights( _this._useLegacyLights );
 
 			if ( camera.isArrayCamera ) {
 
@@ -30289,14 +30289,14 @@ class WebGLRenderer {
 
 	get physicallyCorrectLights() { // @deprecated, r150
 
-		console.warn( 'THREE.WebGLRenderer: the property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
+		console.warn( 'THREE.WebGLRenderer: The property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
 		return ! this.useLegacyLights;
 
 	}
 
 	set physicallyCorrectLights( value ) { // @deprecated, r150
 
-		console.warn( 'THREE.WebGLRenderer: the property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
+		console.warn( 'THREE.WebGLRenderer: The property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.' );
 		this.useLegacyLights = ! value;
 
 	}
@@ -30312,6 +30312,20 @@ class WebGLRenderer {
 
 		console.warn( 'THREE.WebGLRenderer: Property .outputEncoding has been removed. Use .outputColorSpace instead.' );
 		this.outputColorSpace = encoding === sRGBEncoding ? SRGBColorSpace : LinearSRGBColorSpace;
+
+	}
+
+	get useLegacyLights() { // @deprecated, r155
+
+		console.warn( 'THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: TODO.' );
+		return this._useLegacyLights;
+
+	}
+
+	set useLegacyLights( value ) { // @deprecated, r155
+
+		console.warn( 'THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: TODO.' );
+		this._useLegacyLights = value;
 
 	}
 
@@ -34900,7 +34914,7 @@ class CapsuleGeometry extends LatheGeometry {
 
 		this.parameters = {
 			radius: radius,
-			height: length,
+			length: length,
 			capSegments: capSegments,
 			radialSegments: radialSegments,
 		};
@@ -46874,7 +46888,7 @@ class PropertyBinding {
 		// ensure there is a value node
 		if ( ! targetObject ) {
 
-			console.error( 'THREE.PropertyBinding: Trying to update node for track: ' + this.path + ' but it wasn\'t found.' );
+			console.warn( 'THREE.PropertyBinding: No target node found for track: ' + this.path + '.' );
 			return;
 
 		}
@@ -53987,7 +54001,7 @@ const safeGetNodeType = ( node ) => {
 
 		return node.getNodeType();
 
-	} catch {
+	} catch ( _ ) {
 
 		return undefined;
 
@@ -54831,6 +54845,7 @@ const sheen = nodeImmutable( PropertyNode, 'vec3', 'Sheen' );
 const sheenRoughness = nodeImmutable( PropertyNode, 'float', 'SheenRoughness' );
 const specularColor = nodeImmutable( PropertyNode, 'color', 'SpecularColor' );
 const shininess = nodeImmutable( PropertyNode, 'float', 'Shininess' );
+const output = nodeImmutable( PropertyNode, 'vec4', 'Output' );
 
 addNodeClass( PropertyNode );
 
@@ -58276,6 +58291,8 @@ class NodeMaterial extends ShaderMaterial {
 
 		builder.addStack();
 
+		let outputNode;
+
 		if ( this.isUnlit === false ) {
 
 			if ( this.normals === true ) this.constructNormal( builder );
@@ -58285,13 +58302,17 @@ class NodeMaterial extends ShaderMaterial {
 
 			const outgoingLightNode = this.constructLighting( builder );
 
-			builder.stack.outputNode = this.constructOutput( builder, vec4( outgoingLightNode, diffuseColor.a ) );
+			outputNode = this.constructOutput( builder, vec4( outgoingLightNode, diffuseColor.a ) );
+
+			if ( this.outputNode !== null ) outputNode = this.outputNode;
 
 		} else {
 
-			builder.stack.outputNode = this.constructOutput( builder, this.outputNode || vec4( 0, 0, 0, 1 ) );
+			outputNode = this.constructOutput( builder, this.outputNode || vec4( 0, 0, 0, 1 ) );
 
 		}
+
+		builder.stack.outputNode = outputNode;
 
 		builder.addFlow( 'fragment', builder.removeStack() );
 
@@ -58529,6 +58550,10 @@ class NodeMaterial extends ShaderMaterial {
 		const fogNode = builder.fogNode;
 
 		if ( fogNode ) outputNode = vec4( fogNode.mixAssign( outputNode.rgb ), outputNode.a );
+
+		// OUTPUT NODE
+
+		builder.stack.assign( output, outputNode );
 
 		return outputNode;
 
@@ -62334,8 +62359,8 @@ class RangeNode extends Node {
 
 		if ( object.isInstancedMesh === true ) {
 
-			let minValue = this.minNode.value;
-			let maxValue = this.maxNode.value;
+			const minValue = this.minNode.value;
+			const maxValue = this.maxNode.value;
 
 			const minLength = builder.getTypeLength( getValueType( minValue ) );
 			const maxLength = builder.getTypeLength( getValueType( maxValue ) );
@@ -64943,7 +64968,7 @@ class Background extends DataMap {
 	update( scene, renderList, renderContext ) {
 
 		const renderer = this.renderer;
-		const background = ( scene.isScene === true ) ? this.nodes.getBackgroundNode( scene ) || scene.background : null;
+		const background = this.nodes.getBackgroundNode( scene ) || scene.background;
 
 		let forceClear = false;
 
@@ -65350,6 +65375,7 @@ class Nodes extends DataMap {
 
 }
 
+const _scene = new Scene();
 const _drawingBufferSize = new Vector2();
 const _screen = new Vector4();
 const _frustum = new Frustum();
@@ -65517,6 +65543,8 @@ class Renderer {
 
 		//
 
+		const sceneRef = ( scene.isScene === true ) ? scene : _scene;
+
 		const renderTarget = this._renderTarget;
 		const renderContext = this._renderContexts.get( scene, camera, renderTarget );
 		const activeCubeFace = this._activeCubeFace;
@@ -65583,6 +65611,10 @@ class Renderer {
 
 		//
 
+		sceneRef.onBeforeRender( this, scene, camera, renderTarget );
+
+		//
+
 		_projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
 		_frustum.setFromProjectionMatrix( _projScreenMatrix, coordinateSystem );
 
@@ -65621,11 +65653,11 @@ class Renderer {
 
 		//
 
-		this._nodes.updateScene( scene );
+		this._nodes.updateScene( sceneRef );
 
 		//
 
-		this._background.update( scene, renderList, renderContext );
+		this._background.update( sceneRef, renderList, renderContext );
 
 		//
 
@@ -65637,8 +65669,8 @@ class Renderer {
 		const transparentObjects = renderList.transparent;
 		const lightsNode = renderList.lightsNode;
 
-		if ( opaqueObjects.length > 0 ) this._renderObjects( opaqueObjects, camera, scene, lightsNode );
-		if ( transparentObjects.length > 0 ) this._renderObjects( transparentObjects, camera, scene, lightsNode );
+		if ( opaqueObjects.length > 0 ) this._renderObjects( opaqueObjects, camera, sceneRef, lightsNode );
+		if ( transparentObjects.length > 0 ) this._renderObjects( transparentObjects, camera, sceneRef, lightsNode );
 
 		// finish render pass
 
@@ -65650,6 +65682,10 @@ class Renderer {
 		this._currentRenderContext = previousRenderState;
 
 		this._lastRenderContext = renderContext;
+
+		//
+
+		sceneRef.onAfterRender( this, scene, camera, renderTarget );
 
 	}
 
@@ -66157,19 +66193,6 @@ class Renderer {
 
 		object.onBeforeRender( this, scene, camera, geometry, material, group );
 
-		//
-
-		const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext );
-
-		this._nodes.updateBefore( renderObject );
-
-		//
-
-		object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-		object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
-
-		//
-
 		material.onBeforeRender( this, scene, camera, geometry, material, group );
 
 		//
@@ -66177,16 +66200,16 @@ class Renderer {
 		if ( material.transparent === true && material.side === DoubleSide && material.forceSinglePass === false ) {
 
 			material.side = BackSide;
-			this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode, 'backSide' ); // create backSide pass id
+			this._renderObjectDirect( object, material, scene, camera, lightsNode, 'backSide' ); // create backSide pass id
 
 			material.side = FrontSide;
-			this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode ); // use default pass id
+			this._renderObjectDirect( object, material, scene, camera, lightsNode ); // use default pass id
 
 			material.side = DoubleSide;
 
 		} else {
 
-			this._renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode );
+			this._renderObjectDirect( object, material, scene, camera, lightsNode );
 
 		}
 
@@ -66196,11 +66219,18 @@ class Renderer {
 
 	}
 
-	_renderObjectDirect( object, scene, camera, geometry, material, group, lightsNode, passId ) {
+	_renderObjectDirect( object, material, scene, camera, lightsNode, passId ) {
+
+		const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext, passId );
 
 		//
 
-		const renderObject = this._objects.get( object, material, scene, camera, lightsNode, this._currentRenderContext, passId );
+		this._nodes.updateBefore( renderObject );
+
+		//
+
+		object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
+		object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
 
 		//
 
@@ -68594,6 +68624,7 @@ class WebGPUAttributeUtils {
 			buffer.unmap();
 
 			bufferData.buffer = buffer;
+
 		}
 
 	}
