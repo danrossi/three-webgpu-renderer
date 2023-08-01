@@ -3,7 +3,7 @@
  * Copyright 2010-2023 Three.js Authors
  * SPDX-License-Identifier: MIT
  */
-const REVISION = '155dev';
+const REVISION = '156dev';
 
 const MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 const TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -2883,13 +2883,13 @@ class Vector4 {
  * Texture parameters for an auto-generated target texture
  * depthBuffer/stencilBuffer: Booleans to indicate if we should generate these buffers
 */
-class WebGLRenderTarget extends EventDispatcher {
+class RenderTarget extends EventDispatcher {
 
 	constructor( width = 1, height = 1, options = {} ) {
 
 		super();
 
-		this.isWebGLRenderTarget = true;
+		this.isRenderTarget = true;
 
 		this.width = width;
 		this.height = height;
@@ -2987,6 +2987,18 @@ class WebGLRenderTarget extends EventDispatcher {
 	dispose() {
 
 		this.dispatchEvent( { type: 'dispose' } );
+
+	}
+
+}
+
+class WebGLRenderTarget extends RenderTarget {
+
+	constructor( width = 1, height = 1, options = {} ) {
+
+		super( width, height, options );
+
+		this.isWebGLRenderTarget = true;
 
 	}
 
@@ -9915,6 +9927,26 @@ class BufferAttribute {
 
 	}
 
+	getComponent( index, component ) {
+
+		let value = this.array[ index * this.itemSize + component ];
+
+		if ( this.normalized ) value = denormalize( value, this.array );
+
+		return value;
+
+	}
+
+	setComponent( index, component, value ) {
+
+		if ( this.normalized ) value = normalize$1( value, this.array );
+
+		this.array[ index * this.itemSize + component ] = value;
+
+		return this;
+
+	}
+
 	getX( index ) {
 
 		let x = this.array[ index * this.itemSize ];
@@ -13649,7 +13681,7 @@ var beginnormal_vertex = "vec3 objectNormal = vec3( normal );\n#ifdef USE_TANGEN
 
 var bsdfs = "float G_BlinnPhong_Implicit( ) {\n\treturn 0.25;\n}\nfloat D_BlinnPhong( const in float shininess, const in float dotNH ) {\n\treturn RECIPROCAL_PI * ( shininess * 0.5 + 1.0 ) * pow( dotNH, shininess );\n}\nvec3 BRDF_BlinnPhong( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in vec3 specularColor, const in float shininess ) {\n\tvec3 halfDir = normalize( lightDir + viewDir );\n\tfloat dotNH = saturate( dot( normal, halfDir ) );\n\tfloat dotVH = saturate( dot( viewDir, halfDir ) );\n\tvec3 F = F_Schlick( specularColor, 1.0, dotVH );\n\tfloat G = G_BlinnPhong_Implicit( );\n\tfloat D = D_BlinnPhong( shininess, dotNH );\n\treturn F * ( G * D );\n} // validated";
 
-var iridescence_fragment = "#ifdef USE_IRIDESCENCE\n\tconst mat3 XYZ_TO_REC709 = mat3(\n\t\t 3.2404542, -0.9692660,  0.0556434,\n\t\t-1.5371385,  1.8760108, -0.2040259,\n\t\t-0.4985314,  0.0415560,  1.0572252\n\t);\n\tvec3 Fresnel0ToIor( vec3 fresnel0 ) {\n\t\tvec3 sqrtF0 = sqrt( fresnel0 );\n\t\treturn ( vec3( 1.0 ) + sqrtF0 ) / ( vec3( 1.0 ) - sqrtF0 );\n\t}\n\tvec3 IorToFresnel0( vec3 transmittedIor, float incidentIor ) {\n\t\treturn pow2( ( transmittedIor - vec3( incidentIor ) ) / ( transmittedIor + vec3( incidentIor ) ) );\n\t}\n\tfloat IorToFresnel0( float transmittedIor, float incidentIor ) {\n\t\treturn pow2( ( transmittedIor - incidentIor ) / ( transmittedIor + incidentIor ));\n\t}\n\tvec3 evalSensitivity( float OPD, vec3 shift ) {\n\t\tfloat phase = 2.0 * PI * OPD * 1.0e-9;\n\t\tvec3 val = vec3( 5.4856e-13, 4.4201e-13, 5.2481e-13 );\n\t\tvec3 pos = vec3( 1.6810e+06, 1.7953e+06, 2.2084e+06 );\n\t\tvec3 var = vec3( 4.3278e+09, 9.3046e+09, 6.6121e+09 );\n\t\tvec3 xyz = val * sqrt( 2.0 * PI * var ) * cos( pos * phase + shift ) * exp( - pow2( phase ) * var );\n\t\txyz.x += 9.7470e-14 * sqrt( 2.0 * PI * 4.5282e+09 ) * cos( 2.2399e+06 * phase + shift[ 0 ] ) * exp( - 4.5282e+09 * pow2( phase ) );\n\t\txyz /= 1.0685e-7;\n\t\tvec3 rgb = XYZ_TO_REC709 * xyz;\n\t\treturn rgb;\n\t}\n\tvec3 evalIridescence( float outsideIOR, float eta2, float cosTheta1, float thinFilmThickness, vec3 baseF0 ) {\n\t\tvec3 I;\n\t\tfloat iridescenceIOR = mix( outsideIOR, eta2, smoothstep( 0.0, 0.03, thinFilmThickness ) );\n\t\tfloat sinTheta2Sq = pow2( outsideIOR / iridescenceIOR ) * ( 1.0 - pow2( cosTheta1 ) );\n\t\tfloat cosTheta2Sq = 1.0 - sinTheta2Sq;\n\t\tif ( cosTheta2Sq < 0.0 ) {\n\t\t\t return vec3( 1.0 );\n\t\t}\n\t\tfloat cosTheta2 = sqrt( cosTheta2Sq );\n\t\tfloat R0 = IorToFresnel0( iridescenceIOR, outsideIOR );\n\t\tfloat R12 = F_Schlick( R0, 1.0, cosTheta1 );\n\t\tfloat R21 = R12;\n\t\tfloat T121 = 1.0 - R12;\n\t\tfloat phi12 = 0.0;\n\t\tif ( iridescenceIOR < outsideIOR ) phi12 = PI;\n\t\tfloat phi21 = PI - phi12;\n\t\tvec3 baseIOR = Fresnel0ToIor( clamp( baseF0, 0.0, 0.9999 ) );\t\tvec3 R1 = IorToFresnel0( baseIOR, iridescenceIOR );\n\t\tvec3 R23 = F_Schlick( R1, 1.0, cosTheta2 );\n\t\tvec3 phi23 = vec3( 0.0 );\n\t\tif ( baseIOR[ 0 ] < iridescenceIOR ) phi23[ 0 ] = PI;\n\t\tif ( baseIOR[ 1 ] < iridescenceIOR ) phi23[ 1 ] = PI;\n\t\tif ( baseIOR[ 2 ] < iridescenceIOR ) phi23[ 2 ] = PI;\n\t\tfloat OPD = 2.0 * iridescenceIOR * thinFilmThickness * cosTheta2;\n\t\tvec3 phi = vec3( phi21 ) + phi23;\n\t\tvec3 R123 = clamp( R12 * R23, 1e-5, 0.9999 );\n\t\tvec3 r123 = sqrt( R123 );\n\t\tvec3 Rs = pow2( T121 ) * R23 / ( vec3( 1.0 ) - R123 );\n\t\tvec3 C0 = R12 + Rs;\n\t\tI = C0;\n\t\tvec3 Cm = Rs - T121;\n\t\tfor ( int m = 1; m <= 2; ++ m ) {\n\t\t\tCm *= r123;\n\t\t\tvec3 Sm = 2.0 * evalSensitivity( float( m ) * OPD, float( m ) * phi );\n\t\t\tI += Cm * Sm;\n\t\t}\n\t\treturn max( I, vec3( 0.0 ) );\n\t}\n#endif";
+var iridescence_fragment = "#ifdef USE_IRIDESCENCE\n\tconst mat3 XYZ_TO_REC709 = mat3(\n\t\t 3.2404542, -0.9692660,  0.0556434,\n\t\t-1.5371385,  1.8760108, -0.2040259,\n\t\t-0.4985314,  0.0415560,  1.0572252\n\t);\n\tvec3 Fresnel0ToIor( vec3 fresnel0 ) {\n\t\tvec3 sqrtF0 = sqrt( fresnel0 );\n\t\treturn ( vec3( 1.0 ) + sqrtF0 ) / ( vec3( 1.0 ) - sqrtF0 );\n\t}\n\tvec3 IorToFresnel0( vec3 transmittedIor, float incidentIor ) {\n\t\treturn pow2( ( transmittedIor - vec3( incidentIor ) ) / ( transmittedIor + vec3( incidentIor ) ) );\n\t}\n\tfloat IorToFresnel0( float transmittedIor, float incidentIor ) {\n\t\treturn pow2( ( transmittedIor - incidentIor ) / ( transmittedIor + incidentIor ));\n\t}\n\tvec3 evalSensitivity( float OPD, vec3 shift ) {\n\t\tfloat phase = 2.0 * PI * OPD * 1.0e-9;\n\t\tvec3 val = vec3( 5.4856e-13, 4.4201e-13, 5.2481e-13 );\n\t\tvec3 pos = vec3( 1.6810e+06, 1.7953e+06, 2.2084e+06 );\n\t\tvec3 var = vec3( 4.3278e+09, 9.3046e+09, 6.6121e+09 );\n\t\tvec3 xyz = val * sqrt( 2.0 * PI * var ) * cos( pos * phase + shift ) * exp( - pow2( phase ) * var );\n\t\txyz.x += 9.7470e-14 * sqrt( 2.0 * PI * 4.5282e+09 ) * cos( 2.2399e+06 * phase + shift[ 0 ] ) * exp( - 4.5282e+09 * pow2( phase ) );\n\t\txyz /= 1.0685e-7;\n\t\tvec3 rgb = XYZ_TO_REC709 * xyz;\n\t\treturn rgb;\n\t}\n\tvec3 evalIridescence( float outsideIOR, float eta2, float cosTheta1, float thinFilmThickness, vec3 baseF0 ) {\n\t\tvec3 I;\n\t\tfloat iridescenceIOR = mix( outsideIOR, eta2, smoothstep( 0.0, 0.03, thinFilmThickness ) );\n\t\tfloat sinTheta2Sq = pow2( outsideIOR / iridescenceIOR ) * ( 1.0 - pow2( cosTheta1 ) );\n\t\tfloat cosTheta2Sq = 1.0 - sinTheta2Sq;\n\t\tif ( cosTheta2Sq < 0.0 ) {\n\t\t\treturn vec3( 1.0 );\n\t\t}\n\t\tfloat cosTheta2 = sqrt( cosTheta2Sq );\n\t\tfloat R0 = IorToFresnel0( iridescenceIOR, outsideIOR );\n\t\tfloat R12 = F_Schlick( R0, 1.0, cosTheta1 );\n\t\tfloat T121 = 1.0 - R12;\n\t\tfloat phi12 = 0.0;\n\t\tif ( iridescenceIOR < outsideIOR ) phi12 = PI;\n\t\tfloat phi21 = PI - phi12;\n\t\tvec3 baseIOR = Fresnel0ToIor( clamp( baseF0, 0.0, 0.9999 ) );\t\tvec3 R1 = IorToFresnel0( baseIOR, iridescenceIOR );\n\t\tvec3 R23 = F_Schlick( R1, 1.0, cosTheta2 );\n\t\tvec3 phi23 = vec3( 0.0 );\n\t\tif ( baseIOR[ 0 ] < iridescenceIOR ) phi23[ 0 ] = PI;\n\t\tif ( baseIOR[ 1 ] < iridescenceIOR ) phi23[ 1 ] = PI;\n\t\tif ( baseIOR[ 2 ] < iridescenceIOR ) phi23[ 2 ] = PI;\n\t\tfloat OPD = 2.0 * iridescenceIOR * thinFilmThickness * cosTheta2;\n\t\tvec3 phi = vec3( phi21 ) + phi23;\n\t\tvec3 R123 = clamp( R12 * R23, 1e-5, 0.9999 );\n\t\tvec3 r123 = sqrt( R123 );\n\t\tvec3 Rs = pow2( T121 ) * R23 / ( vec3( 1.0 ) - R123 );\n\t\tvec3 C0 = R12 + Rs;\n\t\tI = C0;\n\t\tvec3 Cm = Rs - T121;\n\t\tfor ( int m = 1; m <= 2; ++ m ) {\n\t\t\tCm *= r123;\n\t\t\tvec3 Sm = 2.0 * evalSensitivity( float( m ) * OPD, float( m ) * phi );\n\t\t\tI += Cm * Sm;\n\t\t}\n\t\treturn max( I, vec3( 0.0 ) );\n\t}\n#endif";
 
 var bumpmap_pars_fragment = "#ifdef USE_BUMPMAP\n\tuniform sampler2D bumpMap;\n\tuniform float bumpScale;\n\tvec2 dHdxy_fwd() {\n\t\tvec2 dSTdx = dFdx( vBumpMapUv );\n\t\tvec2 dSTdy = dFdy( vBumpMapUv );\n\t\tfloat Hll = bumpScale * texture2D( bumpMap, vBumpMapUv ).x;\n\t\tfloat dBx = bumpScale * texture2D( bumpMap, vBumpMapUv + dSTdx ).x - Hll;\n\t\tfloat dBy = bumpScale * texture2D( bumpMap, vBumpMapUv + dSTdy ).x - Hll;\n\t\treturn vec2( dBx, dBy );\n\t}\n\tvec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {\n\t\tvec3 vSigmaX = dFdx( surf_pos.xyz );\n\t\tvec3 vSigmaY = dFdy( surf_pos.xyz );\n\t\tvec3 vN = surf_norm;\n\t\tvec3 R1 = cross( vSigmaY, vN );\n\t\tvec3 R2 = cross( vN, vSigmaX );\n\t\tfloat fDet = dot( vSigmaX, R1 ) * faceDirection;\n\t\tvec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );\n\t\treturn normalize( abs( fDet ) * surf_norm - vGrad );\n\t}\n#endif";
 
@@ -14659,24 +14691,15 @@ function WebGLBackground( renderer, cubemaps, cubeuvmaps, state, objects, alpha,
 
 		}
 
-		const xr = renderer.xr;
-		const environmentBlendMode = xr.getEnvironmentBlendMode();
+		const environmentBlendMode = renderer.xr.getEnvironmentBlendMode();
 
-		switch ( environmentBlendMode ) {
+		if ( environmentBlendMode === 'additive' ) {
 
-			case 'opaque':
-				forceClear = true;
-				break;
+			state.buffers.color.setClear( 0, 0, 0, 1, premultipliedAlpha );
 
-			case 'additive':
-				state.buffers.color.setClear( 0, 0, 0, 1, premultipliedAlpha );
-				forceClear = true;
-				break;
+		} else if ( environmentBlendMode === 'alpha-blend' ) {
 
-			case 'alpha-blend':
-				state.buffers.color.setClear( 0, 0, 0, 0, premultipliedAlpha );
-				forceClear = true;
-				break;
+			state.buffers.color.setClear( 0, 0, 0, 0, premultipliedAlpha );
 
 		}
 
@@ -17277,7 +17300,7 @@ function WebGLGeometries( gl, attributes, info, bindingStates ) {
 
 			}
 
-		} else {
+		} else if ( geometryPosition !== undefined ) {
 
 			const array = geometryPosition.array;
 			version = geometryPosition.version;
@@ -17291,6 +17314,10 @@ function WebGLGeometries( gl, attributes, info, bindingStates ) {
 				indices.push( a, b, b, c, c, a );
 
 			}
+
+		} else {
+
+			return;
 
 		}
 
@@ -28746,6 +28773,9 @@ class WebGLRenderer {
 			if ( material.wireframe === true ) {
 
 				index = geometries.getWireframeAttribute( geometry );
+
+				if ( index === undefined ) return;
+
 				rangeFactor = 2;
 
 			}
@@ -42470,9 +42500,26 @@ class DataTextureLoader extends Loader {
 		loader.setWithCredentials( scope.withCredentials );
 		loader.load( url, function ( buffer ) {
 
-			const texData = scope.parse( buffer );
+			let texData;
 
-			if ( ! texData ) return;
+			try {
+
+				texData = scope.parse( buffer );
+
+			} catch ( error ) {
+
+				if ( onError !== undefined ) {
+
+					onError( error );
+
+				} else {
+
+					console.error( error );
+					return;
+
+				}
+
+			}
 
 			if ( texData.image !== undefined ) {
 
@@ -52610,7 +52657,7 @@ class Pipelines extends DataMap {
 			data.stencilWrite !== material.stencilWrite || data.stencilFunc !== material.stencilFunc ||
 			data.stencilFail !== material.stencilFail || data.stencilZFail !== material.stencilZFail || data.stencilZPass !== material.stencilZPass ||
 			data.stencilFuncMask !== material.stencilFuncMask || data.stencilWriteMask !== material.stencilWriteMask ||
-			data.side !== material.side
+			data.side !== material.side || data.alphaToCoverage !== material.alphaToCoverage
 		) {
 
 			data.material = material; data.materialVersion = material.version;
@@ -52622,7 +52669,7 @@ class Pipelines extends DataMap {
 			data.stencilWrite = material.stencilWrite; data.stencilFunc = material.stencilFunc;
 			data.stencilFail = material.stencilFail; data.stencilZFail = material.stencilZFail; data.stencilZPass = material.stencilZPass;
 			data.stencilFuncMask = material.stencilFuncMask; data.stencilWriteMask = material.stencilWriteMask;
-			data.side = material.side;
+			data.side = material.side; data.alphaToCoverage = material.alphaToCoverage;
 
 			needsUpdate = true;
 
@@ -54728,19 +54775,17 @@ addNodeClass( IndexNode );
 
 class LightingModel {
 
-	constructor( init = null, direct = null, indirectDiffuse = null, indirectSpecular = null, ambientOcclusion = null ) {
+	init( /*input, stack, builder*/ ) { }
 
-		this.init = init;
-		this.direct = direct;
-		this.indirectDiffuse = indirectDiffuse;
-		this.indirectSpecular = indirectSpecular;
-		this.ambientOcclusion = ambientOcclusion;
+	direct( /*input, stack, builder*/ ) { }
 
-	}
+	indirectDiffuse( /*input, stack, builder*/ ) { }
+
+	indirectSpecular( /*input, stack, builder*/ ) { }
+
+	ambientOcclusion( /*input, stack, builder*/ ) { }
 
 }
-
-const lightingModel = ( ...params ) => new LightingModel( ...params );
 
 class NodeAttribute {
 
@@ -54951,6 +54996,9 @@ const clearcoat = nodeImmutable( PropertyNode, 'float', 'Clearcoat' );
 const clearcoatRoughness = nodeImmutable( PropertyNode, 'float', 'ClearcoatRoughness' );
 const sheen = nodeImmutable( PropertyNode, 'vec3', 'Sheen' );
 const sheenRoughness = nodeImmutable( PropertyNode, 'float', 'SheenRoughness' );
+const iridescence = nodeImmutable( PropertyNode, 'float', 'Iridescence' );
+const iridescenceIOR = nodeImmutable( PropertyNode, 'float', 'IridescenceIOR' );
+const iridescenceThickness = nodeImmutable( PropertyNode, 'float', 'IridescenceThickness' );
 const specularColor = nodeImmutable( PropertyNode, 'color', 'SpecularColor' );
 const shininess = nodeImmutable( PropertyNode, 'float', 'Shininess' );
 const output = nodeImmutable( PropertyNode, 'vec4', 'Output' );
@@ -56145,31 +56193,6 @@ class MaterialNode extends Node {
 
 	}
 
-	getNodeType( builder ) {
-
-		const scope = this.scope;
-		const material = builder.context.material;
-
-		if ( scope === MaterialNode.COLOR ) {
-
-			return material.map !== null ? 'vec4' : 'vec3';
-
-		} else if ( scope === MaterialNode.OPACITY || scope === MaterialNode.ROTATION ) {
-
-			return 'float';
-
-		} else if ( scope === MaterialNode.EMISSIVE || scope === MaterialNode.SHEEN ) {
-
-			return 'vec3';
-
-		} else if ( scope === MaterialNode.ROUGHNESS || scope === MaterialNode.METALNESS || scope === MaterialNode.SPECULAR || scope === MaterialNode.SHININESS || scope === MaterialNode.CLEARCOAT_ROUGHNESS || scope === MaterialNode.SHEEN_ROUGHNESS ) {
-
-			return 'float';
-
-		}
-
-	}
-
 	getFloat( property ) {
 
 		//@TODO: Check if it can be cached by property name.
@@ -56203,9 +56226,13 @@ class MaterialNode extends Node {
 
 		let node = null;
 
-		if ( scope === MaterialNode.ALPHA_TEST ) {
+		if ( scope === MaterialNode.ALPHA_TEST || scope === MaterialNode.SHININESS || scope === MaterialNode.REFLECTIVITY || scope === MaterialNode.ROTATION || scope === MaterialNode.IRIDESCENCE || scope === MaterialNode.IRIDESCENCE_IOR ) {
 
-			node = this.getFloat( 'alphaTest' );
+			node = this.getFloat( scope );
+
+		} else if ( scope === MaterialNode.SPECULAR_COLOR ) {
+
+			node = this.getColor( 'specular' );
 
 		} else if ( scope === MaterialNode.COLOR ) {
 
@@ -56235,14 +56262,6 @@ class MaterialNode extends Node {
 
 			}
 
-		} else if ( scope === MaterialNode.SHININESS ) {
-
-			node = this.getFloat( 'shininess' );
-
-		} else if ( scope === MaterialNode.SPECULAR_COLOR ) {
-
-			node = this.getColor( 'specular' );
-
 		} else if ( scope === MaterialNode.SPECULAR_STRENGTH ) {
 
 			if ( material.specularMap && material.specularMap.isTexture === true ) {
@@ -56254,10 +56273,6 @@ class MaterialNode extends Node {
 				node = float( 1 );
 
 			}
-
-		} else if ( scope === MaterialNode.REFLECTIVITY ) {
-
-			node = this.getFloat( 'reflectivity' );
 
 		} else if ( scope === MaterialNode.ROUGHNESS ) {
 
@@ -56359,9 +56374,21 @@ class MaterialNode extends Node {
 
 			node = node.clamp( 0.07, 1.0 );
 
-		} else if ( scope === MaterialNode.ROTATION ) {
+		} else if ( scope === MaterialNode.IRIDESCENCE_THICKNESS ) {
 
-			node = this.getFloat( 'rotation' );
+			const iridescenceThicknessMaximum = reference( 1, 'float', material.iridescenceThicknessRange );
+
+			if ( material.iridescenceThicknessMap ) {
+
+				const iridescenceThicknessMinimum = reference( 0, 'float', material.iridescenceThicknessRange );
+
+				node = iridescenceThicknessMaximum.sub( iridescenceThicknessMinimum ).mul( this.getTexture( 'iridescenceThicknessMap' ).g ).add( iridescenceThicknessMinimum );
+
+			} else {
+
+				node = iridescenceThicknessMaximum;
+
+			}
 
 		} else {
 
@@ -56392,6 +56419,9 @@ MaterialNode.EMISSIVE = 'emissive';
 MaterialNode.ROTATION = 'rotation';
 MaterialNode.SHEEN = 'sheen';
 MaterialNode.SHEEN_ROUGHNESS = 'sheenRoughness';
+MaterialNode.IRIDESCENCE = 'iridescence';
+MaterialNode.IRIDESCENCE_IOR = 'iridescenceIOR';
+MaterialNode.IRIDESCENCE_THICKNESS = 'iridescenceThickness';
 
 const materialAlphaTest = nodeImmutable( MaterialNode, MaterialNode.ALPHA_TEST );
 const materialColor = nodeImmutable( MaterialNode, MaterialNode.COLOR );
@@ -56408,6 +56438,9 @@ const materialClearcoatRoughness = nodeImmutable( MaterialNode, MaterialNode.CLE
 const materialRotation = nodeImmutable( MaterialNode, MaterialNode.ROTATION );
 const materialSheen = nodeImmutable( MaterialNode, MaterialNode.SHEEN );
 const materialSheenRoughness = nodeImmutable( MaterialNode, MaterialNode.SHEEN_ROUGHNESS );
+const materialIridescence = nodeImmutable( MaterialNode, MaterialNode.IRIDESCENCE );
+const materialIridescenceIOR = nodeImmutable( MaterialNode, MaterialNode.IRIDESCENCE_IOR );
+const materialIridescenceThickness = nodeImmutable( MaterialNode, MaterialNode.IRIDESCENCE_THICKNESS );
 
 addNodeClass( MaterialNode );
 
@@ -58150,7 +58183,7 @@ class AONode extends LightingNode {
 	construct( builder ) {
 
 		const aoIntensity = 1;
-		const aoNode = this.aoNode.sub( 1.0 ).mul( aoIntensity ).add( 1.0 );
+		const aoNode = this.aoNode.x.sub( 1.0 ).mul( aoIntensity ).add( 1.0 );
 
 		builder.context.ambientOcclusion.mulAssign( aoNode );
 
@@ -58259,6 +58292,8 @@ const specularMIPLevel = nodeProxy( SpecularMIPLevelNode );
 
 addNodeClass( SpecularMIPLevelNode );
 
+const envNodeCache = new WeakMap();
+
 class EnvironmentNode extends LightingNode {
 
 	constructor( envNode = null ) {
@@ -58276,13 +58311,23 @@ class EnvironmentNode extends LightingNode {
 
 		if ( envNode.isTextureNode && envNode.value.isCubeTexture !== true ) {
 
-			const texture = envNode.value;
-			const renderer = builder.renderer;
+			let cacheEnvNode = envNodeCache.get( envNode.value );
 
-			// @TODO: Add dispose logic here
-			const cubeRTT = builder.getCubeRenderTarget( 512 ).fromEquirectangularTexture( renderer, texture );
+			if ( cacheEnvNode === undefined ) {
 
-			envNode = cubeTexture( cubeRTT.texture );
+				const texture = envNode.value;
+				const renderer = builder.renderer;
+
+				// @TODO: Add dispose logic here
+				const cubeRTT = builder.getCubeRenderTarget( 512 ).fromEquirectangularTexture( renderer, texture );
+
+				cacheEnvNode = cubeTexture( cubeRTT.texture );
+
+				envNodeCache.set( envNode.value, cacheEnvNode );
+
+			}
+
+			envNode	= cacheEnvNode;
 
 		}
 
@@ -58303,22 +58348,20 @@ class EnvironmentNode extends LightingNode {
 
 		//
 
-		let isolateClearcoatRadiance = null;
+		const clearcoatRadiance = builder.context.lightingModel.clearcoatRadiance;
 
-		if ( builder.context.clearcoatRadiance  ) {
+		if ( clearcoatRadiance ) {
 
-			const clearcoatRadiance = context( envNode, createRadianceContext( clearcoatRoughness, transformedClearcoatNormalView ) ).mul( intensity );
+			const clearcoatRadianceContext = context( envNode, createRadianceContext( clearcoatRoughness, transformedClearcoatNormalView ) ).mul( intensity );
+			const isolateClearcoatRadiance = cache( clearcoatRadianceContext );
 
-			isolateClearcoatRadiance = cache( clearcoatRadiance );
-
-			builder.context.clearcoatRadiance.addAssign( isolateClearcoatRadiance );
+			clearcoatRadiance.addAssign( isolateClearcoatRadiance );
 
 		}
 
 		//
 
 		properties.radiance = isolateRadiance;
-		properties.clearcoatRadiance = isolateClearcoatRadiance;
 		properties.irradiance = irradiance;
 
 	}
@@ -58457,7 +58500,9 @@ class NodeMaterial extends ShaderMaterial {
 		this.alphaTestNode = null;
 
 		this.positionNode = null;
-		this.outputNode = null;
+
+		this.outputNode = null; // @TODO: Rename to fragmentNode
+		this.vertexNode = null;
 
 	}
 
@@ -58553,7 +58598,7 @@ class NodeMaterial extends ShaderMaterial {
 
 		builder.context.vertex = builder.removeStack();
 
-		return modelViewProjection();
+		return this.vertexNode || modelViewProjection();
 
 	}
 
@@ -58877,7 +58922,9 @@ class NodeMaterial extends ShaderMaterial {
 		this.alphaTestNode = source.alphaTestNode;
 
 		this.positionNode = source.positionNode;
+
 		this.outputNode = source.outputNode;
+		this.vertexNode = source.vertexNode;
 
 		return super.copy( source );
 
@@ -62879,6 +62926,8 @@ class PointLightNode extends AnalyticLightNode {
 
 		const { colorNode, cutoffDistanceNode, decayExponentNode, light } = this;
 
+		const lightingModel = builder.context.lightingModel;
+
 		const lVector = objectViewPosition( light ).sub( positionView ); // @TODO: Add it into LightNode
 
 		const lightDirection = lVector.normalize();
@@ -62892,18 +62941,13 @@ class PointLightNode extends AnalyticLightNode {
 
 		const lightColor = colorNode.mul( lightAttenuation );
 
-		const lightingModelFunctionNode = builder.context.lightingModelNode;
 		const reflectedLight = builder.context.reflectedLight;
 
-		if ( lightingModelFunctionNode && lightingModelFunctionNode.direct ) {
-
-			lightingModelFunctionNode.direct( {
-				lightDirection,
-				lightColor,
-				reflectedLight
-			} );
-
-		}
+		lightingModel.direct( {
+			lightDirection,
+			lightColor,
+			reflectedLight
+		} );
 
 	}
 
@@ -62925,20 +62969,17 @@ class DirectionalLightNode extends AnalyticLightNode {
 
 		super.construct( builder );
 
+		const lightingModel = builder.context.lightingModel;
+
 		const lightColor = this.colorNode;
 		const lightDirection = lightTargetDirection( this.light );
-		const lightingModelFunctionNode = builder.context.lightingModelNode;
 		const reflectedLight = builder.context.reflectedLight;
 
-		if ( lightingModelFunctionNode && lightingModelFunctionNode.direct ) {
-
-			lightingModelFunctionNode.direct( {
-				lightDirection,
-				lightColor,
-				reflectedLight
-			} );
-
-		}
+		lightingModel.direct( {
+			lightDirection,
+			lightColor,
+			reflectedLight
+		} );
 
 	}
 
@@ -62988,6 +63029,8 @@ class SpotLightNode extends AnalyticLightNode {
 
 		super.construct( builder );
 
+		const lightingModel = builder.context.lightingModel;
+
 		const { colorNode, cutoffDistanceNode, decayExponentNode, light } = this;
 
 		const lVector = objectViewPosition( light ).sub( positionView ); // @TODO: Add it into LightNode
@@ -63006,18 +63049,13 @@ class SpotLightNode extends AnalyticLightNode {
 
 		const lightColor = colorNode.mul( spotAttenuation ).mul( lightAttenuation );
 
-		const lightingModelFunctionNode = builder.context.lightingModelNode;
 		const reflectedLight = builder.context.reflectedLight;
 
-		if ( lightingModelFunctionNode && lightingModelFunctionNode.direct ) {
-
-			lightingModelFunctionNode.direct( {
-				lightDirection,
-				lightColor,
-				reflectedLight
-			} );
-
-		}
+		lightingModel.direct( {
+			lightDirection,
+			lightColor,
+			reflectedLight
+		} );
 
 	}
 
@@ -63101,11 +63139,11 @@ addNodeClass( AmbientLightNode );
 
 class LightingContextNode extends ContextNode {
 
-	constructor( node, lightingModelNode = null, backdropNode = null, backdropAlphaNode = null ) {
+	constructor( node, lightingModel = null, backdropNode = null, backdropAlphaNode = null ) {
 
 		super( node );
 
-		this.lightingModelNode = lightingModelNode;
+		this.lightingModel = lightingModel;
 		this.backdropNode = backdropNode;
 		this.backdropAlphaNode = backdropAlphaNode;
 
@@ -63119,7 +63157,7 @@ class LightingContextNode extends ContextNode {
 
 	construct( builder ) {
 
-		const { lightingModelNode, backdropNode, backdropAlphaNode } = this;
+		const { lightingModel, backdropNode, backdropAlphaNode } = this;
 
 		const context = this.context = {}; // reset context
 		const properties = builder.getNodeProperties( this );
@@ -63156,17 +63194,20 @@ class LightingContextNode extends ContextNode {
 		};
 
 		context.reflectedLight = reflectedLight;
-		context.lightingModelNode = lightingModelNode || context.lightingModelNode;
+		context.lightingModel = lightingModel || context.lightingModel;
 
 		Object.assign( properties, reflectedLight, lighting );
 		Object.assign( context, lighting );
 
-		// @TODO: Call needed return a new node ( or rename the ShaderNodeInternal.call() function ), it's not moment to run
-		if ( lightingModelNode && lightingModelNode.init ) lightingModelNode.init( context, builder.stack, builder );
+		if ( lightingModel ) {
 
-		if ( lightingModelNode && lightingModelNode.indirectDiffuse ) lightingModelNode.indirectDiffuse( context, builder.stack, builder );
-		if ( lightingModelNode && lightingModelNode.indirectSpecular ) lightingModelNode.indirectSpecular( context, builder.stack, builder );
-		if ( lightingModelNode && lightingModelNode.ambientOcclusion ) lightingModelNode.ambientOcclusion( context, builder.stack, builder );
+			lightingModel.init( context, builder.stack, builder );
+
+			lightingModel.indirectDiffuse( context, builder.stack, builder );
+			lightingModel.indirectSpecular( context, builder.stack, builder );
+			lightingModel.ambientOcclusion( context, builder.stack, builder );
+
+		}
 
 		return super.construct( builder );
 
@@ -63346,57 +63387,6 @@ class MeshBasicNodeMaterial extends NodeMaterial {
 
 addNodeMaterial( MeshBasicNodeMaterial );
 
-const BRDF_Lambert = tslFn( ( inputs ) => {
-
-	return inputs.diffuseColor.mul( 1 / Math.PI ); // punctual light
-
-} ); // validated
-
-const RE_Direct_Lambert = tslFn( ( { lightDirection, lightColor, reflectedLight } ) => {
-
-	const dotNL = transformedNormalView.dot( lightDirection ).clamp();
-	const irradiance = dotNL.mul( lightColor );
-
-	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
-
-} );
-
-const RE_IndirectDiffuse_Lambert = tslFn( ( { irradiance, reflectedLight } ) => {
-
-	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
-
-} );
-
-const lambertLightingModel = lightingModel( null, RE_Direct_Lambert, RE_IndirectDiffuse_Lambert );
-
-const defaultValues$5 = new MeshLambertMaterial();
-
-class MeshLambertNodeMaterial extends NodeMaterial {
-
-	constructor( parameters ) {
-
-		super();
-
-		this.isMeshLambertNodeMaterial = true;
-
-		this.lights = true;
-
-		this.setDefaultValues( defaultValues$5 );
-
-		this.setValues( parameters );
-
-	}
-
-	constructLightingModel( /*builder*/ ) {
-
-		return lambertLightingModel;
-
-	}
-
-}
-
-addNodeMaterial( MeshLambertNodeMaterial );
-
 const F_Schlick = tslFn( ( { f0, f90, dotVH } ) => {
 
 	// Original approximation by Christophe Schlick '94
@@ -63407,6 +63397,12 @@ const F_Schlick = tslFn( ( { f0, f90, dotVH } ) => {
 	const fresnel = dotVH.mul( - 5.55473 ).sub( 6.98316 ).mul( dotVH ).exp2();
 
 	return f0.mul( fresnel.oneMinus() ).add( f90.mul( fresnel ) );
+
+} ); // validated
+
+const BRDF_Lambert = tslFn( ( inputs ) => {
+
+	return inputs.diffuseColor.mul( 1 / Math.PI ); // punctual light
 
 } ); // validated
 
@@ -63433,24 +63429,66 @@ const BRDF_BlinnPhong = tslFn( ( { lightDirection } ) => {
 
 } );
 
-const RE_Direct_BlinnPhong = tslFn( ( { lightDirection, lightColor, reflectedLight } ) => {
+class PhongLightingModel extends LightingModel {
 
-	const dotNL = transformedNormalView.dot( lightDirection ).clamp();
-	const irradiance = dotNL.mul( lightColor );
+	constructor( specular = true ) {
 
-	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
+		super();
 
-	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_BlinnPhong( { lightDirection } ) ).mul( materialSpecularStrength ) );
+		this.specular = specular;
 
-} );
+	}
 
-const RE_IndirectDiffuse_BlinnPhong = tslFn( ( { irradiance, reflectedLight } ) => {
+	direct( { lightDirection, lightColor, reflectedLight } ) {
 
-	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
+		const dotNL = transformedNormalView.dot( lightDirection ).clamp();
+		const irradiance = dotNL.mul( lightColor );
 
-} );
+		reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
 
-const phongLightingModel = lightingModel( null, RE_Direct_BlinnPhong, RE_IndirectDiffuse_BlinnPhong );
+		if ( this.specular === true ) {
+
+			reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_BlinnPhong( { lightDirection } ) ).mul( materialSpecularStrength ) );
+
+		}
+
+	}
+
+	indirectDiffuse( { irradiance, reflectedLight } ) {
+
+		reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
+
+	}
+
+}
+
+const defaultValues$5 = new MeshLambertMaterial();
+
+class MeshLambertNodeMaterial extends NodeMaterial {
+
+	constructor( parameters ) {
+
+		super();
+
+		this.isMeshLambertNodeMaterial = true;
+
+		this.lights = true;
+
+		this.setDefaultValues( defaultValues$5 );
+
+		this.setValues( parameters );
+
+	}
+
+	constructLightingModel( /*builder*/ ) {
+
+		return new PhongLightingModel( false ); // ( specular ) -> force lambert
+
+	}
+
+}
+
+addNodeMaterial( MeshLambertNodeMaterial );
 
 const defaultValues$4 = new MeshPhongMaterial();
 
@@ -63475,7 +63513,7 @@ class MeshPhongNodeMaterial extends NodeMaterial {
 
 	constructLightingModel( /*builder*/ ) {
 
-		return phongLightingModel;
+		return new PhongLightingModel();
 
 	}
 
@@ -63564,7 +63602,7 @@ const D_GGX = tslFn( ( inputs ) => {
 // GGX Distribution, Schlick Fresnel, GGX_SmithCorrelated Visibility
 const BRDF_GGX = tslFn( ( inputs ) => {
 
-	const { lightDirection, f0, f90, roughness } = inputs;
+	const { lightDirection, f0, f90, roughness, iridescenceFresnel } = inputs;
 
 	const normalView = inputs.normalView || transformedNormalView;
 
@@ -63577,7 +63615,14 @@ const BRDF_GGX = tslFn( ( inputs ) => {
 	const dotNH = normalView.dot( halfDir ).clamp();
 	const dotVH = positionViewDirection.dot( halfDir ).clamp();
 
-	const F = F_Schlick( { f0, f90, dotVH } );
+	let F = F_Schlick( { f0, f90, dotVH } );
+
+	if ( iridescenceFresnel ) {
+
+		F = iridescence.mix( F, iridescenceFresnel );
+
+	}
+
 	const V = V_GGX_SmithCorrelated( { alpha, dotNL, dotNV } );
 	const D = D_GGX( { alpha, dotNH } );
 
@@ -63618,6 +63663,16 @@ const EnvironmentBRDF = tslFn( ( inputs ) => {
 
 } );
 
+const Schlick_to_F0 = tslFn( ( { f, f90, dotVH } ) => {
+
+	const x = dotVH.oneMinus().saturate();
+	const x2 = x.mul( x );
+	const x5 = x.mul( x2, x2 ).clamp( 0, .9999 );
+
+	return f.sub( vec3( f90 ).mul( x5 ) ).div( x5.oneMinus() );
+
+} );
+
 // https://github.com/google/filament/blob/master/shaders/src/brdf.fs
 const D_Charlie = ( roughness, dotNH ) => {
 
@@ -63655,8 +63710,119 @@ const BRDF_Sheen = tslFn( ( { lightDirection } ) => {
 
 } );
 
-const clearcoatF0 = vec3( 0.04 );
-const clearcoatF90 = vec3( 1 );
+//
+// Iridescence
+//
+
+// XYZ to linear-sRGB color space
+const XYZ_TO_REC709 = mat3(
+	3.2404542, - 0.9692660, 0.0556434,
+	- 1.5371385, 1.8760108, - 0.2040259,
+	- 0.4985314, 0.0415560, 1.0572252
+);
+
+// Assume air interface for top
+// Note: We don't handle the case fresnel0 == 1
+const Fresnel0ToIor = ( fresnel0 ) => {
+
+	const sqrtF0 = fresnel0.sqrt();
+	return vec3( 1.0 ).add( sqrtF0 ).div( vec3( 1.0 ).sub( sqrtF0 ) );
+
+};
+
+// ior is a value between 1.0 and 3.0. 1.0 is air interface
+const IorToFresnel0 = ( transmittedIor, incidentIor ) => {
+
+	return transmittedIor.sub( incidentIor ).div( transmittedIor.add( incidentIor ) ).pow2();
+
+};
+
+// Fresnel equations for dielectric/dielectric interfaces.
+// Ref: https://belcour.github.io/blog/research/2017/05/01/brdf-thin-film.html
+// Evaluation XYZ sensitivity curves in Fourier space
+const evalSensitivity = ( OPD, shift ) => {
+
+	const phase = OPD.mul( 2.0 * Math.PI * 1.0e-9 );
+	const val = vec3( 5.4856e-13, 4.4201e-13, 5.2481e-13 );
+	const pos = vec3( 1.6810e+06, 1.7953e+06, 2.2084e+06 );
+	const VAR = vec3( 4.3278e+09, 9.3046e+09, 6.6121e+09 );
+
+	const x = float( 9.7470e-14 * Math.sqrt( 2.0 * Math.PI * 4.5282e+09 ) ).mul( phase.mul( 2.2399e+06 ).add( shift.x ).cos() ).mul( phase.pow2().mul( - 4.5282e+09 ).exp() );
+
+	let xyz = val.mul( VAR.mul( 2.0 * Math.PI ).sqrt() ).mul( pos.mul( phase ).add( shift ).cos() ).mul( phase.pow2().negate().mul( VAR ).exp() );
+	xyz = vec3( xyz.x.add( x ), xyz.y, xyz.z ).div( 1.0685e-7 );
+
+	const rgb = XYZ_TO_REC709.mul( xyz );
+	return rgb;
+
+};
+
+const evalIridescence = ( outsideIOR, eta2, cosTheta1, thinFilmThickness, baseF0 ) => {
+
+	// Force iridescenceIOR -> outsideIOR when thinFilmThickness -> 0.0
+	const iridescenceIOR = mix( outsideIOR, eta2, smoothstep( 0.0, 0.03, thinFilmThickness ) );
+	// Evaluate the cosTheta on the base layer (Snell law)
+	const sinTheta2Sq = outsideIOR.div( iridescenceIOR ).pow2().mul( float( 1 ).sub( cosTheta1.pow2() ) );
+
+	// Handle TIR:
+	const cosTheta2Sq = float( 1 ).sub( sinTheta2Sq );
+	/*if ( cosTheta2Sq < 0.0 ) {
+
+			return vec3( 1.0 );
+
+	}*/
+
+	const cosTheta2 = cosTheta2Sq.sqrt();
+
+	// First interface
+	const R0 = IorToFresnel0( iridescenceIOR, outsideIOR );
+	const R12 = F_Schlick( { f0: R0, f90: 1.0, dotVH: cosTheta1 } );
+	//const R21 = R12;
+	const T121 = R12.oneMinus();
+	const phi12 = iridescenceIOR.lessThan( outsideIOR ).cond( Math.PI, 0.0 );
+	const phi21 = float( Math.PI ).sub( phi12 );
+
+	// Second interface
+	const baseIOR = Fresnel0ToIor( baseF0.clamp( 0.0, 0.9999 ) ); // guard against 1.0
+	const R1 = IorToFresnel0( baseIOR, iridescenceIOR.vec3() );
+	const R23 = F_Schlick( { f0: R1, f90: 1.0, dotVH: cosTheta2 } );
+	const phi23 = vec3(
+		baseIOR.x.lessThan( iridescenceIOR ).cond( Math.PI, 0.0 ),
+		baseIOR.y.lessThan( iridescenceIOR ).cond( Math.PI, 0.0 ),
+		baseIOR.z.lessThan( iridescenceIOR ).cond( Math.PI, 0.0 )
+	);
+
+	// Phase shift
+	const OPD = iridescenceIOR.mul( thinFilmThickness, cosTheta2, 2.0 );
+	const phi = vec3( phi21 ).add( phi23 );
+
+	// Compound terms
+	const R123 = R12.mul( R23 ).clamp( 1e-5, 0.9999 );
+	const r123 = R123.sqrt();
+	const Rs = T121.pow2().mul( R23 ).div( vec3( 1.0 ).sub( R123 ) );
+
+	// Reflectance term for m = 0 (DC term amplitude)
+	const C0 = R12.add( Rs );
+	let I = C0;
+
+	// Reflectance term for m > 0 (pairs of diracs)
+	let Cm = Rs.sub( T121 );
+	for ( let m = 1; m <= 2; ++ m ) {
+
+		Cm = Cm.mul( r123 );
+		const Sm = evalSensitivity( float( m ).mul( OPD ), float( m ).mul( phi ) ).mul( 2.0 );
+		I = I.add( Cm.mul( Sm ) );
+
+	}
+
+	// Since out of gamut colors might be produced, negative color values are clamped to 0.
+	return I.max( vec3( 0.0 ) );
+
+};
+
+//
+//	Sheen
+//
 
 // This is a curve-fit approxmation to the "Charlie sheen" BRDF integrated over the hemisphere from
 // Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF". The analysis can be found
@@ -63685,165 +63851,191 @@ const IBLSheenBRDF = ( normal, viewDir, roughness ) => {
 
 };
 
-// Fdez-Agüera's "Multiple-Scattering Microfacet Model for Real-Time Image Based Lighting"
-// Approximates multiscattering in order to preserve energy.
-// http://www.jcgt.org/published/0008/01/03/
-const computeMultiscattering = ( singleScatter, multiScatter, specularF90 = float( 1 ) ) => {
+const clearcoatF0 = vec3( 0.04 );
+const clearcoatF90 = vec3( 1 );
 
-	const fab = DFGApprox( { roughness } );
+//
 
-	const FssEss = specularColor.mul( fab.x ).add( specularF90.mul( fab.y ) );
+class PhysicalLightingModel extends LightingModel {
 
-	const Ess = fab.x.add( fab.y );
-	const Ems = Ess.oneMinus();
+	constructor( clearcoat = true, sheen = true, iridescence = true ) {
 
-	const Favg = specularColor.add( specularColor.oneMinus().mul( 0.047619 ) ); // 1/21
-	const Fms = FssEss.mul( Favg ).div( Ems.mul( Favg ).oneMinus() );
+		super();
 
-	singleScatter.addAssign( FssEss );
-	multiScatter.addAssign( Fms.mul( Ems ) );
+		this.clearcoat = clearcoat;
+		this.sheen = sheen;
+		this.iridescence = iridescence;
 
-};
-
-const LM_Init = tslFn( ( context, stack, builder ) => {
-
-	if ( builder.includes( clearcoat ) ) {
-
-		context.clearcoatRadiance = vec3().temp();
-		context.reflectedLight.clearcoatSpecular = vec3().temp();
-
-		const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
-
-		const Fcc = F_Schlick( {
-			dotVH: dotNVcc,
-			f0: clearcoatF0,
-			f90: clearcoatF90
-		} );
-
-		const outgoingLight = context.reflectedLight.total;
-		const clearcoatLight = outgoingLight.mul( clearcoat.mul( Fcc ).oneMinus() ).add( context.reflectedLight.clearcoatSpecular.mul( clearcoat ) );
-
-		outgoingLight.assign( clearcoatLight );
+		this.clearcoatRadiance = null;
+		this.clearcoatSpecular = null;
+		this.sheenSpecular = null;
+		this.iridescenceFresnel = null;
+		this.iridescenceF0 = null;
 
 	}
 
-	if ( builder.includes( sheen ) ) {
+	init( { reflectedLight } ) {
 
-		context.reflectedLight.sheenSpecular = vec3().temp();
+		if ( this.clearcoat === true ) {
 
-		const outgoingLight = context.reflectedLight.total;
+			this.clearcoatRadiance = vec3().temp();
+			this.clearcoatSpecular = vec3().temp();
 
-		const sheenEnergyComp = sheen.r.max( sheen.g ).max( sheen.b ).mul( 0.157 ).oneMinus();
-		const sheenLight = outgoingLight.mul( sheenEnergyComp ).add( context.reflectedLight.sheenSpecular );
+			const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
 
-		outgoingLight.assign( sheenLight );
+			const Fcc = F_Schlick( {
+				dotVH: dotNVcc,
+				f0: clearcoatF0,
+				f90: clearcoatF90
+			} );
 
-	}
+			const outgoingLight = reflectedLight.total;
+			const clearcoatLight = outgoingLight.mul( clearcoat.mul( Fcc ).oneMinus() ).add( this.clearcoatSpecular.mul( clearcoat ) );
 
-} );
+			outgoingLight.assign( clearcoatLight );
 
-const RE_IndirectSpecular_Physical = tslFn( ( context ) => {
+		}
 
-	const { radiance, iblIrradiance, reflectedLight } = context;
+		if ( this.sheen === true ) {
 
-	if ( reflectedLight.sheenSpecular ) {
+			this.sheenSpecular = vec3().temp();
 
-		reflectedLight.sheenSpecular.addAssign( iblIrradiance.mul(
-			sheen,
-			IBLSheenBRDF( transformedNormalView, positionViewDirection, sheenRoughness )
-		) );
+			const outgoingLight = reflectedLight.total;
 
-	}
+			const sheenEnergyComp = sheen.r.max( sheen.g ).max( sheen.b ).mul( 0.157 ).oneMinus();
+			const sheenLight = outgoingLight.mul( sheenEnergyComp ).add( this.sheenSpecular );
 
-	if ( reflectedLight.clearcoatSpecular ) {
+			outgoingLight.assign( sheenLight );
 
-		const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
+		}
 
-		const clearcoatEnv = EnvironmentBRDF( {
-			dotNV: dotNVcc,
-			specularColor: clearcoatF0,
-			specularF90: clearcoatF90,
-			roughness: clearcoatRoughness
-		} );
+		if ( this.iridescence === true ) {
 
-		reflectedLight.clearcoatSpecular.addAssign( context.clearcoatRadiance.mul( clearcoatEnv ) );
+			const dotNVi = transformedNormalView.dot( positionViewDirection ).clamp();
 
-	}
+			this.iridescenceFresnel = evalIridescence( float( 1.0 ), iridescenceIOR, dotNVi, iridescenceThickness, specularColor );
+			this.iridescenceF0 = Schlick_to_F0( { f: this.iridescenceFresnel, f90: 1.0, dotVH: dotNVi } );
 
-	// Both indirect specular and indirect diffuse light accumulate here
-
-	const singleScattering = vec3().temp();
-	const multiScattering = vec3().temp();
-	const cosineWeightedIrradiance = iblIrradiance.mul( 1 / Math.PI );
-
-	computeMultiscattering( singleScattering, multiScattering );
-
-	const totalScattering = singleScattering.add( multiScattering );
-
-	const diffuse = diffuseColor.mul( totalScattering.r.max( totalScattering.g ).max( totalScattering.b ).oneMinus() );
-
-	reflectedLight.indirectSpecular.addAssign( radiance.mul( singleScattering ) );
-	reflectedLight.indirectSpecular.addAssign( multiScattering.mul( cosineWeightedIrradiance ) );
-
-	reflectedLight.indirectDiffuse.addAssign( diffuse.mul( cosineWeightedIrradiance ) );
-
-} );
-
-const RE_IndirectDiffuse_Physical = tslFn( ( context ) => {
-
-	const { irradiance, reflectedLight } = context;
-
-	reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
-
-} );
-
-const RE_Direct_Physical = tslFn( ( inputs ) => {
-
-	const { lightDirection, lightColor, reflectedLight } = inputs;
-
-	const dotNL = transformedNormalView.dot( lightDirection ).clamp();
-	const irradiance = dotNL.mul( lightColor );
-
-	if ( reflectedLight.sheenSpecular ) {
-
-		reflectedLight.sheenSpecular.addAssign( irradiance.mul( BRDF_Sheen( { lightDirection } ) ) );
+		}
 
 	}
 
-	if ( reflectedLight.clearcoatSpecular ) {
+	// Fdez-Agüera's "Multiple-Scattering Microfacet Model for Real-Time Image Based Lighting"
+	// Approximates multiscattering in order to preserve energy.
+	// http://www.jcgt.org/published/0008/01/03/
 
-		const dotNLcc = transformedClearcoatNormalView.dot( lightDirection ).clamp();
-		const ccIrradiance = dotNLcc.mul( lightColor );
+	computeMultiscattering( singleScatter, multiScatter, specularF90 = float( 1 ) ) {
 
-		reflectedLight.clearcoatSpecular.addAssign( ccIrradiance.mul( BRDF_GGX( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
+		const fab = DFGApprox( { roughness } );
+
+		const Fr = this.iridescenceF0 ? iridescence.mix( specularColor, this.iridescenceF0 ) : specularColor;
+
+		const FssEss = Fr.mul( fab.x ).add( specularF90.mul( fab.y ) );
+
+		const Ess = fab.x.add( fab.y );
+		const Ems = Ess.oneMinus();
+
+		const Favg = specularColor.add( specularColor.oneMinus().mul( 0.047619 ) ); // 1/21
+		const Fms = FssEss.mul( Favg ).div( Ems.mul( Favg ).oneMinus() );
+
+		singleScatter.addAssign( FssEss );
+		multiScatter.addAssign( Fms.mul( Ems ) );
 
 	}
 
-	reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
+	direct( { lightDirection, lightColor, reflectedLight } ) {
 
-	reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_GGX( { lightDirection, f0: specularColor, f90: 1, roughness } ) ) );
+		const dotNL = transformedNormalView.dot( lightDirection ).clamp();
+		const irradiance = dotNL.mul( lightColor );
 
-} );
+		if ( this.sheen === true ) {
 
-const RE_AmbientOcclusion_Physical = tslFn( ( context ) => {
+			this.sheenSpecular.addAssign( irradiance.mul( BRDF_Sheen( { lightDirection } ) ) );
 
-	const { ambientOcclusion, reflectedLight } = context;
+		}
 
-	const dotNV = transformedNormalView.dot( positionViewDirection ).clamp(); // @ TODO: Move to core dotNV
+		if ( this.clearcoat === true ) {
 
-	const aoNV = dotNV.add( ambientOcclusion );
-	const aoExp = roughness.mul( - 16.0 ).oneMinus().negate().exp2();
+			const dotNLcc = transformedClearcoatNormalView.dot( lightDirection ).clamp();
+			const ccIrradiance = dotNLcc.mul( lightColor );
 
-	const aoNode = ambientOcclusion.sub( aoNV.pow( aoExp ).oneMinus() ).clamp();
+			this.clearcoatSpecular.addAssign( ccIrradiance.mul( BRDF_GGX( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
 
-	reflectedLight.indirectDiffuse.mulAssign( ambientOcclusion );
+		}
 
-	reflectedLight.indirectSpecular.mulAssign( aoNode );
+		reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
 
+		reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_GGX( { lightDirection, f0: specularColor, f90: 1, roughness, iridescence: this.iridescence, iridescenceFresnel: this.iridescenceFresnel } ) ) );
 
-} );
+	}
 
-const physicalLightingModel = lightingModel( LM_Init, RE_Direct_Physical, RE_IndirectDiffuse_Physical, RE_IndirectSpecular_Physical, RE_AmbientOcclusion_Physical );
+	indirectDiffuse( { irradiance, reflectedLight } ) {
+
+		reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
+
+	}
+
+	indirectSpecular( { radiance, iblIrradiance, reflectedLight, } ) {
+
+		if ( this.sheen === true ) {
+
+			this.sheenSpecular.addAssign( iblIrradiance.mul(
+				sheen,
+				IBLSheenBRDF( transformedNormalView, positionViewDirection, sheenRoughness )
+			) );
+
+		}
+
+		if ( this.clearcoat === true ) {
+
+			const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
+
+			const clearcoatEnv = EnvironmentBRDF( {
+				dotNV: dotNVcc,
+				specularColor: clearcoatF0,
+				specularF90: clearcoatF90,
+				roughness: clearcoatRoughness
+			} );
+
+			this.clearcoatSpecular.addAssign( this.clearcoatRadiance.mul( clearcoatEnv ) );
+
+		}
+
+		// Both indirect specular and indirect diffuse light accumulate here
+
+		const singleScattering = vec3().temp();
+		const multiScattering = vec3().temp();
+		const cosineWeightedIrradiance = iblIrradiance.mul( 1 / Math.PI );
+
+		this.computeMultiscattering( singleScattering, multiScattering );
+
+		const totalScattering = singleScattering.add( multiScattering );
+
+		const diffuse = diffuseColor.mul( totalScattering.r.max( totalScattering.g ).max( totalScattering.b ).oneMinus() );
+
+		reflectedLight.indirectSpecular.addAssign( radiance.mul( singleScattering ) );
+		reflectedLight.indirectSpecular.addAssign( multiScattering.mul( cosineWeightedIrradiance ) );
+
+		reflectedLight.indirectDiffuse.addAssign( diffuse.mul( cosineWeightedIrradiance ) );
+
+	}
+
+	ambientOcclusion( { ambientOcclusion, reflectedLight } ) {
+
+		const dotNV = transformedNormalView.dot( positionViewDirection ).clamp(); // @ TODO: Move to core dotNV
+
+		const aoNV = dotNV.add( ambientOcclusion );
+		const aoExp = roughness.mul( - 16.0 ).oneMinus().negate().exp2();
+
+		const aoNode = ambientOcclusion.sub( aoNV.pow( aoExp ).oneMinus() ).clamp();
+
+		reflectedLight.indirectDiffuse.mulAssign( ambientOcclusion );
+
+		reflectedLight.indirectSpecular.mulAssign( aoNode );
+
+	}
+
+}
 
 const defaultValues$3 = new MeshStandardMaterial();
 
@@ -63868,7 +64060,7 @@ class MeshStandardNodeMaterial extends NodeMaterial {
 
 	constructLightingModel( /*builder*/ ) {
 
-		return physicalLightingModel;
+		return new PhysicalLightingModel( false, false ); // ( clearcoat, sheen ) -> standard
 
 	}
 
@@ -63949,6 +64141,12 @@ class MeshPhysicalNodeMaterial extends MeshStandardNodeMaterial {
 
 	}
 
+	constructLightingModel( /*builder*/ ) {
+
+		return new PhysicalLightingModel(); // @TODO: Optimize shader using parameters.
+
+	}
+
 	constructVariants( builder ) {
 
 		super.constructVariants( builder );
@@ -63970,6 +64168,16 @@ class MeshPhysicalNodeMaterial extends MeshStandardNodeMaterial {
 
 		stack.assign( sheen, sheenNode );
 		stack.assign( sheenRoughness, sheenRoughnessNode );
+
+		// IRIDESCENCE
+
+		const iridescenceNode = this.iridescenceNode ? float( this.iridescenceNode ) : materialIridescence;
+		const iridescenceIORNode = this.iridescenceIORNode ? float( this.iridescenceIORNode ) : materialIridescenceIOR;
+		const iridescenceThicknessNode = this.iridescenceThicknessNode ? float( this.iridescenceThicknessNode ) : materialIridescenceThickness;
+
+		stack.assign( iridescence, iridescenceNode );
+		stack.assign( iridescenceIOR, iridescenceIORNode );
+		stack.assign( iridescenceThickness, iridescenceThicknessNode );
 
 	}
 
@@ -64116,7 +64324,7 @@ class SpriteNodeMaterial extends NodeMaterial {
 
 		alignedPosition = alignedPosition.mul( scale );
 
-		const rotation = rotationNode || materialRotation;
+		const rotation = float( rotationNode || materialRotation );
 
 		const cosAngle = rotation.cos();
 		const sinAngle = rotation.sin();
@@ -65312,8 +65520,8 @@ class Background extends DataMap {
 		this.renderer = renderer;
 		this.nodes = nodes;
 
-		this.boxMesh = null;
-		this.boxMeshNode = null;
+		this.backgroundMesh = null;
+		this.backgroundMeshNode = null;
 
 	}
 
@@ -65347,31 +65555,33 @@ class Background extends DataMap {
 			_clearColor.copy( renderer._clearColor );
 			_clearAlpha = renderer._clearAlpha;
 
-			let boxMesh = this.boxMesh;
+			let backgroundMesh = this.backgroundMesh;
 
-			if ( boxMesh === null ) {
+			if ( backgroundMesh === null ) {
 
-				this.boxMeshNode = context( backgroundNode, {
+				this.backgroundMeshNode = context( backgroundNode, {
 					// @TODO: Add Texture2D support using node context
-					getUVNode: () => positionWorldDirection,
+					getUVNode: () => normalWorld,
 					getSamplerLevelNode: () => backgroundBlurriness
 				} ).mul( backgroundIntensity );
 
-				const nodeMaterial = new MeshBasicNodeMaterial();
-				nodeMaterial.colorNode = this.boxMeshNode;
+				let viewProj = modelViewProjection();
+				viewProj = vec4( viewProj.x, viewProj.y, viewProj.w, viewProj.w );
+
+				const nodeMaterial = new NodeMaterial();
+				nodeMaterial.outputNode = this.backgroundMeshNode;
 				nodeMaterial.side = BackSide;
 				nodeMaterial.depthTest = false;
 				nodeMaterial.depthWrite = false;
 				nodeMaterial.fog = false;
+				nodeMaterial.vertexNode = viewProj;
 
-				this.boxMesh = boxMesh = new Mesh( new SphereGeometry( 1, 32, 32 ), nodeMaterial );
-				boxMesh.frustumCulled = false;
+				this.backgroundMesh = backgroundMesh = new Mesh( new SphereGeometry( 1, 32, 32 ), nodeMaterial );
+				backgroundMesh.frustumCulled = false;
 
-				boxMesh.onBeforeRender = function ( renderer, scene, camera ) {
+				backgroundMesh.onBeforeRender = function ( renderer, scene, camera ) {
 
-					const scale = camera.far;
-
-					this.matrixWorld.makeScale( scale, scale, scale ).copyPosition( camera.matrixWorld );
+					this.matrixWorld.copyPosition( camera.matrixWorld );
 
 				};
 
@@ -65381,15 +65591,15 @@ class Background extends DataMap {
 
 			if ( sceneData.backgroundCacheKey !== backgroundCacheKey ) {
 
-				this.boxMeshNode.node = backgroundNode;
+				this.backgroundMeshNode.node = backgroundNode;
 
-				boxMesh.material.needsUpdate = true;
+				backgroundMesh.material.needsUpdate = true;
 
 				sceneData.backgroundCacheKey = backgroundCacheKey;
 
 			}
 
-			renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, 0, null );
+			renderList.unshift( backgroundMesh, backgroundMesh.geometry, backgroundMesh.material, 0, 0, null );
 
 		} else ;
 
@@ -65583,7 +65793,7 @@ class Nodes extends DataMap {
 
 				if ( background.isCubeTexture === true ) {
 
-					backgroundNode = cubeTexture( background, transformDirection( positionWorld, modelWorldMatrix ) );
+					backgroundNode = cubeTexture( background, normalWorld );
 
 				} else if ( background.isTexture === true ) {
 
@@ -67666,18 +67876,6 @@ class StorageBuffer extends Buffer {
 
 }
 
-// @TODO: Consider rename WebGLRenderTarget to just RenderTarget
-
-class RenderTarget extends WebGLRenderTarget {
-
-	constructor( width, height, options = {} ) {
-
-		super( width, height, options );
-
-	}
-
-}
-
 // @TODO: Consider rename WebGLCubeRenderTarget to just CubeRenderTarget
 
 class CubeRenderTarget extends WebGLCubeRenderTarget {
@@ -69524,7 +69722,8 @@ class WebGPUPipelineUtils {
 				stencilWriteMask: material.stencilWriteMask
 			},
 			multisample: {
-				count: sampleCount
+				count: sampleCount,
+				alphaToCoverageEnabled: material.alphaToCoverage
 			},
 			layout: device.createPipelineLayout( {
 				bindGroupLayouts: [ bindingsData.layout ]
@@ -71872,4 +72071,4 @@ class WebGPURenderer extends Renderer {
 
 }
 
-export { ACESFilmicToneMapping, AddEquation, AddOperation, AdditiveAnimationBlendMode, AdditiveBlending, AlphaFormat, AlwaysCompare, AlwaysDepth, AlwaysStencilFunc, AmbientLight, AmbientLightProbe, AnimationAction, AnimationClip, AnimationLoader, AnimationMixer, AnimationObjectGroup, AnimationUtils, ArcCurve, ArrayCamera, ArrowHelper, Audio, AudioAnalyser, AudioContext, AudioListener, AudioLoader, AxesHelper, BackSide, BasicDepthPacking, BasicShadowMap, Bone, BooleanKeyframeTrack, Box2, Box3, Box3Helper, BoxGeometry, BoxHelper, BufferAttribute, BufferGeometry, BufferGeometryLoader, ByteType, Cache, Camera, CameraHelper, CanvasTexture, CapsuleGeometry, CatmullRomCurve3, CineonToneMapping, CircleGeometry, ClampToEdgeWrapping, Clock, Color, ColorKeyframeTrack, ColorManagement, CompressedArrayTexture, CompressedCubeTexture, CompressedTexture, CompressedTextureLoader, ConeGeometry, CubeCamera, CubeReflectionMapping, CubeRefractionMapping, CubeTexture, CubeTextureLoader, CubeUVReflectionMapping, CubicBezierCurve, CubicBezierCurve3, CubicInterpolant, CullFaceBack, CullFaceFront, CullFaceFrontBack, CullFaceNone, Curve, CurvePath, CustomBlending, CustomToneMapping, CylinderGeometry, Cylindrical, Data3DTexture, DataArrayTexture, DataTexture, DataTextureLoader, DataUtils, DecrementStencilOp, DecrementWrapStencilOp, DefaultLoadingManager, DepthFormat, DepthStencilFormat, DepthTexture, DirectionalLight, DirectionalLightHelper, DiscreteInterpolant, DisplayP3ColorSpace, DodecahedronGeometry, DoubleSide, DstAlphaFactor, DstColorFactor, DynamicCopyUsage, DynamicDrawUsage, DynamicReadUsage, EdgesGeometry, EllipseCurve, EqualCompare, EqualDepth, EqualStencilFunc, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Euler, EventDispatcher, ExtrudeGeometry, FileLoader, Float16BufferAttribute, Float32BufferAttribute, Float64BufferAttribute, FloatType, Fog, FogExp2, FramebufferTexture, FrontSide, Frustum, GLBufferAttribute, GLSL1, GLSL3, GreaterCompare, GreaterDepth, GreaterEqualCompare, GreaterEqualDepth, GreaterEqualStencilFunc, GreaterStencilFunc, GridHelper, Group, HalfFloatType, HemisphereLight, HemisphereLightHelper, HemisphereLightProbe, IcosahedronGeometry, ImageBitmapLoader, ImageLoader, ImageUtils, IncrementStencilOp, IncrementWrapStencilOp, InstancedBufferAttribute, InstancedBufferGeometry, InstancedInterleavedBuffer, InstancedMesh, Int16BufferAttribute, Int32BufferAttribute, Int8BufferAttribute, IntType, InterleavedBuffer, InterleavedBufferAttribute, Interpolant, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InvertStencilOp, KeepStencilOp, KeyframeTrack, LOD, LatheGeometry, Layers, LessCompare, LessDepth, LessEqualCompare, LessEqualDepth, LessEqualStencilFunc, LessStencilFunc, Light, LightProbe, Line, Line3, LineBasicMaterial, LineCurve, LineCurve3, LineDashedMaterial, LineLoop, LineSegments, LinearEncoding, LinearFilter, LinearInterpolant, LinearMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipmapLinearFilter, LinearMipmapNearestFilter, LinearSRGBColorSpace, LinearToneMapping, Loader, LoaderUtils, LoadingManager, LoopOnce, LoopPingPong, LoopRepeat, LuminanceAlphaFormat, LuminanceFormat, MOUSE, Material, MaterialLoader, MathUtils, Matrix3, Matrix4, MaxEquation, Mesh, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshLambertMaterial, MeshMatcapMaterial, MeshNormalMaterial, MeshPhongMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshToonMaterial, MinEquation, MirroredRepeatWrapping, MixOperation, MultiplyBlending, MultiplyOperation, NearestFilter, NearestMipMapLinearFilter, NearestMipMapNearestFilter, NearestMipmapLinearFilter, NearestMipmapNearestFilter, NeverCompare, NeverDepth, NeverStencilFunc, NoBlending, NoColorSpace, NoToneMapping, NormalAnimationBlendMode, NormalBlending, NotEqualCompare, NotEqualDepth, NotEqualStencilFunc, NumberKeyframeTrack, Object3D, ObjectLoader, ObjectSpaceNormalMap, OctahedronGeometry, OneFactor, OneMinusDstAlphaFactor, OneMinusDstColorFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, PCFShadowMap, PCFSoftShadowMap, PMREMGenerator, Path, PerspectiveCamera, Plane, PlaneGeometry, PlaneHelper, PointLight, PointLightHelper, Points, PointsMaterial, PolarGridHelper, PolyhedronGeometry, PositionalAudio, PropertyBinding, PropertyMixer, QuadraticBezierCurve, QuadraticBezierCurve3, Quaternion, QuaternionKeyframeTrack, QuaternionLinearInterpolant, RED_GREEN_RGTC2_Format, RED_RGTC1_Format, REVISION, RGBADepthPacking, RGBAFormat, RGBAIntegerFormat, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_BPTC_Format, RGBA_ETC2_EAC_Format, RGBA_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGB_PVRTC_2BPPV1_Format, RGB_PVRTC_4BPPV1_Format, RGB_S3TC_DXT1_Format, RGFormat, RGIntegerFormat, RawShaderMaterial, Ray, Raycaster, RectAreaLight, RedFormat, RedIntegerFormat, ReinhardToneMapping, RepeatWrapping, ReplaceStencilOp, ReverseSubtractEquation, RingGeometry, SIGNED_RED_GREEN_RGTC2_Format, SIGNED_RED_RGTC1_Format, SRGBColorSpace, Scene, ShaderChunk, ShaderLib, ShaderMaterial, ShadowMaterial, Shape, ShapeGeometry, ShapePath, ShapeUtils, ShortType, Skeleton, SkeletonHelper, SkinnedMesh, Source, Sphere, SphereGeometry, Spherical, SphericalHarmonics3, SplineCurve, SpotLight, SpotLightHelper, Sprite, SpriteMaterial, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, StaticCopyUsage, StaticDrawUsage, StaticReadUsage, StereoCamera, StreamCopyUsage, StreamDrawUsage, StreamReadUsage, StringKeyframeTrack, SubtractEquation, SubtractiveBlending, TOUCH, TangentSpaceNormalMap, TetrahedronGeometry, Texture, TextureLoader, TorusGeometry, TorusKnotGeometry, Triangle, TriangleFanDrawMode, TriangleStripDrawMode, TrianglesDrawMode, TubeGeometry, TwoPassDoubleSide, UVMapping, Uint16BufferAttribute, Uint32BufferAttribute, Uint8BufferAttribute, Uint8ClampedBufferAttribute, Uniform$1 as Uniform, UniformsGroup$1 as UniformsGroup, UniformsLib, UniformsUtils, UnsignedByteType, UnsignedInt248Type, UnsignedIntType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedShortType, VSMShadowMap, Vector2, Vector3, Vector4, VectorKeyframeTrack, VideoTexture, WebGL1Renderer, WebGL3DRenderTarget, WebGLArrayRenderTarget, WebGLCoordinateSystem, WebGLCubeRenderTarget, WebGLMultipleRenderTargets, WebGLRenderTarget, WebGLRenderer, WebGLUtils, WebGPU, WebGPUCoordinateSystem, WebGPURenderer, WireframeGeometry, WrapAroundEnding, ZeroCurvatureEnding, ZeroFactor, ZeroSlopeEnding, ZeroStencilOp, _SRGBAFormat, equirectUV, sRGBEncoding, texture };
+export { ACESFilmicToneMapping, AddEquation, AddOperation, AdditiveAnimationBlendMode, AdditiveBlending, AlphaFormat, AlwaysCompare, AlwaysDepth, AlwaysStencilFunc, AmbientLight, AmbientLightProbe, AnimationAction, AnimationClip, AnimationLoader, AnimationMixer, AnimationObjectGroup, AnimationUtils, ArcCurve, ArrayCamera, ArrowHelper, Audio, AudioAnalyser, AudioContext, AudioListener, AudioLoader, AxesHelper, BackSide, BasicDepthPacking, BasicShadowMap, Bone, BooleanKeyframeTrack, Box2, Box3, Box3Helper, BoxGeometry, BoxHelper, BufferAttribute, BufferGeometry, BufferGeometryLoader, ByteType, Cache, Camera, CameraHelper, CanvasTexture, CapsuleGeometry, CatmullRomCurve3, CineonToneMapping, CircleGeometry, ClampToEdgeWrapping, Clock, Color, ColorKeyframeTrack, ColorManagement, CompressedArrayTexture, CompressedCubeTexture, CompressedTexture, CompressedTextureLoader, ConeGeometry, CubeCamera, CubeReflectionMapping, CubeRefractionMapping, CubeTexture, CubeTextureLoader, CubeUVReflectionMapping, CubicBezierCurve, CubicBezierCurve3, CubicInterpolant, CullFaceBack, CullFaceFront, CullFaceFrontBack, CullFaceNone, Curve, CurvePath, CustomBlending, CustomToneMapping, CylinderGeometry, Cylindrical, Data3DTexture, DataArrayTexture, DataTexture, DataTextureLoader, DataUtils, DecrementStencilOp, DecrementWrapStencilOp, DefaultLoadingManager, DepthFormat, DepthStencilFormat, DepthTexture, DirectionalLight, DirectionalLightHelper, DiscreteInterpolant, DisplayP3ColorSpace, DodecahedronGeometry, DoubleSide, DstAlphaFactor, DstColorFactor, DynamicCopyUsage, DynamicDrawUsage, DynamicReadUsage, EdgesGeometry, EllipseCurve, EqualCompare, EqualDepth, EqualStencilFunc, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Euler, EventDispatcher, ExtrudeGeometry, FileLoader, Float16BufferAttribute, Float32BufferAttribute, Float64BufferAttribute, FloatType, Fog, FogExp2, FramebufferTexture, FrontSide, Frustum, GLBufferAttribute, GLSL1, GLSL3, GreaterCompare, GreaterDepth, GreaterEqualCompare, GreaterEqualDepth, GreaterEqualStencilFunc, GreaterStencilFunc, GridHelper, Group, HalfFloatType, HemisphereLight, HemisphereLightHelper, HemisphereLightProbe, IcosahedronGeometry, ImageBitmapLoader, ImageLoader, ImageUtils, IncrementStencilOp, IncrementWrapStencilOp, InstancedBufferAttribute, InstancedBufferGeometry, InstancedInterleavedBuffer, InstancedMesh, Int16BufferAttribute, Int32BufferAttribute, Int8BufferAttribute, IntType, InterleavedBuffer, InterleavedBufferAttribute, Interpolant, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InvertStencilOp, KeepStencilOp, KeyframeTrack, LOD, LatheGeometry, Layers, LessCompare, LessDepth, LessEqualCompare, LessEqualDepth, LessEqualStencilFunc, LessStencilFunc, Light, LightProbe, Line, Line3, LineBasicMaterial, LineCurve, LineCurve3, LineDashedMaterial, LineLoop, LineSegments, LinearEncoding, LinearFilter, LinearInterpolant, LinearMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipmapLinearFilter, LinearMipmapNearestFilter, LinearSRGBColorSpace, LinearToneMapping, Loader, LoaderUtils, LoadingManager, LoopOnce, LoopPingPong, LoopRepeat, LuminanceAlphaFormat, LuminanceFormat, MOUSE, Material, MaterialLoader, MathUtils, Matrix3, Matrix4, MaxEquation, Mesh, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshLambertMaterial, MeshMatcapMaterial, MeshNormalMaterial, MeshPhongMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshToonMaterial, MinEquation, MirroredRepeatWrapping, MixOperation, MultiplyBlending, MultiplyOperation, NearestFilter, NearestMipMapLinearFilter, NearestMipMapNearestFilter, NearestMipmapLinearFilter, NearestMipmapNearestFilter, NeverCompare, NeverDepth, NeverStencilFunc, NoBlending, NoColorSpace, NoToneMapping, NormalAnimationBlendMode, NormalBlending, NotEqualCompare, NotEqualDepth, NotEqualStencilFunc, NumberKeyframeTrack, Object3D, ObjectLoader, ObjectSpaceNormalMap, OctahedronGeometry, OneFactor, OneMinusDstAlphaFactor, OneMinusDstColorFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, PCFShadowMap, PCFSoftShadowMap, PMREMGenerator, Path, PerspectiveCamera, Plane, PlaneGeometry, PlaneHelper, PointLight, PointLightHelper, Points, PointsMaterial, PolarGridHelper, PolyhedronGeometry, PositionalAudio, PropertyBinding, PropertyMixer, QuadraticBezierCurve, QuadraticBezierCurve3, Quaternion, QuaternionKeyframeTrack, QuaternionLinearInterpolant, RED_GREEN_RGTC2_Format, RED_RGTC1_Format, REVISION, RGBADepthPacking, RGBAFormat, RGBAIntegerFormat, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_BPTC_Format, RGBA_ETC2_EAC_Format, RGBA_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGB_PVRTC_2BPPV1_Format, RGB_PVRTC_4BPPV1_Format, RGB_S3TC_DXT1_Format, RGFormat, RGIntegerFormat, RawShaderMaterial, Ray, Raycaster, RectAreaLight, RedFormat, RedIntegerFormat, ReinhardToneMapping, RenderTarget, RepeatWrapping, ReplaceStencilOp, ReverseSubtractEquation, RingGeometry, SIGNED_RED_GREEN_RGTC2_Format, SIGNED_RED_RGTC1_Format, SRGBColorSpace, Scene, ShaderChunk, ShaderLib, ShaderMaterial, ShadowMaterial, Shape, ShapeGeometry, ShapePath, ShapeUtils, ShortType, Skeleton, SkeletonHelper, SkinnedMesh, Source, Sphere, SphereGeometry, Spherical, SphericalHarmonics3, SplineCurve, SpotLight, SpotLightHelper, Sprite, SpriteMaterial, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, StaticCopyUsage, StaticDrawUsage, StaticReadUsage, StereoCamera, StreamCopyUsage, StreamDrawUsage, StreamReadUsage, StringKeyframeTrack, SubtractEquation, SubtractiveBlending, TOUCH, TangentSpaceNormalMap, TetrahedronGeometry, Texture, TextureLoader, TorusGeometry, TorusKnotGeometry, Triangle, TriangleFanDrawMode, TriangleStripDrawMode, TrianglesDrawMode, TubeGeometry, TwoPassDoubleSide, UVMapping, Uint16BufferAttribute, Uint32BufferAttribute, Uint8BufferAttribute, Uint8ClampedBufferAttribute, Uniform$1 as Uniform, UniformsGroup$1 as UniformsGroup, UniformsLib, UniformsUtils, UnsignedByteType, UnsignedInt248Type, UnsignedIntType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedShortType, VSMShadowMap, Vector2, Vector3, Vector4, VectorKeyframeTrack, VideoTexture, WebGL1Renderer, WebGL3DRenderTarget, WebGLArrayRenderTarget, WebGLCoordinateSystem, WebGLCubeRenderTarget, WebGLMultipleRenderTargets, WebGLRenderTarget, WebGLRenderer, WebGLUtils, WebGPU, WebGPUCoordinateSystem, WebGPURenderer, WireframeGeometry, WrapAroundEnding, ZeroCurvatureEnding, ZeroFactor, ZeroSlopeEnding, ZeroStencilOp, _SRGBAFormat, equirectUV, sRGBEncoding, texture };

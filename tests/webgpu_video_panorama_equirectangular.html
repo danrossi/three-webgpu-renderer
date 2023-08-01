@@ -33,7 +33,8 @@
 				"imports": {
 					"three": "../three.js/build/three.module.js",
 					"three/addons/": "../three.js/examples/jsm/",
-					"three-webgpu": "../build/webgpu-renderer.module.js"
+					"three-webgpu": "../build/webgpu-renderer.module.js",
+					"linearsrgb-material": "../build/linearsrgb-material.module.js"
 				}
 			}
 		</script>
@@ -134,7 +135,7 @@
 			} else {
 				console.log("Using WebGL");
 				renderer = new THREE.WebGLRenderer();
-				texture.colorSpace = THREE.LinearSRGBColorSpace;
+				//texture.colorSpace = THREE.LinearSRGBColorSpace;
 
 				//use shader material for performance srgb decode fix
 				/*material = new THREE.ShaderMaterial( {
@@ -173,7 +174,7 @@
 				material.color = new THREE.Color( 0xffffff );*/
 
 
-				material = new THREE.MeshBasicMaterial({ map: texture });
+				/*material = new THREE.MeshBasicMaterial({ map: texture });
 
 				material.onBeforeCompile = function (shader) {
 
@@ -194,7 +195,9 @@
 						`
 					);
 
-				};
+				};*/
+
+				material = new LinearSRGBMaterial({ map: texture });
 
 			}
 

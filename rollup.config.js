@@ -185,5 +185,25 @@ export default [
 				file: 'build/three-webgpu.js'
 			}
 		]
-	}
+	},
+	{
+		input: './linearsrgb-material.js',
+		external: ['three'],
+		plugins: [
+		
+			includePaths({
+				paths: ["./src"],
+		  	}),
+			strip({
+				debugger: true
+			}),
+			header()
+		],
+		output: [
+			{
+				format: 'esm',
+				file: 'build/linearsrgb-material.module.js'
+			}
+		]
+	},
 ];
