@@ -120,8 +120,8 @@
 
 
 			const texture = new CustomVideoTexture(video);
-			//texture.colorSpace = THREE.LinearSRGBColorSpace;
-	
+			texture.colorSpace = THREE.SRGBColorSpace;
+			const material = new THREE.MeshBasicMaterial({ map: texture });
 			/*const material = new THREE.MeshBasicMaterial({ map: texture });
 
 			material.onBeforeCompile = function (shader) {
@@ -145,7 +145,7 @@
 
 			};*/
 
-			const material = new LinearSRGBMaterial({ map: texture });
+			//const material = new LinearSRGBMaterial({ map: texture });
 
 
 

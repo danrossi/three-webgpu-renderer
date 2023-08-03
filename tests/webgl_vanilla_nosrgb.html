@@ -58,16 +58,23 @@
 
             initCanvas();
 
+            window.addEventListener( 'resize', onWindowResize );
+
 			//animate();
 
 		}
 
 		function onWindowResize() {
 
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
+            const width = window.innerWidth, height = window.innerHeight;
 
-			renderer.setSize(window.innerWidth, window.innerHeight);
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+    gl.viewport(0, 0, width, height);
+    gl.uniform1f(texWidthLoc, width);
+    gl.uniform1f(texHeightLoc, height);
+
+    
 
 		}
 
@@ -131,8 +138,8 @@
             };
 
             video.addEventListener("resize", onResize);
-
             onResize();
+            onWindowResize();
 
             animation.start();
 
@@ -147,6 +154,15 @@
         }
 
         async function render(now, metadata) {
+            gl.pixelStorei( gl.UNPACK_FLIP_Y_WEBGL,  false );
+			gl.pixelStorei( gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false );
+			gl.pixelStorei( gl.UNPACK_ALIGNMENT, 4 );
+			gl.pixelStorei( gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE );
+
+            gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER,9729 );
+			gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 9729);
 
             gl.viewport(0, 0, metadata.width, metadata.height);
             gl.activeTexture(gl.TEXTURE0);

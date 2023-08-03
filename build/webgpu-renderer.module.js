@@ -8191,6 +8191,8 @@ class NodeBuilder {
 
 	getType( type ) {
 
+		if ( type === 'color' ) return 'vec3';
+
 		return type;
 
 	}
@@ -8666,7 +8668,7 @@ class NodeBuilder {
 
 	getVar( type, name ) {
 
-		return `${type} ${name}`;
+		return `${ this.getType( type ) } ${ name }`;
 
 	}
 
