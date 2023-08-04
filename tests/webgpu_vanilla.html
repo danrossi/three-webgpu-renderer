@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>WebGPU Basic</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <style>
+        body {
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "../three.js/build/three.module.js",
+                "three/addons/": "../three.js/examples/jsm/",
+                "three-webgpu": "../build/webgpu-renderer.module.js"
+            }
+        }
+    </script>
+
+    <div id="container"></div>
+
+    <video id="video" loop muted autoplay crossOrigin="anonymous" preload="metadata" playsinline style="display:none">
+
+    </video>
+
+    <canvas id="renderer"></canvas>
+
+
+
+    <script type="module">
+
+        import * as THREE from 'three';
+
+        const geometry = new THREE.SphereGeometry(500, 60, 40);
+        // invert the geometry on the x-axis so that all of the faces point inward
+        geometry.scale(- 1, 1, 1);
+
+        const buffers = [
+            geometry.getAttribute("normal"),
+            geometry.getAttribute("uv"),
+            geometry.getAttribute("position")
+        ]
+
+        const video = document.getElementById('video'),
+            canvas = document.getElementById('renderer');
+
+        video.src = "https://videos.electroteque.org/360/ultra_light_flight_720p.mp4";
+        video.play();
+
+        video.addEventListener("loadedmetadata", () => {
+            console.log("loadedmetadata");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            init();
+        });
+
+        const vertexShader = `
+        // Three.js r155dev - NodeMaterial System
+
+
+// uniforms
+
+struct NodeUniformsStruct {
+	nodeUniform0 : mat3x3<f32>,
+	projectionMatrix : mat4x4<f32>,
+	modelViewMatrix : mat4x4<f32>
+};
+@binding( 0 ) @group( 0 )
+var<uniform> NodeUniforms : NodeUniformsStruct;
+
+// varyings
+
+struct NodeVaryingsStruct {
+	@location( 0 ) nodeVarying0 : vec3<f32>,
+	@location( 2 ) nodeVarying2 : vec2<f32>,
+	@builtin( position ) Vertex : vec4<f32>
+};
+
+// codes
+
+
+@vertex
+fn main( @location( 0 ) normal : vec3<f32>,
+	@location( 1 ) uv : vec2<f32>,
+	@location( 2 ) position : vec3<f32> ) -> NodeVaryingsStruct {
+
+	// system
+	var NodeVaryings: NodeVaryingsStruct;
+
+	// vars
+	
+	var nodeVarying1 : vec3<f32>;
+	var nodeVarying3 : vec3<f32>;
+
+
+	// flow
+	// code
+
+	nodeVarying1 = normal;
+	NodeVaryings.nodeVarying0 = ( NodeUniforms.nodeUniform0 * nodeVarying1 );
+	NodeVaryings.nodeVarying2 = uv;
+	nodeVarying3 = position;
+
+	// result
+	NodeVaryings.Vertex = ( ( NodeUniforms.projectionMatrix * NodeUniforms.modelViewMatrix ) * vec4<f32>( nodeVarying3, 1.0 ) );
+
+	return NodeVaryings;
+
+}
+
+        `;
+
+        const fragmentShader = `
+// Three.js r155dev - NodeMaterial System
+
+
+// uniforms
+@binding( 1 ) @group( 0 ) var nodeUniform2_sampler : sampler;
+@binding( 2 ) @group( 0 ) var nodeUniform2 : texture_external;
+struct NodeUniformsStruct {
+	nodeUniform1 : vec3<f32>,
+	nodeUniform3 : mat3x3<f32>,
+	nodeUniform4 : f32
+};
+@binding( 3 ) @group( 0 )
+var<uniform> NodeUniforms : NodeUniformsStruct;
+
+// codes
+
+fn threejs_lessThanEqual( a : vec3<f32>, b : vec3<f32> ) -> vec3<bool> {
+
+	return vec3<bool>( a.x <= b.x, a.y <= b.y, a.z <= b.z );
+
+}
+
+
+
+@fragment
+fn main( @location( 0 ) nodeVarying0 : vec3<f32>,
+	@location( 2 ) nodeVarying2 : vec2<f32> ) -> @location( 0 ) vec4<f32> {
+
+	// vars
+	
+	var TransformedNormalView : vec3<f32>;
+	var DiffuseColor : vec4<f32>;
+	var nodeVar2 : vec4<f32>;
+	var Output : vec4<f32>;
+	var nodeVar4 : vec4<f32>;
+	var nodeVar5 : vec4<f32>;
+
+
+	// flow
+	// code
+
+	TransformedNormalView = normalize( nodeVarying0 );
+	nodeVar2 = textureSampleBaseClampToEdge( nodeUniform2, nodeUniform2_sampler, vec2<f32>( ( NodeUniforms.nodeUniform3 * vec3<f32>( nodeVarying2, 1.0 ) ).xy.x, 1.0 - ( NodeUniforms.nodeUniform3 * vec3<f32>( nodeVarying2, 1.0 ) ).xy.y ) );
+	DiffuseColor = ( vec4<f32>( NodeUniforms.nodeUniform1, 1.0 ) * vec4<f32>( mix( pow( ( ( ( nodeVar2 ).xyz * vec3<f32>( 0.9478672986 ) ) + vec3<f32>( 0.0521327014 ) ), vec3<f32>( 2.4 ) ), ( ( nodeVar2 ).xyz * vec3<f32>( 0.0773993808 ) ), vec3<f32>( threejs_lessThanEqual( ( nodeVar2 ).xyz, vec3<f32>( 0.04045 ) ) ) ), ( nodeVar2 ).w ) );
+	DiffuseColor.w = ( DiffuseColor.w * NodeUniforms.nodeUniform4 );
+	nodeVar4 = vec4<f32>( DiffuseColor.xyz, DiffuseColor.w );
+	nodeVar5 = vec4<f32>( mix( ( ( pow( nodeVar4.xyz, vec3<f32>( 0.41666 ) ) * vec3<f32>( 1.055 ) ) - vec3<f32>( 0.055 ) ), ( nodeVar4.xyz * vec3<f32>( 12.92 ) ), vec3<f32>( threejs_lessThanEqual( nodeVar4.xyz, vec3<f32>( 0.0031308 ) ) ) ), nodeVar4.w );
+	Output = nodeVar5;
+
+	// result
+	return nodeVar5;
+
+}
+`;
+
+        async function init() {
+            const adapter = await navigator.gpu.requestAdapter();
+            const device = await adapter.requestDevice();
+
+
+
+            const context = canvas.getContext('webgpu');
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            canvas.width = canvas.clientWidth * devicePixelRatio;
+            canvas.height = canvas.clientHeight * devicePixelRatio;
+            const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
+            /* const vertices = new Float32Array([
+                 -1.0, -1.0, 0, 1, 1, 0, 0, 1, // Bottom left, red
+                 -0.0, 1.0, 0, 1, 0, 1, 0, 1, // Top, green
+                 1.0, -1.0, 0, 1, 0, 0, 1, 1, // Bottom right, blue
+             ]);
+ 
+             const vertexBuffer = device.createBuffer({
+                 size: vertices.byteLength,
+                 usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+                 mappedAtCreation: true
+             });
+             new Float32Array(vertexBuffer.getMappedRange()).set(vertices);*/
+            // vertexBuffer.unmap();
+
+            
+            const vertexInitBuffers = [{
+                "arrayStride": 12,
+                "attributes": [
+                    {
+                        "shaderLocation": 0,
+                        "offset": 0,
+                        "format": "float32x3"
+                    }
+                ],
+                "stepMode": "vertex"
+            },
+            {
+                "arrayStride": 8,
+                "attributes": [
+                    {
+                        "shaderLocation": 1,
+                        "offset": 0,
+                        "format": "float32x2"
+                    }
+                ],
+                "stepMode": "vertex"
+            },
+            {
+                "arrayStride": 12,
+                "attributes": [
+                    {
+                        "shaderLocation": 2,
+                        "offset": 0,
+                        "format": "float32x3"
+                    }
+                ],
+                "stepMode": "vertex"
+            }
+            ];
+
+
+            context.configure({
+                device,
+                format: presentationFormat,
+                alphaMode: 'premultiplied',
+            });
+
+            const entries = [
+                {
+                    "binding": 0,
+                    "visibility": 1,
+                    "buffer": {}
+                },
+                {
+                    "binding": 1,
+                    "visibility": 2,
+                    "sampler": {}
+                },
+                {
+                    "binding": 2,
+                    "visibility": 2,
+                    "externalTexture": {}
+                },
+                {
+                    "binding": 3,
+                    "visibility": 2,
+                    "buffer": {}
+                }
+            ];
+
+            let bindingLayout = device.createBindGroupLayout({ entries });
+
+            const pipeline = device.createRenderPipeline({
+                //layout: 'auto',
+                vertex: {
+                    module: device.createShaderModule({
+                        code: vertexShader,
+                        label: "vertex",
+                        buffers: vertexInitBuffers
+                    }),
+                    entryPoint: 'main',
+                },
+                fragment: {
+                    module: device.createShaderModule({
+                        code: fragmentShader,
+                        label: "fragment"
+                    }),
+                    entryPoint: 'main',
+                    targets: [
+                        {
+                            format: presentationFormat,
+                        },
+                    ],
+                },
+                primitive: {
+                    "topology": "triangle-list",
+                    "frontFace": "cw",
+                    "cullMode": "front"
+                },
+                layout: device.createPipelineLayout({
+                    bindGroupLayouts: [bindingLayout]
+                })
+            });
+
+
+            const sampler = device.createSampler({
+                "addressModeU": "clamp-to-edge",
+                "addressModeV": "clamp-to-edge",
+                "addressModeW": "clamp-to-edge",
+                "magFilter": "linear",
+                "minFilter": "linear",
+                "mipmapFilter": "linear",
+                "maxAnisotropy": 1
+            });
+
+            const usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
+
+            const bufferGPU1 = device.createBuffer({
+                label: 'bindingBuffer',
+                size: 176,
+                usage: usage
+            }),
+                bufferGPU2 = device.createBuffer({
+                    label: 'bindingBuffer',
+                    size: 80,
+                    usage: usage
+                });
+
+            function createAttribute(bufferAttribute, usage) {
+
+
+                const array = bufferAttribute.array;
+                const size = array.byteLength + ((4 - (array.byteLength % 4)) % 4); // ensure 4 byte alignment, see #20441
+
+                const buffer = device.createBuffer({
+                    label: bufferAttribute.name,
+                    size: size,
+                    usage: usage,
+                    mappedAtCreation: true
+                });
+
+                new array.constructor(buffer.getMappedRange()).set(array);
+
+                buffer.unmap();
+
+                return buffer;
+
+            }
+
+            const GPUIndexFormat = {
+                Uint16: 'uint16',
+                Uint32: 'uint32'
+            };
+
+            const vertexBuffers = [
+                createAttribute(buffers[0], GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST),
+                createAttribute(buffers[1], GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST),
+                createAttribute(buffers[2], GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST)
+            ];
+
+            const indexBuffer = createAttribute(geometry.getIndex(), GPUBufferUsage.INDEX | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST);
+            const indexFormat = (geometry.getIndex().array instanceof Uint16Array) ? GPUIndexFormat.Uint16 : GPUIndexFormat.Uint32;
+
+
+            function frame() {
+                
+                
+                
+                bindingLayout = device.createBindGroupLayout({ entries });
+                
+
+
+                const uniformBindGroup = device.createBindGroup({
+                    layout: bindingLayout,
+                    entries: [
+                        {
+                            "binding": 0,
+                            "resource": {
+                                "buffer": bufferGPU1
+                            }
+                        },
+                        {
+                            "binding": 1,
+                            "resource": sampler
+                        },
+                        {
+                            "binding": 2,
+                            "resource": device.importExternalTexture({
+                                source: video,
+                            }),
+                        },
+                        {
+                            "binding": 3,
+                            "resource": {
+                                "buffer": bufferGPU2
+                            }
+                        }
+                    ],
+                });
+
+                const commandEncoder = device.createCommandEncoder();
+                const textureView = context.getCurrentTexture().createView();
+
+                const renderPassDescriptor = {
+                    colorAttachments: [
+                        {
+                            view: textureView,
+                            clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                            loadOp: 'clear',
+                            storeOp: 'store',
+                        },
+                    ],
+                };
+
+                const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+                /*const uniformBindGroup = device.createBindGroup({
+                    layout: pipeline.getBindGroupLayout(0),
+                    entries: [
+                        {
+                            binding: 1,
+                            resource: sampler,
+                        },
+                        {
+                            binding: 2,
+                            resource: device.importExternalTexture({
+                                source: video,
+                            }),
+                        },
+                    ],
+                });*/
+
+                
+
+                
+                
+
+            
+                passEncoder.setIndexBuffer(indexBuffer, indexFormat);
+
+                passEncoder.setVertexBuffer(0, vertexBuffers[0]);
+                passEncoder.setVertexBuffer(1, vertexBuffers[1]);
+                passEncoder.setVertexBuffer(2, vertexBuffers[2]);
+
+
+                passEncoder.setPipeline(pipeline);
+                passEncoder.setBindGroup(0, uniformBindGroup);
+
+
+                passEncoder.drawIndexed(14040, 1, 0, 0, 0);
+                //passEncoder.draw(6, 1, 0, 0);
+                passEncoder.end();
+                device.queue.submit([commandEncoder.finish()]);
+
+                if ('requestVideoFrameCallback' in video) {
+                    video.requestVideoFrameCallback(frame);
+                } else {
+                    requestAnimationFrame(frame);
+                }
+            }
+
+            if ('requestVideoFrameCallback' in video) {
+                video.requestVideoFrameCallback(frame);
+            } else {
+                requestAnimationFrame(frame);
+            }
+
+
+
+
+
+        }
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>
