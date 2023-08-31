@@ -7,6 +7,8 @@ import includePaths from 'rollup-plugin-includepaths';
 import gzipPlugin from 'rollup-plugin-gzip';
 import { gzipAsync } from '@gfx/zopfli'
 
+import tla from 'rollup-plugin-tla';
+
 
 function header() {
 
@@ -150,9 +152,10 @@ export default [
 			strip({
 				debugger: true
 			}),
-			terser({
+			tla(),
+			/*terser({
                 keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
-            }),
+            }),*/
 			header()
 		],
 		output: [
@@ -176,6 +179,7 @@ export default [
 			strip({
 				debugger: true
 			}),
+			tla(),
 			header()
 		],
 		output: [
@@ -186,7 +190,7 @@ export default [
 			}
 		]
 	},
-	{
+	/*{
 		input: './linearsrgb-material.js',
 		external: ['three'],
 		plugins: [
@@ -205,5 +209,5 @@ export default [
 				file: 'build/linearsrgb-material.module.js'
 			}
 		]
-	},
+	},*/
 ];

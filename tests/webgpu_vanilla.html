@@ -361,6 +361,10 @@ fn main( @location( 0 ) nodeVarying0 : vec3<f32>,
 
             function frame() {
                 
+
+                bufferGPU1
+
+                device.queue.writeBuffer( bufferGPU, 0, buffer, 0 );
                 
                 
                 bindingLayout = device.createBindGroupLayout({ entries });
@@ -394,6 +398,9 @@ fn main( @location( 0 ) nodeVarying0 : vec3<f32>,
                         }
                     ],
                 });
+
+
+                return;
 
                 const commandEncoder = device.createCommandEncoder();
                 const textureView = context.getCurrentTexture().createView();

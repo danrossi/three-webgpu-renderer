@@ -18,6 +18,7 @@
         "magic-string": "^0.30.0",
         "rollup": "^2.38.0",
         "rollup-plugin-gzip": "^3.1.0",
-        "rollup-plugin-includepaths": "^0.2.4"
+        "rollup-plugin-includepaths": "^0.2.4",
+        "rollup-plugin-tla": "^0.0.2"
     }
 }
