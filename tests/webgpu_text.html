@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>three.js webgl - equirectangular video panorama</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="../three.js/examples/main.css">
+	<style>
+		body {
+			touch-action: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="info">
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - video panorama
+	</div>
+
+	<div id="container"></div>
+
+	<video id="video" loop muted autoplay crossOrigin="anonymous" preload="metadata" playsinline style="display:none">
+
+	</video>
+
+	<!-- Import maps polyfill -->
+	<!-- Remove this when import maps will be widely supported -->
+	<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../three.js/build/three.module.js",
+					"three/addons/": "../three.js/examples/jsm/",
+					"three-webgpu": "../build/webgpu-renderer.module.js",
+					"three-bmfont-text": "./three-bmfont-text.module.js"
+				}
+			}
+		</script>
+
+	<script type="module">
+
+		import * as THREE from 'three';
+		import { WebGPU, WebGPURenderer,WebGPUGLRenderer, texture, uv, min, max, MeshBasicNodeMaterial, tslFn, uniform, clamp, fwidth, vec4 } from 'three-webgpu';
+		import { TextBitmap } from 'three-bmfont-text';
+
+        import { fontAssets } from './fontassets.js';
+
+		let _requestVideoFrameCallback = false;
+
+		class BMFontLoader {
+
+			static loadTexture(image) {
+				return new Promise((resolve, reject) => {
+					const texture = new THREE.TextureLoader().load(image, function () {
+						resolve(texture);
+					}, null, reject);
+				});
+			}
+		}
+
+
+
+		let camera, scene, renderer;
+
+		const distance = 50;
+
+
+		init();
+
+
+
+
+		async function init() {
+
+			const container = document.getElementById('container');
+
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+			camera.position.x = 6.926950826802958;
+			camera.position.y = -2.58284056910726;
+			camera.position.z = 49.450442736517815;
+	
+
+			scene = new THREE.Scene();
+
+			let material;
+
+
+			renderer = new WebGPURenderer();
+			//videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+		
+
+			const fontsTexture = await BMFontLoader.loadTexture(fontAssets.image);
+
+			//fontsTexture.colorSpace = THREE.SRGBColorSpace;
+
+            const text = new TextBitmap({
+                //text: "P",
+				text: "Participant Title",
+                width: 400,
+                align: "center",
+                font: fontAssets.font,
+                letterSpacing: 1,
+                flipY: fontsTexture.flipY,
+                scale: 0.1,
+                color: "#ffffff",
+                texture: fontsTexture,
+            }, renderer);
+
+            scene.add(text.group);
+
+
+
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		
+			container.appendChild(renderer.domElement);
+
+			//
+
+			//await renderer.init();
+
+			//window.addEventListener( 'resize', onWindowResize );
+
+			renderer.setAnimationLoop( update);
+
+			//animate();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+
+		function animate() {
+
+			requestAnimationFrame(animate);
+			update();
+
+		}
+
+		function update() {
+
+			renderer.render(scene, camera);
+
+		}
+
+	</script>
+</body>
+
+</html>

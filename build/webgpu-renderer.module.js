@@ -89,59 +89,6 @@ class Animation {
 
 }
 
-class DataMap {
-
-	constructor() {
-
-		this.data = new WeakMap();
-
-	}
-
-	get( object ) {
-
-		let map = this.data.get( object );
-
-		if ( map === undefined ) {
-
-			map = {};
-			this.data.set( object, map );
-
-		}
-
-		return map;
-
-	}
-
-	delete( object ) {
-
-		let map;
-
-		if ( this.data.has( object ) ) {
-
-			map = this.data.get( object );
-
-			this.data.delete( object );
-
-		}
-
-		return map;
-
-	}
-
-	has( object ) {
-
-		return this.data.has( object );
-
-	}
-
-	dispose() {
-
-		this.data.clear();
-
-	}
-
-}
-
 class ChainMap {
 
 	constructor() {
@@ -252,15 +199,16 @@ class RenderObject {
 		this.context = renderContext;
 
 		this.geometry = object.geometry;
+		this.version = material.version;
 
 		this.attributes = null;
 		this.pipeline = null;
 		this.vertexBuffers = null;
 
-		this._nodeBuilder = null;
+		this.initialCacheKey = this.getCacheKey();
+
+		this._nodeBuilderState = null;
 		this._bindings = null;
-		this._materialVersion = - 1;
-		this._materialCacheKey = '';
 
 		this.onDispose = null;
 
@@ -276,15 +224,15 @@ class RenderObject {
 
 	}
 
-	getNodeBuilder() {
+	getNodeBuilderState() {
 
-		return this._nodeBuilder || ( this._nodeBuilder = this._nodes.getForRender( this ) );
+		return this._nodeBuilderState || ( this._nodeBuilderState = this._nodes.getForRender( this ) );
 
 	}
 
 	getBindings() {
 
-		return this._bindings || ( this._bindings = this.getNodeBuilder().createBindings() );
+		return this._bindings || ( this._bindings = this.getNodeBuilderState().createBindings() );
 
 	}
 
@@ -304,7 +252,7 @@ class RenderObject {
 
 		if ( this.attributes !== null ) return this.attributes;
 
-		const nodeAttributes = this.getNodeBuilder().getAttributesArray();
+		const nodeAttributes = this.getNodeBuilderState().nodeAttributes;
 		const geometry = this.geometry;
 
 		const attributes = [];
@@ -336,23 +284,46 @@ class RenderObject {
 
 	}
 
-	getCacheKey() {
+	getMaterialCacheKey() {
 
-		const { material, scene, lightsNode } = this;
+		const material = this.material;
 
-		if ( material.version !== this._materialVersion ) {
+		let cacheKey = material.customProgramCacheKey();
 
-			this._materialVersion = material.version;
-			this._materialCacheKey = material.customProgramCacheKey();
+		for ( const property in material ) {
+
+			if ( /^(is[A-Z])|^(visible|version|uuid|name|opacity|userData)$/.test( property ) ) continue;
+
+			let value = material[ property ];
+
+			if ( value !== null ) {
+
+				const type = typeof value;
+
+				if ( type === 'number' ) value = value !== 0 ? '1' : '0'; // Convert to on/off, important for clearcoat, transmission, etc
+				else if ( type === 'object' ) value = '{}';
+
+			}
+
+			cacheKey += /*property + ':' +*/ value + ',';
 
 		}
 
-		const cacheKey = [];
+		return cacheKey;
 
-		cacheKey.push( 'material:' + this._materialCacheKey );
-		cacheKey.push( 'nodes:' + this._nodes.getCacheKey( scene, lightsNode ) );
+	}
 
-		return '{' + cacheKey.join( ',' ) + '}';
+	getNodesCacheKey() {
+
+		// Environment Nodes Cache Key
+
+		return this._nodes.getCacheKey( this.scene, this.lightsNode );
+
+	}
+
+	getCacheKey() {
+
+		return `{material:${ this.getMaterialCacheKey() },nodes:${ this.getNodesCacheKey()}`;
 
 	}
 
@@ -378,7 +349,6 @@ class RenderObjects {
 		this.info = info;
 
 		this.chainMaps = {};
-		this.dataMap = new DataMap();
 
 	}
 
@@ -397,14 +367,17 @@ class RenderObjects {
 
 		} else {
 
-			const data = this.dataMap.get( renderObject );
-			const cacheKey = renderObject.getCacheKey();
+			if ( renderObject.version !== material.version ) {
 
-			if ( data.cacheKey !== cacheKey ) {
+				renderObject.version = material.version;
 
-				renderObject.dispose();
+				if ( renderObject.initialCacheKey !== renderObject.getCacheKey() ) {
 
-				renderObject = this.get( object, material, scene, camera, lightsNode, renderContext, passId );
+					renderObject.dispose();
+
+					renderObject = this.get( object, material, scene, camera, lightsNode, renderContext, passId );
+
+				}
 
 			}
 
@@ -423,23 +396,16 @@ class RenderObjects {
 	dispose() {
 
 		this.chainMaps = {};
-		this.dataMap = new DataMap();
 
 	}
 
 	createRenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode, renderContext, passId ) {
 
 		const chainMap = this.getChainMap( passId );
-		const dataMap = this.dataMap;
 
 		const renderObject = new RenderObject( nodes, geometries, renderer, object, material, scene, camera, lightsNode, renderContext );
 
-		const data = dataMap.get( renderObject );
-		data.cacheKey = renderObject.getCacheKey();
-
 		renderObject.onDispose = () => {
-
-			dataMap.delete( renderObject );
 
 			this.pipelines.delete( renderObject );
 			this.bindings.delete( renderObject );
@@ -453,6 +419,59 @@ class RenderObjects {
 
 	}
 
+
+}
+
+class DataMap {
+
+	constructor() {
+
+		this.data = new WeakMap();
+
+	}
+
+	get( object ) {
+
+		let map = this.data.get( object );
+
+		if ( map === undefined ) {
+
+			map = {};
+			this.data.set( object, map );
+
+		}
+
+		return map;
+
+	}
+
+	delete( object ) {
+
+		let map;
+
+		if ( this.data.has( object ) ) {
+
+			map = this.data.get( object );
+
+			this.data.delete( object );
+
+		}
+
+		return map;
+
+	}
+
+	has( object ) {
+
+		return this.data.has( object );
+
+	}
+
+	dispose() {
+
+		this.data.clear();
+
+	}
 
 }
 
@@ -980,31 +999,31 @@ class Pipelines extends DataMap {
 
 			// get shader
 
-			const nodeBuilder = this.nodes.getForRender( renderObject );
+			const nodeBuilderState = renderObject.getNodeBuilderState();
 
 			// programmable stages
 
-			let stageVertex = this.programs.vertex.get( nodeBuilder.vertexShader );
+			let stageVertex = this.programs.vertex.get( nodeBuilderState.vertexShader );
 
 			if ( stageVertex === undefined ) {
 
 				if ( previousPipeline && previousPipeline.vertexProgram.usedTimes === 0 ) this._releaseProgram( previousPipeline.vertexProgram );
 
-				stageVertex = new ProgrammableStage( nodeBuilder.vertexShader, 'vertex' );
-				this.programs.vertex.set( nodeBuilder.vertexShader, stageVertex );
+				stageVertex = new ProgrammableStage( nodeBuilderState.vertexShader, 'vertex' );
+				this.programs.vertex.set( nodeBuilderState.vertexShader, stageVertex );
 
 				backend.createProgram( stageVertex );
 
 			}
 
-			let stageFragment = this.programs.fragment.get( nodeBuilder.fragmentShader );
+			let stageFragment = this.programs.fragment.get( nodeBuilderState.fragmentShader );
 
 			if ( stageFragment === undefined ) {
 
 				if ( previousPipeline && previousPipeline.fragmentProgram.usedTimes === 0 ) this._releaseProgram( previousPipeline.fragmentProgram );
 
-				stageFragment = new ProgrammableStage( nodeBuilder.fragmentShader, 'fragment' );
-				this.programs.fragment.set( nodeBuilder.fragmentShader, stageFragment );
+				stageFragment = new ProgrammableStage( nodeBuilderState.fragmentShader, 'fragment' );
+				this.programs.fragment.set( nodeBuilderState.fragmentShader, stageFragment );
 
 				backend.createProgram( stageFragment );
 
@@ -1285,9 +1304,9 @@ class Bindings extends DataMap {
 
 		if ( data.bindings === undefined ) {
 
-			const nodeBuilder = this.nodes.getForCompute( computeNode );
+			const nodeBuilderState = this.nodes.getForCompute( computeNode );
 
-			const bindings = nodeBuilder.getBindings();
+			const bindings = nodeBuilderState.bindings;
 
 			data.bindings = bindings;
 
@@ -1665,6 +1684,12 @@ class Node extends EventDispatcher {
 
 	}
 
+	updateReference() {
+
+		return this;
+
+	}
+
 	isGlobal( /*builder*/ ) {
 
 		return false;
@@ -1744,7 +1769,7 @@ class Node extends EventDispatcher {
 
 	}
 
-	getReference( builder ) {
+	getShared( builder ) {
 
 		const hash = this.getHash( builder );
 		const nodeFromHash = builder.getNodeFromHash( hash );
@@ -1815,7 +1840,7 @@ class Node extends EventDispatcher {
 
 	build( builder, output = null ) {
 
-		const refNode = this.getReference( builder );
+		const refNode = this.getShared( builder );
 
 		if ( this !== refNode ) {
 
@@ -3221,9 +3246,9 @@ class CacheNode extends Node {
 
 }
 
-const cache$1 = nodeProxy( CacheNode );
+const cache = nodeProxy( CacheNode );
 
-addNodeElement( 'cache', cache$1 );
+addNodeElement( 'cache', cache );
 
 addNodeClass( CacheNode );
 
@@ -3574,8 +3599,8 @@ const iridescenceThickness = nodeImmutable( PropertyNode, 'float', 'IridescenceT
 const specularColor = nodeImmutable( PropertyNode, 'color', 'SpecularColor' );
 const shininess = nodeImmutable( PropertyNode, 'float', 'Shininess' );
 const output = nodeImmutable( PropertyNode, 'vec4', 'Output' );
-const dashSize = nodeImmutable( PropertyNode, 'float', 'dashScale' );
-const gapSize= nodeImmutable( PropertyNode, 'float', 'gapSize' );
+const dashSize = nodeImmutable( PropertyNode, 'float', 'dashSize' );
+const gapSize = nodeImmutable( PropertyNode, 'float', 'gapSize' );
 
 addNodeClass( PropertyNode );
 
@@ -4446,6 +4471,12 @@ class TextureNode extends UniformNode {
 
 	}
 
+	updateReference( /*frame*/ ) {
+
+		return this.value;
+
+	}
+
 	getTextureMatrix( uvNode ) {
 
 		const texture = this.value;
@@ -4479,7 +4510,7 @@ class TextureNode extends UniformNode {
 
 		if ( ! uvNode ) uvNode = this.getDefaultUV();
 
-		if ( this.updateMatrix ) {
+		if ( this.updateMatrix === true ) {
 
 			uvNode = this.getTextureMatrix( uvNode );
 
@@ -4673,12 +4704,21 @@ class ReferenceNode extends Node {
 		this.uniformType = uniformType;
 
 		this.object = object;
+		this.reference = null;
 
 		this.node = null;
 
 		this.updateType = NodeUpdateType.OBJECT;
 
 		this.setNodeType( uniformType );
+
+	}
+
+	updateReference( frame ) {
+
+		this.reference = this.object !== null ? this.object : frame.object;
+
+		return this.reference;
 
 	}
 
@@ -4706,12 +4746,9 @@ class ReferenceNode extends Node {
 
 	}
 
-	update( frame ) {
+	update( /*frame*/ ) {
 
-		const object = this.object !== null ? this.object : frame.object;
-		const property = this.property;
-
-		this.node.value = object[ property ];
+		this.node.value = this.reference[ this.property ];
 
 	}
 
@@ -4739,6 +4776,14 @@ class MaterialReferenceNode extends ReferenceNode {
 
 	}
 
+	updateReference( frame ) {
+
+		this.reference = this.material !== null ? this.material : frame.material;
+
+		return this.reference;
+
+	}
+
 	construct( builder ) {
 
 		const material = this.material !== null ? this.material : builder.material;
@@ -4749,21 +4794,13 @@ class MaterialReferenceNode extends ReferenceNode {
 
 	}
 
-	update( frame ) {
-
-		this.object = this.material !== null ? this.material : frame.material;
-
-		super.update( frame );
-
-	}
-
 }
 
 const materialReference = ( name, type, material ) => nodeObject( new MaterialReferenceNode( name, type, material ) );
 
 addNodeClass( MaterialReferenceNode );
 
-const cache = new WeakMap();
+const _propertyCache = new Map();
 
 class MaterialNode extends Node {
 
@@ -4775,27 +4812,15 @@ class MaterialNode extends Node {
 
 	}
 
-	getCache( builder, property, type ) {
+	getCache( property, type ) {
 
-		const material = builder.context.material;
-
-		let cacheMaterial = cache.get( material );
-
-		if ( cacheMaterial === undefined ) {
-
-			cacheMaterial = {};
-
-			cache.set( material, cacheMaterial );
-
-		}
-
-		let node = cacheMaterial[ property ];
+		let node = _propertyCache.get( property );
 
 		if ( node === undefined ) {
 
 			node = materialReference( property, type );
 
-			cacheMaterial[ property ] = node;
+			_propertyCache.set( property, node );
 
 		}
 
@@ -4803,21 +4828,21 @@ class MaterialNode extends Node {
 
 	}
 
-	getFloat( builder, property ) {
+	getFloat( property ) {
 
-		return this.getCache( builder, property, 'float' );
-
-	}
-
-	getColor( builder, property ) {
-
-		return this.getCache( builder, property, 'color' );
+		return this.getCache( property, 'float' );
 
 	}
 
-	getTexture( builder, property ) {
+	getColor( property ) {
 
-		return this.getCache( builder, property, 'texture' );
+		return this.getCache( property, 'color' );
+
+	}
+
+	getTexture( property ) {
+
+		return this.getCache( property, 'texture' );
 
 	}
 
@@ -4830,19 +4855,19 @@ class MaterialNode extends Node {
 
 		if ( scope === MaterialNode.ALPHA_TEST || scope === MaterialNode.SHININESS || scope === MaterialNode.REFLECTIVITY || scope === MaterialNode.ROTATION || scope === MaterialNode.IRIDESCENCE || scope === MaterialNode.IRIDESCENCE_IOR ) {
 
-			node = this.getFloat( builder, scope );
+			node = this.getFloat( scope );
 
 		} else if ( scope === MaterialNode.SPECULAR_COLOR ) {
 
-			node = this.getColor( builder, 'specular' );
+			node = this.getColor( 'specular' );
 
 		} else if ( scope === MaterialNode.COLOR ) {
 
-			const colorNode = this.getColor( builder, 'color' );
+			const colorNode = this.getColor( 'color' );
 
 			if ( material.map && material.map.isTexture === true ) {
 
-				node = colorNode.mul( this.getTexture( builder, 'map' ) );
+				node = colorNode.mul( this.getTexture( 'map' ) );
 
 			} else {
 
@@ -4852,11 +4877,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.OPACITY ) {
 
-			const opacityNode = this.getFloat( builder, 'opacity' );
+			const opacityNode = this.getFloat( 'opacity' );
 
 			if ( material.alphaMap && material.alphaMap.isTexture === true ) {
 
-				node = opacityNode.mul( this.getTexture( builder, 'alphaMap' ) );
+				node = opacityNode.mul( this.getTexture( 'alphaMap' ) );
 
 			} else {
 
@@ -4868,7 +4893,7 @@ class MaterialNode extends Node {
 
 			if ( material.specularMap && material.specularMap.isTexture === true ) {
 
-				node = this.getTexture( builder, 'specularMap' ).r;
+				node = this.getTexture( 'specularMap' ).r;
 
 			} else {
 
@@ -4878,11 +4903,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.ROUGHNESS ) {
 
-			const roughnessNode = this.getFloat( builder, 'roughness' );
+			const roughnessNode = this.getFloat( 'roughness' );
 
 			if ( material.roughnessMap && material.roughnessMap.isTexture === true ) {
 
-				node = roughnessNode.mul( this.getTexture( builder, 'roughnessMap' ).g );
+				node = roughnessNode.mul( this.getTexture( 'roughnessMap' ).g );
 
 			} else {
 
@@ -4892,11 +4917,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.METALNESS ) {
 
-			const metalnessNode = this.getFloat( builder, 'metalness' );
+			const metalnessNode = this.getFloat( 'metalness' );
 
 			if ( material.metalnessMap && material.metalnessMap.isTexture === true ) {
 
-				node = metalnessNode.mul( this.getTexture( builder, 'metalnessMap' ).b );
+				node = metalnessNode.mul( this.getTexture( 'metalnessMap' ).b );
 
 			} else {
 
@@ -4906,11 +4931,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.EMISSIVE ) {
 
-			const emissiveNode = this.getColor( builder, 'emissive' );
+			const emissiveNode = this.getColor( 'emissive' );
 
 			if ( material.emissiveMap && material.emissiveMap.isTexture === true ) {
 
-				node = emissiveNode.mul( this.getTexture( builder, 'emissiveMap' ) );
+				node = emissiveNode.mul( this.getTexture( 'emissiveMap' ) );
 
 			} else {
 
@@ -4920,11 +4945,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.CLEARCOAT ) {
 
-			const clearcoatNode = this.getFloat( builder, 'clearcoat' );
+			const clearcoatNode = this.getFloat( 'clearcoat' );
 
 			if ( material.clearcoatMap && material.clearcoatMap.isTexture === true ) {
 
-				node = clearcoatNode.mul( this.getTexture( builder, 'clearcoatMap' ).r );
+				node = clearcoatNode.mul( this.getTexture( 'clearcoatMap' ).r );
 
 			} else {
 
@@ -4934,11 +4959,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.CLEARCOAT_ROUGHNESS ) {
 
-			const clearcoatRoughnessNode = this.getFloat( builder, 'clearcoatRoughness' );
+			const clearcoatRoughnessNode = this.getFloat( 'clearcoatRoughness' );
 
 			if ( material.clearcoatRoughnessMap && material.clearcoatRoughnessMap.isTexture === true ) {
 
-				node = clearcoatRoughnessNode.mul( this.getTexture( builder, 'clearcoatRoughnessMap' ).r );
+				node = clearcoatRoughnessNode.mul( this.getTexture( 'clearcoatRoughnessMap' ).r );
 
 			} else {
 
@@ -4948,11 +4973,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.SHEEN ) {
 
-			const sheenNode = this.getColor( builder, 'sheenColor' ).mul( this.getFloat( builder, 'sheen' ) ); // Move this mul() to CPU
+			const sheenNode = this.getColor( 'sheenColor' ).mul( this.getFloat( 'sheen' ) ); // Move this mul() to CPU
 
 			if ( material.sheenColorMap && material.sheenColorMap.isTexture === true ) {
 
-				node = sheenNode.mul( this.getTexture( builder, 'sheenColorMap' ).rgb );
+				node = sheenNode.mul( this.getTexture( 'sheenColorMap' ).rgb );
 
 			} else {
 
@@ -4962,11 +4987,11 @@ class MaterialNode extends Node {
 
 		} else if ( scope === MaterialNode.SHEEN_ROUGHNESS ) {
 
-			const sheenRoughnessNode = this.getFloat( builder, 'sheenRoughness' );
+			const sheenRoughnessNode = this.getFloat( 'sheenRoughness' );
 
 			if ( material.sheenRoughnessMap && material.sheenRoughnessMap.isTexture === true ) {
 
-				node = sheenRoughnessNode.mul( this.getTexture( builder, 'sheenRoughnessMap' ).a );
+				node = sheenRoughnessNode.mul( this.getTexture( 'sheenRoughnessMap' ).a );
 
 			} else {
 
@@ -4984,7 +5009,7 @@ class MaterialNode extends Node {
 
 				const iridescenceThicknessMinimum = reference( 0, 'float', material.iridescenceThicknessRange );
 
-				node = iridescenceThicknessMaximum.sub( iridescenceThicknessMinimum ).mul( this.getTexture( builder, 'iridescenceThicknessMap' ).g ).add( iridescenceThicknessMinimum );
+				node = iridescenceThicknessMaximum.sub( iridescenceThicknessMinimum ).mul( this.getTexture( 'iridescenceThicknessMap' ).g ).add( iridescenceThicknessMinimum );
 
 			} else {
 
@@ -5961,10 +5986,11 @@ class ExtendedMaterialNode extends MaterialNode {
 
 			if ( material.normalMap ) {
 
-				node = normalMap( this.getTexture( builder, 'normalMap' ), materialReference( 'normalScale', 'vec2' ) );
+				node = normalMap( this.getTexture( 'normalMap' ), materialReference( 'normalScale', 'vec2' ) );
 
 			} else if ( material.bumpMap ) {
 
+				// @TODO: Replace material.bumpMap to this.getTexture( 'bumpMap' )
 				node = bumpMap( material.bumpMap, materialReference( 'bumpScale', 'float' ) );
 
 			} else {
@@ -5975,7 +6001,7 @@ class ExtendedMaterialNode extends MaterialNode {
 
 		} else if ( scope === ExtendedMaterialNode.CLEARCOAT_NORMAL ) {
 
-			node = material.clearcoatNormalMap ? normalMap( this.getTexture( builder, 'clearcoatNormalMap' ), materialReference( 'clearcoatNormalScale', 'vec2' ) ) : normalView;
+			node = material.clearcoatNormalMap ? normalMap( this.getTexture( 'clearcoatNormalMap' ), materialReference( 'clearcoatNormalScale', 'vec2' ) ) : normalView;
 
 		}
 
@@ -7070,7 +7096,7 @@ class EnvironmentNode extends LightingNode {
 		const radiance = context( envNode, createRadianceContext( roughness, transformedNormalView ) ).mul( intensity );
 		const irradiance = context( envNode, createIrradianceContext( transformedNormalWorld ) ).mul( Math.PI ).mul( intensity );
 
-		const isolateRadiance = cache$1( radiance );
+		const isolateRadiance = cache( radiance );
 
 		//
 
@@ -7085,7 +7111,7 @@ class EnvironmentNode extends LightingNode {
 		if ( clearcoatRadiance ) {
 
 			const clearcoatRadianceContext = context( envNode, createRadianceContext( clearcoatRoughness, transformedClearcoatNormalView ) ).mul( intensity );
-			const isolateClearcoatRadiance = cache$1( clearcoatRadianceContext );
+			const isolateClearcoatRadiance = cache( clearcoatRadianceContext );
 
 			clearcoatRadiance.addAssign( isolateClearcoatRadiance );
 
@@ -8493,20 +8519,6 @@ class NodeBuilder {
 
 	}
 
-	createBindings() {
-
-		const bindingsArray = [];
-
-		for ( const binding of this.getBindings() ) {
-
-			bindingsArray.push( binding.clone() );
-
-		}
-
-		return bindingsArray;
-
-	}
-
 	getBindings() {
 
 		let bindingsArray = this.bindingsArray;
@@ -9454,10 +9466,8 @@ class NodeFrame {
 
 		this.startTime = null;
 
-		this.frameMap = new WeakMap();
-		this.frameBeforeMap = new WeakMap();
-		this.renderMap = new WeakMap();
-		this.renderBeforeMap = new WeakMap();
+		this.updateMap = new WeakMap();
+		this.updateBeforeMap = new WeakMap();
 
 		this.renderer = null;
 		this.material = null;
@@ -9467,15 +9477,37 @@ class NodeFrame {
 
 	}
 
+	_getMaps( referenceMap, nodeRef ) {
+
+		let maps = referenceMap.get( nodeRef );
+
+		if ( maps === undefined ) {
+
+			maps = {
+				renderMap: new WeakMap(),
+				frameMap: new WeakMap()
+			};
+
+			referenceMap.set( nodeRef, maps );
+
+		}
+
+		return maps;
+
+	}
+
 	updateBeforeNode( node ) {
 
 		const updateType = node.getUpdateBeforeType();
+		const reference = node.updateReference( this );
+
+		const { frameMap, renderMap } = this._getMaps( this.updateBeforeMap, reference );
 
 		if ( updateType === NodeUpdateType.FRAME ) {
 
-			if ( this.frameBeforeMap.get( node ) !== this.frameId ) {
+			if ( frameMap.get( node ) !== this.frameId ) {
 
-				this.frameBeforeMap.set( node, this.frameId );
+				frameMap.set( node, this.frameId );
 
 				node.updateBefore( this );
 
@@ -9483,10 +9515,10 @@ class NodeFrame {
 
 		} else if ( updateType === NodeUpdateType.RENDER ) {
 
-			if ( this.renderBeforeMap.get( node ) !== this.renderId || this.frameBeforeMap.get( node ) !== this.frameId ) {
+			if ( renderMap.get( node ) !== this.renderId || frameMap.get( node ) !== this.frameId ) {
 
-				this.renderBeforeMap.set( node, this.renderId );
-				this.frameBeforeMap.set( node, this.frameId );
+				renderMap.set( node, this.renderId );
+				frameMap.set( node, this.frameId );
 
 				node.updateBefore( this );
 
@@ -9503,12 +9535,15 @@ class NodeFrame {
 	updateNode( node ) {
 
 		const updateType = node.getUpdateType();
+		const reference = node.updateReference( this );
+
+		const { frameMap, renderMap } = this._getMaps( this.updateMap, reference );
 
 		if ( updateType === NodeUpdateType.FRAME ) {
 
-			if ( this.frameMap.get( node ) !== this.frameId ) {
+			if ( frameMap.get( node ) !== this.frameId ) {
 
-				this.frameMap.set( node, this.frameId );
+				frameMap.set( node, this.frameId );
 
 				node.update( this );
 
@@ -9516,10 +9551,10 @@ class NodeFrame {
 
 		} else if ( updateType === NodeUpdateType.RENDER ) {
 
-			if ( this.renderMap.get( node ) !== this.renderId || this.frameMap.get( node ) !== this.frameId ) {
+			if ( renderMap.get( node ) !== this.renderId || frameMap.get( node ) !== this.frameId ) {
 
-				this.renderMap.set( node, this.renderId );
-				this.frameMap.set( node, this.frameId );
+				renderMap.set( node, this.renderId );
+				frameMap.set( node, this.frameId );
 
 				node.update( this );
 
@@ -9635,7 +9670,7 @@ class OutputStructNode extends Node {
 
 }
 
-nodeProxy( OutputStructNode );
+const outputStruct = nodeProxy( OutputStructNode );
 
 addNodeClass( OutputStructNode );
 
@@ -9651,13 +9686,13 @@ class HashNode extends Node {
 
 	construct( /*builder*/ ) {
 
-		const seed = this.seedNode;
+		// Taken from https://www.shadertoy.com/view/XlGcRh, originally from pcg-random.org
 
-		const state = add( mul( uint( seed ), 747796405 ), 2891336453 );
-		const word = mul( bitXor( shiftRight( state, add( shiftRight( state, 28 ), 4 ) ), state ), 277803737 );
-		const uintResult = bitXor( shiftRight( word, 22 ), word );
+		const state = this.seedNode.uint().mul( 747796405 ).add( 2891336453 );
+		const word = state.shiftRight( state.shiftRight( 28 ).add( 4 ) ).bitXor( state ).mul( 277803737 );
+		const result = word.shiftRight( 22 ).bitXor( word );
 
-		return mul( 1 / 2 ** 32, uintResult ); // Convert to range [0, 1)
+		return result.float().mul( 1 / 2 ** 32 ); // Convert to range [0, 1)
 
 	}
 
@@ -10090,6 +10125,30 @@ addNodeElement( 'triplanarTexture', triplanarTexture );
 
 addNodeClass( TriplanarTexturesNode );
 
+class LineMaterialNode extends MaterialNode {
+
+	construct( /*builder*/ ) {
+
+		return this.getFloat( this.scope );
+
+	}
+
+}
+
+LineMaterialNode.SCALE = 'scale';
+LineMaterialNode.DASH_SIZE = 'dashSize';
+LineMaterialNode.GAP_SIZE = 'gapSize';
+LineMaterialNode.LINEWIDTH = 'linewidth';
+LineMaterialNode.DASH_OFFSET = 'dashOffset';
+
+const materialLineScale = nodeImmutable( LineMaterialNode, LineMaterialNode.SCALE );
+const materialLineDashOffset = nodeImmutable( LineMaterialNode, LineMaterialNode.DASH_OFFSET );
+const materialLineDashSize = nodeImmutable( LineMaterialNode, LineMaterialNode.DASH_SIZE );
+const materialLineGapSize = nodeImmutable( LineMaterialNode, LineMaterialNode.GAP_SIZE );
+const materialLineWidth = nodeImmutable( LineMaterialNode, LineMaterialNode.LINEWIDTH );
+
+addNodeClass( LineMaterialNode );
+
 // Mipped Bicubic Texture Filtering by N8
 // https://www.shadertoy.com/view/Dl2SDW
 
@@ -10297,7 +10356,7 @@ class UserDataNode extends ReferenceNode {
 
 	update( frame ) {
 
-		this.object = this.userData !== null ? this.userData : frame.object.userData;
+		this.reference = this.userData !== null ? this.userData : frame.object.userData;
 
 		super.update( frame );
 
@@ -10761,7 +10820,7 @@ ViewportNode.BOTTOM_RIGHT = 'bottomRight';
 
 nodeImmutable( ViewportNode, ViewportNode.COORDINATE );
 nodeImmutable( ViewportNode, ViewportNode.RESOLUTION );
-nodeImmutable( ViewportNode, ViewportNode.VIEWPORT );
+const viewport = nodeImmutable( ViewportNode, ViewportNode.VIEWPORT );
 const viewportTopLeft = nodeImmutable( ViewportNode, ViewportNode.TOP_LEFT );
 const viewportBottomLeft = nodeImmutable( ViewportNode, ViewportNode.BOTTOM_LEFT );
 nodeImmutable( ViewportNode, ViewportNode.TOP_RIGHT );
@@ -12491,7 +12550,7 @@ addNodeElement( 'checker', checker );
 
 addNodeClass( CheckerNode );
 
-const defaultValues$9 = new LineBasicMaterial();
+const defaultValues$a = new LineBasicMaterial();
 
 class LineBasicNodeMaterial extends NodeMaterial {
 
@@ -12504,7 +12563,7 @@ class LineBasicNodeMaterial extends NodeMaterial {
 		this.lights = false;
 		this.normals = false;
 
-		this.setDefaultValues( defaultValues$9 );
+		this.setDefaultValues( defaultValues$a );
 
 		this.setValues( parameters );
 
@@ -12514,33 +12573,7 @@ class LineBasicNodeMaterial extends NodeMaterial {
 
 addNodeMaterial( LineBasicNodeMaterial );
 
-class LineMaterialNode extends MaterialNode {
-
-	constructor( scope ) {
-
-		super( scope );
-
-	}
-
-	construct( builder ) {
-
-		return this.getFloat( builder, this.scope );
-
-	}
-
-}
-
-LineMaterialNode.SCALE = 'scale';
-LineMaterialNode.DASH_SIZE = 'dashSize';
-LineMaterialNode.GAP_SIZE = 'gapSize';
-
-const materialLineScale = nodeImmutable( LineMaterialNode, LineMaterialNode.SCALE );
-const materialLineDashSize = nodeImmutable( LineMaterialNode, LineMaterialNode.DASH_SIZE );
-const materialLineGapSize = nodeImmutable( LineMaterialNode, LineMaterialNode.GAP_SIZE );
-
-addNodeClass( LineMaterialNode );
-
-const defaultValues$8 = new LineDashedMaterial();
+const defaultValues$9 = new LineDashedMaterial();
 
 class LineDashedNodeMaterial extends NodeMaterial {
 
@@ -12553,7 +12586,7 @@ class LineDashedNodeMaterial extends NodeMaterial {
 		this.lights = false;
 		this.normals = false;
 
-		this.setDefaultValues( defaultValues$8 );
+		this.setDefaultValues( defaultValues$9 );
 
 		this.offsetNode = null;
 		this.dashScaleNode = null;
@@ -12584,6 +12617,436 @@ class LineDashedNodeMaterial extends NodeMaterial {
 }
 
 addNodeMaterial( LineDashedNodeMaterial );
+
+const defaultValues$8 = new LineDashedMaterial();
+
+class Line2NodeMaterial extends NodeMaterial {
+
+	constructor( params = {} ) {
+
+		super();
+
+		this.normals = false;
+		this.lights = false;
+
+		this.setDefaultValues( defaultValues$8 );
+
+		this.useAlphaToCoverage = true;
+		this.useColor = params.vertexColors;
+		this.useDash = params.dashed;
+		this.useWorldUnits = false;
+
+		this.dashOffset = 0;
+		this.lineWidth = 1;
+
+		this.lineColorNode = null;
+
+		this.offsetNode = null;
+		this.dashScaleNode = null;
+		this.dashSizeNode = null;
+		this.gapSizeNode = null;
+
+		this.constructShaders();
+
+		this.setValues( params );
+
+	}
+
+	constructShaders() {
+
+		const useAlphaToCoverage = this.alphaToCoverage;
+		const useColor = this.useColor;
+		const useDash = this.dashed;
+		const useWorldUnits = this.worldUnits;
+
+		const trimSegment = tslFn( ( { start, end } ) => {
+
+			const a = cameraProjectionMatrix.element( 2 ).element( 2 ); // 3nd entry in 3th column
+			const b = cameraProjectionMatrix.element( 3 ).element( 2 ); // 3nd entry in 4th column
+			const nearEstimate = b.mul( -0.5 ).div( a );
+
+			const alpha = nearEstimate.sub( start.z ).div( end.z.sub( start.z ) );
+
+			return vec4( mix( start.xyz, end.xyz, alpha ), end.w );
+
+		} );
+
+		this.vertexNode = new ShaderNode( ( stack ) => {
+
+			stack.assign( varying( vec2(), 'vUv' ), uv() );
+
+			const instanceStart = attribute( 'instanceStart' );
+			const instanceEnd = attribute( 'instanceEnd' );
+
+			// camera space
+
+			const start = property( 'vec4', 'start' );
+			const end = property( 'vec4', 'end' );
+
+			stack.assign( start, modelViewMatrix.mul( vec4( instanceStart, 1.0 ) ) ); // force assignment into correct place in flow
+			stack.assign( end, modelViewMatrix.mul( vec4( instanceEnd, 1.0 ) ) );
+
+
+			if ( useWorldUnits ) {
+
+				stack.assign( varying( vec3(), 'worldStart' ), start.xyz );
+				stack.assign( varying( vec3(), 'worldEnd' ), end.xyz );
+
+			}
+
+			const aspect = viewport.z.div( viewport.w );
+
+			// special case for perspective projection, and segments that terminate either in, or behind, the camera plane
+			// clearly the gpu firmware has a way of addressing this issue when projecting into ndc space
+			// but we need to perform ndc-space calculations in the shader, so we must address this issue directly
+			// perhaps there is a more elegant solution -- WestLangley
+
+			const perspective = cameraProjectionMatrix.element( 2 ).element( 3 ).equal( -1.0 ); // 4th entry in the 3rd column
+
+			stack.if( perspective, ( stack ) => {
+
+				stack.if( start.z.lessThan( 0.0 ).and( end.z.greaterThan( 0.0 ) ), ( stack ) => {
+
+					stack.assign( end, trimSegment( { start: start, end: end } ) );
+
+				} ).elseif( end.z.lessThan( 0.0 ).and( start.z.greaterThanEqual( 0.0 ) ), ( stack ) => {
+
+					stack.assign( start, trimSegment( { start: end, end: start } ) );
+
+			 	} );
+
+			} );
+
+			// clip space
+			const clipStart = cameraProjectionMatrix.mul( start );
+			const clipEnd = cameraProjectionMatrix.mul( end );
+
+			// ndc space
+			const ndcStart = clipStart.xyz.div( clipStart.w );
+			const ndcEnd = clipEnd.xyz.div( clipEnd.w );
+
+			// direction
+			const dir = ndcEnd.xy.sub( ndcStart.xy );
+
+			// account for clip-space aspect ratio
+			stack.assign( dir.x, dir.x.mul( aspect ) );
+			stack.assign( dir, dir.normalize() );
+
+			const clip = temp( vec4() );
+
+			if ( useWorldUnits ) {
+
+				// get the offset direction as perpendicular to the view vector
+				const worldDir = end.xyz.sub( start.xyz ).normalize();
+
+				const offset = positionGeometry.y.lessThan( 0.5 ).cond(
+					start.xyz.cross( worldDir ).normalize(),
+					end.xyz.cross( worldDir ).normalize()
+
+				);
+
+				// sign flip
+				stack.assign( offset, positionGeometry.x.lessThan( 0.0 ).cond( offset.negate(), offset ) );
+
+				const forwardOffset = worldDir.dot( vec3( 0.0, 0.0, 1.0 ) );
+
+				// don't extend the line if we're rendering dashes because we
+				// won't be rendering the endcaps
+				if ( ! useDash ) {
+
+					// extend the line bounds to encompass endcaps
+					stack.assign( start, start.sub( vec4( worldDir.mul( materialLineWidth ).mul( 0.5 ), 0 ) ) );
+					stack.assign( end, end.add( vec4( worldDir.mul( materialLineWidth ).mul( 0.5 ), 0 ) ) );
+
+					// shift the position of the quad so it hugs the forward edge of the line
+					stack.assign( offset, offset.sub( vec3( dir.mul( forwardOffset ), 0 ) ) );
+					stack.assign( offset.z, offset.z.add( 0.5 ) );
+
+				}
+
+				// endcaps
+
+				stack.if( positionGeometry.y.greaterThan( 1.0 ).or( positionGeometry.y.lessThan( 0.0 ) ), ( stack ) => {
+
+					stack.assign( offset, offset.add( vec3( dir.mul( 2.0 ).mul( forwardOffset ), 0 ) ) );
+
+				} );
+
+				// adjust for linewidth
+				stack.assign( offset, offset.mul( materialLineWidth ).mul( 0.5 ) );
+
+				// set the world position
+
+				const worldPos = varying( vec4(), 'worldPos' );
+
+				stack.assign( worldPos, positionGeometry.y.lessThan( 0.5 ).cond( start, end ) );
+				stack.assign( worldPos, worldPos.add( vec4( offset, 0 ) ) );
+
+				// project the worldpos
+				stack.assign( clip, cameraProjectionMatrix.mul( worldPos ) );
+
+				// shift the depth of the projected points so the line
+				// segments overlap neatly
+				const clipPose = temp( vec3() );
+
+				stack.assign( clipPose, positionGeometry.y.lessThan( 0.5 ).cond( ndcStart, ndcEnd ) );
+				stack.assign( clip.z, clipPose.z.mul( clip.w ) );
+
+			} else {
+
+				const offset = property( 'vec2', 'offset' );
+
+				stack.assign( offset, vec2( dir.y, dir.x.negate() ) );
+
+				// undo aspect ratio adjustment
+				stack.assign( dir.x, dir.x.div( aspect ) );
+				stack.assign( offset.x, offset.x.div( aspect ) );
+
+				// sign flip
+				stack.assign( offset, positionGeometry.x.lessThan( 0.0 ).cond( offset.negate(), offset ) );
+
+				// endcaps
+				stack.if( positionGeometry.y.lessThan( 0.0 ), ( stack ) => {
+
+					stack.assign( offset, offset.sub( dir ) );
+
+				} ).elseif( positionGeometry.y.greaterThan( 1.0 ), ( stack ) => {
+
+					stack.assign( offset, offset.add( dir ) );
+
+				} );
+
+				// adjust for linewidth
+				stack.assign( offset, offset.mul( materialLineWidth ) );
+
+				// adjust for clip-space to screen-space conversion // maybe resolution should be based on viewport ...
+				stack.assign( offset, offset.div( viewport.w ) );
+
+				// select end
+				stack.assign( clip, positionGeometry.y.lessThan( 0.5 ).cond( clipStart, clipEnd ) );
+
+				// back to clip space
+				stack.assign( offset, offset.mul( clip.w ) );
+
+				stack.assign( clip, clip.add( vec4( offset, 0, 0 ) ) );
+
+			}
+
+			return clip;
+
+		} );
+
+		const closestLineToLine = tslFn( ( { p1, p2, p3, p4 } ) => {
+
+			const p13 = p1.sub( p3 );
+			const p43 = p4.sub( p3 );
+
+			const p21 = p2.sub( p1 );
+
+			const d1343 = dot( p13, p43 );
+			const d4321 = dot( p43, p21 );
+			const d1321 = dot( p13, p21 );
+			const d4343 = dot( p43, p43 );
+			const d2121 = dot( p21, p21 );
+
+			const denom = d2121.mul( d4343 ).sub( d4321.mul( d4321 ) );
+			const numer = d1343.mul( d4321 ).sub( d1321.mul( d4343 ) );
+
+			const mua = clamp( numer.div( denom ), 0, 1 );
+			const mub = clamp( d1343.add( d4321.mul( mua ) ).div( d4343 ), 0, 1 );
+
+			return vec2( mua, mub );
+
+		} );
+
+		this.colorNode = new ShaderNode( ( stack ) => {
+
+			const vUv = varying( vec2(), 'vUv' );
+
+			if ( useDash ) {
+
+				const offsetNode = this.offsetNode ? float( this.offsetNodeNode ) : materialLineDashOffset;
+				const dashScaleNode = this.dashScaleNode ? float( this.dashScaleNode ) : materialLineScale;
+				const dashSizeNode = this.dashSizeNode ? float( this.dashSizeNode ) : materialLineDashSize;
+				const gapSizeNode = this.dashSizeNode ? float( this.dashGapNode ) : materialLineGapSize;
+
+				stack.assign( dashSize, dashSizeNode );
+				stack.assign( gapSize, gapSizeNode );
+
+				const instanceDistanceStart = attribute( 'instanceDistanceStart' );
+				const instanceDistanceEnd = attribute( 'instanceDistanceEnd' );
+
+				const lineDistance = positionGeometry.y.lessThan( 0.5 ).cond( dashScaleNode.mul( instanceDistanceStart ), materialLineScale.mul( instanceDistanceEnd ) );
+
+				const vLineDistance = varying( lineDistance.add( materialLineDashOffset ) );
+				const vLineDistanceOffset = offsetNode ? vLineDistance.add( offsetNode ) : vLineDistance;
+
+				stack.add( vUv.y.lessThan( - 1.0 ).or( vUv.y.greaterThan( 1.0 ) ).discard() ); // discard endcaps
+				stack.add( mod( vLineDistanceOffset, dashSize.add( gapSize ) ).greaterThan( dashSize ).discard() ); // todo - FIX
+
+			}
+
+			 // force assignment into correct place in flow
+			const alpha = property( 'float', 'alpha' );
+			stack.assign( alpha, 1 );
+
+			if ( useWorldUnits ) {
+
+
+				let worldStart = varying( vec3(), 'worldStart' );
+				let worldEnd = varying( vec3(), 'worldEnd' );
+
+				// Find the closest points on the view ray and the line segment
+				const rayEnd = varying( vec4(), 'worldPos' ).xyz.normalize().mul( 1e5 );
+				const lineDir = worldEnd.sub( worldStart );
+				const params = closestLineToLine( { p1: worldStart, p2: worldEnd, p3: vec3( 0.0, 0.0, 0.0 ), p4: rayEnd } );
+
+				const p1 = worldStart.add( lineDir.mul( params.x ) );
+				const p2 = rayEnd.mul( params.y );
+				const delta = p1.sub( p2 );
+				const len = delta.length();
+				const norm = len.div( materialLineWidth );
+
+				if ( ! useDash ) {
+
+					if ( useAlphaToCoverage ) {
+
+						const dnorm = norm.fwidth();
+						stack.assign( alpha, smoothstep( dnorm.negate().add( 0.5 ), dnorm.add( 0.5 ), norm ).oneMinus() );
+
+					} else {
+
+						stack.add( norm.greaterThan( 0.5 ).discard() );
+
+					}
+
+				}
+
+			} else {
+
+				// round endcaps
+
+				if ( useAlphaToCoverage ) {
+
+					const a = vUv.x;
+					const b = vUv.y.greaterThan( 0.0 ).cond( vUv.y.sub( 1.0 ), vUv.y.add( 1.0 ) );
+
+					const len2 = a.mul( a ).add( b.mul( b ) );
+
+					// force assignment out of following 'if' statement - to avoid uniform control flow errors
+					const dlen = property( 'float', 'dlen' );
+					stack.assign( dlen, len2.fwidth() );
+
+					stack.if( abs( vUv.y ).greaterThan( 1.0 ), ( stack ) => {
+
+						stack.assign( alpha, smoothstep( dlen.oneMinus(), dlen.add( 1 ), len2 ).oneMinus() );
+
+					} );
+
+				} else {
+
+					stack.if( abs( vUv.y ).greaterThan( 1.0 ), ( stack ) => {
+
+						const a = vUv.x;
+						const b = vUv.y.greaterThan( 0.0 ).cond( vUv.y.sub( 1.0 ), vUv.y.add( 1.0 ) );
+						const len2 = a.mul( a ).add( b.mul( b ) );
+
+						stack.add( len2.greaterThan( 1.0 ).discard() );
+
+					} );
+
+				}
+
+			}
+
+			let lineColorNode;
+
+			if ( this.lineColorNode ) {
+
+				lineColorNode = this.lineColorNode;
+
+			} else {
+
+				if ( useColor ) {
+
+					const instanceColorStart = attribute( 'instanceColorStart' );
+					const instanceColorEnd = attribute( 'instanceColorEnd' );
+
+					lineColorNode = varying( positionGeometry.y.lessThan( 0.5 ).cond( instanceColorStart, instanceColorEnd ) );
+
+				} else {
+
+					lineColorNode = materialColor;
+
+				}
+
+			}
+
+			return vec4( lineColorNode, alpha );
+
+		} );
+
+		this.needsUpdate = true;
+
+	}
+
+
+	get worldUnits() {
+
+		return this.useWorldUnits;
+
+	}
+
+	set worldUnits( value ) {
+
+		if ( this.useWorldUnits !== value ) {
+
+			this.useWorldUnits = value;
+			this.constructShaders();
+
+		}
+
+	}
+
+
+	get dashed() {
+
+		return this.useDash;
+
+	}
+
+	set dashed( value ) {
+
+		if ( this.useDash !== value ) {
+
+			this.useDash = value;
+			this.constructShaders();
+
+		}
+
+	}
+
+
+	get alphaToCoverage() {
+
+		return this.useAlphaToCoverage;
+
+	}
+
+	set alphaToCoverage( value ) {
+
+		if ( this.useAlphaToCoverage !== value ) {
+
+			this.useAlphaToCoverage = value;
+			this.constructShaders();
+
+		}
+
+	}
+
+}
+
+addNodeMaterial( Line2NodeMaterial );
 
 const defaultValues$7 = new MeshNormalMaterial();
 
@@ -14669,6 +15132,9 @@ class RenderContext {
 		this.activeCubeFace = 0;
 		this.sampleCount = 1;
 
+		this.width = 0;
+		this.height = 0;
+
 	}
 
 }
@@ -15215,6 +15681,40 @@ class Background extends DataMap {
 
 }
 
+class NodeBuilderState {
+
+	constructor( vertexShader, fragmentShader, computeShader, nodeAttributes, bindings, updateNodes, updateBeforeNodes ) {
+
+		this.vertexShader = vertexShader;
+		this.fragmentShader = fragmentShader;
+		this.computeShader = computeShader;
+
+		this.nodeAttributes = nodeAttributes;
+		this.bindings = bindings;
+
+		this.updateNodes = updateNodes;
+		this.updateBeforeNodes = updateBeforeNodes;
+
+		this.usedTimes = 0;
+
+	}
+
+	createBindings() {
+
+		const bindingsArray = [];
+
+		for ( const binding of this.bindings ) {
+
+			bindingsArray.push( binding.clone() );
+
+		}
+
+		return bindingsArray;
+
+	}
+
+}
+
 class Nodes extends DataMap {
 
 	constructor( renderer, backend ) {
@@ -15224,15 +15724,13 @@ class Nodes extends DataMap {
 		this.renderer = renderer;
 		this.backend = backend;
 		this.nodeFrame = new NodeFrame();
-		this.cache = new ChainMap();
+		this.nodeBuilderCache = new Map();
 
 	}
 
-	getForRenderChainKey( renderObject ) {
+	getForRenderCacheKey( renderObject ) {
 
-		const { object, material, lightsNode, context } = renderObject;
-
-		return [ object.geometry, material, lightsNode, context ];
+		return renderObject.initialCacheKey;
 
 	}
 
@@ -15240,19 +15738,19 @@ class Nodes extends DataMap {
 
 		const renderObjectData = this.get( renderObject );
 
-		let nodeBuilder = renderObjectData.nodeBuilder;
+		let nodeBuilderState = renderObjectData.nodeBuilderState;
 
-		if ( nodeBuilder === undefined ) {
+		if ( nodeBuilderState === undefined ) {
 
-			const { cache } = this;
+			const { nodeBuilderCache } = this;
 
-			const chainKey = this.getForRenderChainKey( renderObject );
+			const cacheKey = this.getForRenderCacheKey( renderObject );
 
-			nodeBuilder = cache.get( chainKey );
+			nodeBuilderState = nodeBuilderCache.get( cacheKey );
 
-			if ( nodeBuilder === undefined ) {
+			if ( nodeBuilderState === undefined ) {
 
-				nodeBuilder = this.backend.createNodeBuilder( renderObject.object, this.renderer, renderObject.scene );
+				const nodeBuilder = this.backend.createNodeBuilder( renderObject.object, this.renderer, renderObject.scene );
 				nodeBuilder.material = renderObject.material;
 				nodeBuilder.lightsNode = renderObject.lightsNode;
 				nodeBuilder.environmentNode = this.getEnvironmentNode( renderObject.scene );
@@ -15260,15 +15758,19 @@ class Nodes extends DataMap {
 				nodeBuilder.toneMappingNode = this.getToneMappingNode();
 				nodeBuilder.build();
 
-				cache.set( chainKey, nodeBuilder );
+				nodeBuilderState = this._createNodeBuilderState( nodeBuilder );
+
+				nodeBuilderCache.set( cacheKey, nodeBuilderState );
 
 			}
 
-			renderObjectData.nodeBuilder = nodeBuilder;
+			nodeBuilderState.usedTimes ++;
+
+			renderObjectData.nodeBuilderState = nodeBuilderState;
 
 		}
 
-		return nodeBuilder;
+		return nodeBuilderState;
 
 	}
 
@@ -15276,7 +15778,14 @@ class Nodes extends DataMap {
 
 		if ( object.isRenderObject ) {
 
-			this.cache.delete( this.getForRenderChainKey( object ) );
+			const nodeBuilderState = this.get( object ).nodeBuilderState;
+			nodeBuilderState.usedTimes --;
+
+			if ( nodeBuilderState.usedTimes === 0 ) {
+
+				this.nodeBuilderCache.delete( this.getForRenderCacheKey( object ) );
+
+			}
 
 		}
 
@@ -15288,18 +15797,34 @@ class Nodes extends DataMap {
 
 		const computeData = this.get( computeNode );
 
-		let nodeBuilder = computeData.nodeBuilder;
+		let nodeBuilderState = computeData.nodeBuilderState;
 
-		if ( nodeBuilder === undefined ) {
+		if ( nodeBuilderState === undefined ) {
 
-			nodeBuilder = this.backend.createNodeBuilder( computeNode, this.renderer );
+			const nodeBuilder = this.backend.createNodeBuilder( computeNode, this.renderer );
 			nodeBuilder.build();
 
-			computeData.nodeBuilder = nodeBuilder;
+			nodeBuilderState = this._createNodeBuilderState( nodeBuilder );
+
+			computeData.nodeBuilderState = nodeBuilder;
 
 		}
 
-		return nodeBuilder;
+		return nodeBuilderState;
+
+	}
+
+	_createNodeBuilderState( nodeBuilder ) {
+
+		return new NodeBuilderState(
+			nodeBuilder.vertexShader,
+			nodeBuilder.fragmentShader,
+			nodeBuilder.computeShader,
+			nodeBuilder.getAttributesArray(),
+			nodeBuilder.getBindings(),
+			nodeBuilder.updateNodes,
+			nodeBuilder.updateBeforeNodes
+		);
 
 	}
 
@@ -15526,7 +16051,7 @@ class Nodes extends DataMap {
 	updateBefore( renderObject ) {
 
 		const nodeFrame = this.getNodeFrame( renderObject );
-		const nodeBuilder = renderObject.getNodeBuilder();
+		const nodeBuilder = renderObject.getNodeBuilderState();
 
 		for ( const node of nodeBuilder.updateBeforeNodes ) {
 
@@ -15541,7 +16066,7 @@ class Nodes extends DataMap {
 	updateForRender( renderObject ) {
 
 		const nodeFrame = this.getNodeFrame( renderObject );
-		const nodeBuilder = renderObject.getNodeBuilder();
+		const nodeBuilder = renderObject.getNodeBuilderState();
 
 		for ( const node of nodeBuilder.updateNodes ) {
 
@@ -15556,6 +16081,7 @@ class Nodes extends DataMap {
 		super.dispose();
 
 		this.nodeFrame = new NodeFrame();
+		this.nodeBuilderCache = new Map();
 
 	}
 
@@ -15827,11 +16353,15 @@ class Renderer {
 
 			renderContext.textures = renderTargetData.textures;
 			renderContext.depthTexture = renderTargetData.depthTexture;
+			renderContext.width = renderTargetData.width;
+			renderContext.height = renderTargetData.height;
 
 		} else {
 
 			renderContext.textures = null;
 			renderContext.depthTexture = null;
+			renderContext.width = this.domElement.width;
+			renderContext.height = this.domElement.height;
 
 		}
 
@@ -16859,27 +17389,17 @@ class SampledTexture extends Binding {
 
 	update() {
 
-		if ( this.version !== this.texture.version ) {
+		const { texture, version } = this;
 
-			this.version = this.texture.version;
+		if ( version !== texture.version ) {
+
+			this.version = texture.version;
 
 			return true;
 
 		}
 
 		return false;
-
-	}
-
-}
-
-class SampledCubeTexture extends SampledTexture {
-
-	constructor( name, texture ) {
-
-		super( name, texture );
-
-		this.isSampledCubeTexture = true;
 
 	}
 
@@ -16895,27 +17415,37 @@ class NodeSampledTexture extends SampledTexture {
 
 	}
 
-	getTexture() {
+	get needsBindingsUpdate() {
 
-		return this.textureNode.value;
+		return this.textureNode.value !== this.texture || super.needsBindingsUpdate;
+
+	}
+
+	update() {
+
+		const { textureNode } = this;
+
+		if ( this.texture !== textureNode.value ) {
+
+			this.texture = textureNode.value;
+
+			return true;
+
+		}
+
+		return super.update();
 
 	}
 
 }
 
-class NodeSampledCubeTexture extends SampledCubeTexture {
+class NodeSampledCubeTexture extends NodeSampledTexture {
 
 	constructor( name, textureNode ) {
 
-		super( name, textureNode ? textureNode.value : null );
+		super( name, textureNode );
 
-		this.textureNode = textureNode;
-
-	}
-
-	getTexture() {
-
-		return this.textureNode.value;
+		this.isSampledCubeTexture = true;
 
 	}
 
@@ -19429,12 +19959,6 @@ class NodeSampler extends Sampler {
 		super( name, textureNode ? textureNode.value : null );
 
 		this.textureNode = textureNode;
-
-	}
-
-	getTexture() {
-
-		return this.textureNode.value;
 
 	}
 
@@ -22876,7 +23400,7 @@ class WebGPUBackend extends Backend {
 
 			const { x, y, width, height } = renderContext.scissorValue;
 
-			currentPass.setScissorRect( x, y, width, height );
+			currentPass.setScissorRect( x, renderContext.height - height - y, width, height );
 
 		}
 
@@ -23010,9 +23534,9 @@ class WebGPUBackend extends Backend {
 	updateViewport( renderContext ) {
 
 		const { currentPass } = this.get( renderContext );
-		const { x, y, width, height, minDepth, maxDepth } = renderContext.viewportValue;
+		let { x, y, width, height, minDepth, maxDepth } = renderContext.viewportValue;
 
-		currentPass.setViewport( x, y, width, height, minDepth, maxDepth );
+		currentPass.setViewport( x, renderContext.height - height - y, width, height, minDepth, maxDepth );
 
 	}
 
@@ -23699,6 +24223,35 @@ class WebGPURenderer extends Renderer {
 
 }
 
+class WebGPUGLRenderer extends Renderer {
+
+	constructor( parameters = {}, useWebGL = false ) {
+
+		let BackendClass;
+
+		if ( WebGPU.isAvailable() && !useWebGL) {
+
+			BackendClass = WebGPUBackend;
+
+		} else {
+
+			BackendClass = WebGLBackend;
+
+			//console.warn( 'THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.' );
+
+		}
+
+		const backend = new BackendClass( parameters );
+
+		//super( new Proxy( backend, debugHandler ) );
+		super( backend );
+
+		this.isWebGPURenderer = true;
+
+	}
+
+}
+
 const supportsFrameCallback$1 = 'requestVideoFrameCallback' in HTMLVideoElement.prototype,
 requestAnimationFrame$1 = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
                             window.webkitRequestAnimationFrame || window.msRequestAnimationFrame,
@@ -23847,4 +24400,4 @@ class WebGPUVideoAnimation {
     }
 }
 
-export { VideoAnimation, WebGPU$1 as WebGPU, WebGPURenderer, WebGPUVideoAnimation, equirectUV, texture };
+export { MeshBasicNodeMaterial, VideoAnimation, WebGPU$1 as WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };
