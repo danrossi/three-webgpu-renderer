@@ -52823,9 +52823,7 @@ var THREE = (async function (exports) {
 
 				if ( binding.isSampledTexture ) {
 
-					const store = binding.store === true;
-
-					this.textures.updateTexture( binding.texture, { store } );
+					this.textures.updateTexture( binding.texture );
 
 				} else if ( binding.isStorageBuffer ) {
 
@@ -58891,7 +58889,7 @@ var THREE = (async function (exports) {
 			if ( this.flatShading === true ) {
 
 				const fdx = dFdx( positionView );
-				const fdy = dFdy( positionView.negate() ); // use -positionView ?
+				const fdy = dFdy( positionView );
 				const normalNode = fdx.cross( fdy ).normalize();
 
 				stack.assign( transformedNormalView, normalNode );
@@ -66845,9 +66843,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
-			if ( isRenderTarget || options.store === true ) {
-
-				//if ( options.store === true ) options.levels = 1; /* no mipmaps? */
+			if ( isRenderTarget || texture.isStorageTexture === true ) {
 
 				backend.createSampler( texture );
 				backend.createTexture( texture, options );
@@ -71618,7 +71614,7 @@ void main() {
 
 	const wgslMethods = {
 		dFdx: 'dpdx',
-		dFdy: 'dpdy',
+		dFdy: '- dpdy',
 		mod: 'threejs_mod',
 		lessThanEqual: 'threejs_lessThanEqual',
 		inversesqrt: 'inverseSqrt'
@@ -73832,7 +73828,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 			let usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC;
 
-			if ( options.store === true ) {
+			if ( texture.isStorageTexture === true ) {
 
 				usage |= GPUTextureUsage.STORAGE_BINDING;
 

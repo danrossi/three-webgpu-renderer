@@ -96,14 +96,16 @@
 
 			//fontsTexture.colorSpace = THREE.SRGBColorSpace;
 
+
             const text = new TextBitmap({
-                //text: "P",
+                //text: "H",
 				text: "Participant Title",
                 width: 400,
                 align: "center",
                 font: fontAssets.font,
                 letterSpacing: 1,
-                flipY: fontsTexture.flipY,
+				flipY: false,
+                //flipY: fontsTexture.flipY,
                 scale: 0.1,
                 color: "#ffffff",
                 texture: fontsTexture,
