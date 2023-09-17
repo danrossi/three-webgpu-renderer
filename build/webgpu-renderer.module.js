@@ -24229,9 +24229,13 @@ class WebGPUGLRenderer extends Renderer {
 
 			BackendClass = WebGPUBackend;
 
+			this.isWebGPUBackend = true;
+
 		} else {
 
 			BackendClass = WebGLBackend;
+
+			this.isWebGLBackend = true;
 
 			//console.warn( 'THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.' );
 
@@ -24396,4 +24400,4 @@ class WebGPUVideoAnimation {
     }
 }
 
-export { MeshBasicNodeMaterial, VideoAnimation, WebGPU$1 as WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };
+export { MeshBasicNodeMaterial, VideoAnimation, WebGPU$1 as WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, color, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };
