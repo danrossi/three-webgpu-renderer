@@ -1,5 +1,5 @@
 import { Texture, Color, BufferGeometry, Box3, BufferAttribute, DoubleSide, GLSL3, RawShaderMaterial, Mesh, Group, BoxGeometry, MeshBasicMaterial, LinearMipMapLinearFilter, LinearFilter } from 'three';
-import { tslFn, color, texture, uniform, max, min, clamp, fwidth, vec4, MeshBasicNodeMaterial } from 'three-webgpu';
+import { tslFn, color, texture, uniform, max, min, clamp, fwidth, MeshBasicNodeMaterial } from 'three-webgpu';
 
 class BaseShader {
 
@@ -124,19 +124,9 @@ class MSDFShader extends BaseShader {
 
   static createWebGPUColorShader() {
     return tslFn( ( input ) => {
-
-      //const tex = texture(input.texture);
       //const color = uniform(input.color);
-      //const opacity = uniform(input.opacity);
-
-      //const sigDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b));
-
-      //const alpha = clamp(sigDist.div(fwidth(sigDist)).add(0.5), 0.0, 1.0);
-
+    
       return color(input.color);
-      //return color;
-      //return vec4(color.xyz, opacity);
-      //return vec4(color.xyz, alpha.mul(opacity));
     });
 
   }
@@ -145,7 +135,6 @@ class MSDFShader extends BaseShader {
     return tslFn( ( input ) => {
 
       const tex = texture(input.texture);
-      //const color = uniform(input.color);
       const opacity = uniform(input.opacity);
 
       const sigDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b)).sub(0.5);
@@ -154,58 +143,9 @@ class MSDFShader extends BaseShader {
 
    
       return alpha.mul(opacity);
-      //return vec4(color.xyz, opacity);
-      //return vec4(color.xyz, alpha.mul(opacity));
     });
 
   }
-
-
-  static createWebGPUShader() {
-    return tslFn( ( input ) => {
-
-      const tex = texture(input.texture);
-      const color = uniform(input.color);
-      const opacity = uniform(input.opacity);
-
-      const sigDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b));
-
-      const alpha = clamp(sigDist.div(fwidth(sigDist)).add(0.5), 0.0, 1.0);
-
-   
-      //return vec4(color.xyz, 1);
-      return vec4(color.xyz, alpha.mul(opacity));
-    });
-
-  }
-
- /* static fragmentShader(precision, alphaTest) { 
-
-    const discard = BaseShader.discarOnAlphaTest(alphaTest);
-       
-    return `
-      #ifdef GL_OES_standard_derivatives
-        #extension GL_OES_standard_derivatives : enable
-      #endif
-      precision ${precision || 'highp'} float;
-      uniform float opacity;
-      uniform vec3 color;
-      uniform sampler2D map;
-      varying vec2 vUv;
-
-      float median(float r, float g, float b) {
-        return max(min(r, g), min(max(r, g), b));
-      }
-
-      void main() {
-        vec3 sample = texture2D(map, vUv).rgb;
-        float sigDist = median(sample.r, sample.g, sample.b) - 0.5;
-        float alpha = clamp(sigDist/fwidth(sigDist) + 0.5, 0.0, 1.0);
-        gl_FragColor = vec4(color.xyz, alpha * opacity);
-        ${discard}
-      }
-    `
-  }*/
 }
 
 /*
