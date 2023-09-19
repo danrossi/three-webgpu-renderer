@@ -128,7 +128,7 @@
 			const mesh = new THREE.Mesh(geometry, material);
 			scene.add(mesh);
 
-			if (await WebGPU.isAvailable()) {
+			if (WebGPU.isAvailable()) {
 				console.log("Using WebGPU");
 				renderer = new WebGPURenderer();
 			} else {

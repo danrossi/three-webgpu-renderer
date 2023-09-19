@@ -86,7 +86,7 @@
 				light.position.set( 0.5, 1, 1 ).normalize();
 				scene.add( light );
 
-				if (await WebGPU.isAvailable()) {
+				if (WebGPU.isAvailable()) {
 					renderer = new WebGPURenderer();				
 				} else {
 					renderer = new THREE.WebGLRenderer();

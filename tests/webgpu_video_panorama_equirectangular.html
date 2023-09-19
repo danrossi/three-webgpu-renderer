@@ -126,7 +126,7 @@
 			//texture.colorSpace = THREE.LinearSRGBColorSpace;
 			let material;
 
-			if (await WebGPU.isAvailable()) {
+			if (WebGPU.isAvailable()) {
 				console.log("Using WebGPU");
 				renderer = new WebGPURenderer();
 				texture.colorSpace = THREE.SRGBColorSpace;

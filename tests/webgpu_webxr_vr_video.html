@@ -112,7 +112,7 @@
 
 				//
 
-				if (await WebGPU.isAvailable()) {
+				if (WebGPU.isAvailable()) {
 					renderer = new WebGPURenderer();				
 				} else {
 					renderer = new THREE.WebGLRenderer();

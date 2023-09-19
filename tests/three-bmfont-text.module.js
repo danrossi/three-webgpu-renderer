@@ -558,24 +558,24 @@ class TextGeometry extends BufferGeometry {
 
 class TextBitmap {
 
-    constructor(config, renderer) {
+    constructor(config, isWebGPU) {
         config.color = config.color || '#fff';
         config.lineHeight = config.lineHeight ? config.font.common.lineHeight + config.lineHeight : config.font.common.lineHeight;
         this.config = config;
         this._text = null;
-        this.init(config, renderer);
+        this.init(config, isWebGPU);
     }
 
     createGeometry() {
         return new TextGeometry(this.config);
     }
 
-    init(config, renderer) {
+    init(config, isWebGPU) {
         const geometry = this.geometry = this.createGeometry(),
         texture = config.texture;
         //webgl2 = renderer.capabilities.isWebGL2;
 
-        this.initTexture(texture, renderer);
+        this.initTexture(texture, config.maxAnisotropy);
 
         const shaderConf = {
                 side: DoubleSide,
@@ -592,7 +592,7 @@ class TextBitmap {
         //const material = new RawShaderMaterial(webgl2 ? MSDFShader.createShader2(shaderConf) : MSDFShader.createShader(shaderConf));
         let material;
 
-        if (renderer.isWebGPURenderer) {
+        if (isWebGPU) {
             material = new MeshBasicNodeMaterial({ map: texture, color: new Color(config.color), opacity: 1.0, transparent: true, depthTest: false, side: DoubleSide, alphaTest: 0.0001 });
             const colorNode = MSDFShader.createWebGPUColorShader();
             material.colorNode = colorNode( { color: material.color });
@@ -652,12 +652,12 @@ class TextBitmap {
         this.group.add(hitBox);
     }
 
-    initTexture(texture, renderer) {
+    initTexture(texture, maxAnisotropy = 16) {
         texture.needsUpdate = true;
         texture.minFilter = LinearMipMapLinearFilter;
         texture.magFilter = LinearFilter;
         texture.generateMipmaps = true;
-        texture.anisotropy = renderer.capabilities && renderer.capabilities.getMaxAnisotropy() || 6;
+        texture.anisotropy = maxAnisotropy;
     }
 
     update() {
