@@ -13,13 +13,10 @@ class WebGPUGLRenderer extends Renderer {
 
 			BackendClass = WebGPUBackend;
 
-			this.isWebGPUBackend = true;
 
 		} else {
 
 			BackendClass = WebGLBackend;
-
-			this.isWebGLBackend = true;
 
 			//console.warn( 'THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.' );
 

@@ -5,31 +5,56 @@
  */
 import { DynamicDrawUsage, Uint32BufferAttribute, Uint16BufferAttribute, Color, Vector2, Vector3, Vector4, Matrix3, Matrix4, EventDispatcher, MathUtils, LinearSRGBColorSpace, SRGBColorSpace, TangentSpaceNormalMap, ObjectSpaceNormalMap, StaticDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, InstancedInterleavedBuffer, DepthTexture, NearestFilter, LessCompare, ShaderMaterial, NoColorSpace, Material, WebGLCubeRenderTarget, BoxGeometry, BackSide, NoBlending, Mesh, Scene, LinearMipmapLinearFilter, LinearFilter, CubeCamera, RenderTarget, sRGBEncoding, LinearEncoding, Float16BufferAttribute, REVISION, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, FramebufferTexture, UnsignedIntType, DepthFormat, PointLight, DirectionalLight, SpotLight, AmbientLight, HemisphereLight, LineBasicMaterial, LineDashedMaterial, MeshNormalMaterial, MeshBasicMaterial, MeshLambertMaterial, MeshPhongMaterial, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, SpriteMaterial, MaterialLoader, DepthStencilFormat, UnsignedInt248Type, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeReflectionMapping, CubeRefractionMapping, SphereGeometry, Frustum, DoubleSide, FrontSide, createCanvasElement, AddEquation, SubtractEquation, ReverseSubtractEquation, ZeroFactor, OneFactor, SrcColorFactor, SrcAlphaFactor, SrcAlphaSaturateFactor, DstColorFactor, DstAlphaFactor, OneMinusSrcColorFactor, OneMinusSrcAlphaFactor, OneMinusDstColorFactor, OneMinusDstAlphaFactor, CullFaceNone, CullFaceBack, CullFaceFront, CustomBlending, MultiplyBlending, SubtractiveBlending, AdditiveBlending, NormalBlending, NotEqualDepth, GreaterDepth, GreaterEqualDepth, EqualDepth, LessEqualDepth, LessDepth, AlwaysDepth, NeverDepth, UnsignedByteType, UnsignedShort4444Type, UnsignedShort5551Type, ByteType, ShortType, UnsignedShortType, IntType, FloatType, HalfFloatType, AlphaFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearMipmapNearestFilter, NeverCompare, AlwaysCompare, LessEqualCompare, EqualCompare, GreaterEqualCompare, GreaterCompare, NotEqualCompare, WebGLCoordinateSystem, NotEqualStencilFunc, GreaterStencilFunc, GreaterEqualStencilFunc, EqualStencilFunc, LessEqualStencilFunc, LessStencilFunc, AlwaysStencilFunc, NeverStencilFunc, DecrementWrapStencilOp, IncrementWrapStencilOp, DecrementStencilOp, IncrementStencilOp, InvertStencilOp, ReplaceStencilOp, ZeroStencilOp, KeepStencilOp, MaxEquation, MinEquation, Texture, CubeTexture, WebGPUCoordinateSystem } from 'three';
 
-class WebGPU$1 {
+if ( window.GPUShaderStage === undefined ) {
 
-	static async isAvailable() {
-		if (navigator.gpu !== undefined) {
+	window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
 
-			try {
-				const adapter = await navigator.gpu.requestAdapter();
+}
 
-				if (adapter !== null) {
-					if (window.GPUShaderStage === undefined) {
+let isAvailable = false;
 
-						window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
+if ( navigator.gpu !== undefined ) {
 
-					}
+	const adapter = await navigator.gpu.requestAdapter();
 
-					return true;
-				}
-			} catch (e) {
-				return false;
-			}
+	if ( adapter !== null ) {
 
-		}
+		isAvailable = true;
 
-		return false;
 	}
+
+}
+
+class WebGPU {
+
+	static isAvailable() {
+
+		return isAvailable;
+
+	}
+
+	static getErrorMessage() {
+
+		const message = 'Your browser does not support <a href="https://gpuweb.github.io/gpuweb/" style="color:blue">WebGPU</a> yet';
+
+		const element = document.createElement( 'div' );
+		element.id = 'webgpumessage';
+		element.style.fontFamily = 'monospace';
+		element.style.fontSize = '13px';
+		element.style.fontWeight = 'normal';
+		element.style.textAlign = 'center';
+		element.style.background = '#fff';
+		element.style.color = '#000';
+		element.style.padding = '1.5em';
+		element.style.maxWidth = '400px';
+		element.style.margin = '5em auto 0';
+
+		element.innerHTML = message;
+
+		return element;
+
+	}
+
 }
 
 class Animation {
@@ -3662,7 +3687,7 @@ class TextureSizeNode extends Node {
 		const textureProperty = this.textureNode.build( builder, 'property' );
 		const levelNode = this.levelNode.build( builder, 'int' );
 
-		return builder.format( `textureDimensions( ${textureProperty}, ${levelNode} )`, this.getNodeType( builder ), output );
+		return builder.format( `${builder.getMethod( 'textureDimensions' )}( ${textureProperty}, ${levelNode} )`, this.getNodeType( builder ), output );
 
 	}
 
@@ -15220,10 +15245,12 @@ class Textures extends DataMap {
 
 	}
 
-	updateRenderTarget( renderTarget ) {
+	updateRenderTarget( renderTarget, activeMipmapLevel = 0 ) {
 
 		const renderTargetData = this.get( renderTarget );
+
 		const sampleCount = renderTarget.samples === 0 ? 1 : renderTarget.samples;
+		const depthTextureMips = renderTargetData.depthTextureMips || ( renderTargetData.depthTextureMips = {} );
 
 		let texture, textures;
 
@@ -15241,7 +15268,10 @@ class Textures extends DataMap {
 
 		const size = this.getSize( texture );
 
-		let depthTexture = renderTarget.depthTexture || renderTargetData.depthTexture;
+		const mipWidth = size.width >> activeMipmapLevel;
+		const mipHeight = size.height >> activeMipmapLevel;
+
+		let depthTexture = renderTarget.depthTexture || depthTextureMips[ activeMipmapLevel ];
 		let textureNeedsUpdate = false;
 
 		if ( depthTexture === undefined ) {
@@ -15249,8 +15279,10 @@ class Textures extends DataMap {
 			depthTexture = new DepthTexture();
 			depthTexture.format = DepthStencilFormat;
 			depthTexture.type = UnsignedInt248Type;
-			depthTexture.image.width = size.width;
-			depthTexture.image.height = size.height;
+			depthTexture.image.width = mipWidth;
+			depthTexture.image.height = mipHeight;
+
+			depthTextureMips[ activeMipmapLevel ] = depthTexture;
 
 		}
 
@@ -15259,8 +15291,8 @@ class Textures extends DataMap {
 			textureNeedsUpdate = true;
 			depthTexture.needsUpdate = true;
 
-			depthTexture.image.width = size.width;
-			depthTexture.image.height = size.height;
+			depthTexture.image.width = mipWidth;
+			depthTexture.image.height = mipHeight;
 
 		}
 
@@ -16154,7 +16186,8 @@ class Renderer {
 		this._clearStencil = 0;
 
 		this._renderTarget = null;
-		this._currentActiveCubeFace = 0;
+		this._activeCubeFace = 0;
+		this._activeMipmapLevel = 0;
 
 		this._initialized = false;
 		this._initPromise = null;
@@ -16256,6 +16289,7 @@ class Renderer {
 		const renderTarget = this._renderTarget;
 		const renderContext = this._renderContexts.get( scene, camera, renderTarget );
 		const activeCubeFace = this._activeCubeFace;
+		const activeMipmapLevel = this._activeMipmapLevel;
 
 		this._currentRenderContext = renderContext;
 
@@ -16307,12 +16341,16 @@ class Renderer {
 		const maxDepth = ( viewport.maxDepth === undefined ) ? 1 : viewport.maxDepth;
 
 		renderContext.viewportValue.copy( viewport ).multiplyScalar( pixelRatio ).floor();
+		renderContext.viewportValue.width >>= activeMipmapLevel;
+		renderContext.viewportValue.height >>= activeMipmapLevel;
 		renderContext.viewportValue.minDepth = minDepth;
 		renderContext.viewportValue.maxDepth = maxDepth;
 		renderContext.viewport = renderContext.viewportValue.equals( _screen ) === false;
 
 		renderContext.scissorValue.copy( scissor ).multiplyScalar( pixelRatio ).floor();
 		renderContext.scissor = this._scissorTest && renderContext.scissorValue.equals( _screen ) === false;
+		renderContext.scissorValue.width >>= activeMipmapLevel;
+		renderContext.scissorValue.height >>= activeMipmapLevel;
 
 		renderContext.depth = this.depth;
 		renderContext.stencil = this.stencil;
@@ -16343,7 +16381,7 @@ class Renderer {
 
 		if ( renderTarget !== null ) {
 
-			this._textures.updateRenderTarget( renderTarget );
+			this._textures.updateRenderTarget( renderTarget, activeMipmapLevel );
 
 			const renderTargetData = this._textures.get( renderTarget );
 
@@ -16361,7 +16399,10 @@ class Renderer {
 
 		}
 
+		renderContext.width >>= activeMipmapLevel;
+		renderContext.height >>= activeMipmapLevel;
 		renderContext.activeCubeFace = activeCubeFace;
+		renderContext.activeMipmapLevel = activeMipmapLevel;
 		renderContext.occlusionQueryCount = renderList.occlusionQueryCount;
 
 		//
@@ -16399,6 +16440,18 @@ class Renderer {
 		//
 
 		sceneRef.onAfterRender( this, scene, camera, renderTarget );
+
+	}
+
+	getActiveCubeFace() {
+
+		return this._activeCubeFace;
+
+	}
+
+	getActiveMipmapLevel() {
+
+		return this._activeMipmapLevel;
 
 	}
 
@@ -16673,10 +16726,11 @@ class Renderer {
 
 	}
 
-	setRenderTarget( renderTarget, activeCubeFace = 0 ) {
+	setRenderTarget( renderTarget, activeCubeFace = 0, activeMipmapLevel = 0 ) {
 
 		this._renderTarget = renderTarget;
 		this._activeCubeFace = activeCubeFace;
+		this._activeMipmapLevel = activeMipmapLevel;
 
 	}
 
@@ -17448,7 +17502,8 @@ class NodeSampledCubeTexture extends NodeSampledTexture {
 }
 
 const glslMethods = {
-	[ MathNode.ATAN2 ]: 'atan'
+	[ MathNode.ATAN2 ]: 'atan',
+	textureDimensions: 'textureSize'
 };
 
 const precisionLib = {
@@ -17478,6 +17533,10 @@ class GLSLNodeBuilder extends NodeBuilder {
 		if ( texture.isTextureCube ) {
 
 			return `textureCube( ${textureProperty}, ${uvSnippet} )`;
+
+		} else if ( texture.isDepthTexture ) {
+
+			return `texture( ${textureProperty}, ${uvSnippet} ).x`;
 
 		} else {
 
@@ -19349,7 +19408,12 @@ class WebGLBackend extends Backend {
 		textureUtils.setTextureParameters( glTextureType, texture );
 
 		gl.bindTexture( glTextureType, textureGPU );
-		gl.texStorage2D( glTextureType, levels, glInternalFormat, width, height );
+
+		if ( ! texture.isVideoTexture ) {
+
+			gl.texStorage2D( glTextureType, levels, glInternalFormat, width, height );
+
+		}
 
 		this.set( texture, {
 			textureGPU,
@@ -19365,7 +19429,7 @@ class WebGLBackend extends Backend {
 
 		const { gl } = this;
 		const { width, height } = options;
-		const { textureGPU, glTextureType, glFormat, glType } = this.get( texture );
+		const { textureGPU, glTextureType, glFormat, glType, glInternalFormat } = this.get( texture );
 
 		const getImage = ( source ) => {
 
@@ -19373,9 +19437,13 @@ class WebGLBackend extends Backend {
 
 				return source.image.data;
 
+			} else if ( source instanceof ImageBitmap || source instanceof OffscreenCanvas ) {
+
+				return source;
+
 			}
 
-			return source;
+			return source.data;
 
 		};
 
@@ -19392,6 +19460,13 @@ class WebGLBackend extends Backend {
 				gl.texSubImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, width, height, glFormat, glType, image );
 
 			}
+
+		} else if ( texture.isVideoTexture ) {
+
+			texture.update();
+
+			gl.texImage2D( glTextureType, 0, glInternalFormat, glFormat, glType, options.image );
+
 
 		} else {
 
@@ -23237,7 +23312,7 @@ class WebGPUBackend extends Backend {
 				const textureData = this.get( textures[ i ] );
 
 				const textureView = textureData.texture.createView( {
-					baseMipLevel: 0,
+					baseMipLevel: renderContext.activeMipmapLevel,
 					mipLevelCount: 1,
 					baseArrayLayer: renderContext.activeCubeFace,
 					dimension: GPUTextureViewDimension.TwoD
@@ -24126,58 +24201,6 @@ class WebGPUBackend extends Backend {
 
 }
 
-if ( window.GPUShaderStage === undefined ) {
-
-	window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
-
-}
-
-let isAvailable = false;
-
-if ( navigator.gpu !== undefined ) {
-
-	const adapter = await navigator.gpu.requestAdapter();
-
-	if ( adapter !== null ) {
-
-		isAvailable = true;
-
-	}
-
-}
-
-class WebGPU {
-
-	static isAvailable() {
-
-		return isAvailable;
-
-	}
-
-	static getErrorMessage() {
-
-		const message = 'Your browser does not support <a href="https://gpuweb.github.io/gpuweb/" style="color:blue">WebGPU</a> yet';
-
-		const element = document.createElement( 'div' );
-		element.id = 'webgpumessage';
-		element.style.fontFamily = 'monospace';
-		element.style.fontSize = '13px';
-		element.style.fontWeight = 'normal';
-		element.style.textAlign = 'center';
-		element.style.background = '#fff';
-		element.style.color = '#000';
-		element.style.padding = '1.5em';
-		element.style.maxWidth = '400px';
-		element.style.margin = '5em auto 0';
-
-		element.innerHTML = message;
-
-		return element;
-
-	}
-
-}
-
 /*
 const debugHandler = {
 
@@ -24229,13 +24252,10 @@ class WebGPUGLRenderer extends Renderer {
 
 			BackendClass = WebGPUBackend;
 
-			this.isWebGPUBackend = true;
 
 		} else {
 
 			BackendClass = WebGLBackend;
-
-			this.isWebGLBackend = true;
 
 			//console.warn( 'THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.' );
 
@@ -24400,4 +24420,4 @@ class WebGPUVideoAnimation {
     }
 }
 
-export { MeshBasicNodeMaterial, VideoAnimation, WebGPU$1 as WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, color, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };
+export { MeshBasicNodeMaterial, VideoAnimation, WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, color, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };

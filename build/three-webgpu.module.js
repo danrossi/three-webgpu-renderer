@@ -8730,10 +8730,10 @@ class Material extends EventDispatcher {
 
 		if ( this.blending !== NormalBlending ) data.blending = this.blending;
 		if ( this.side !== FrontSide ) data.side = this.side;
-		if ( this.vertexColors ) data.vertexColors = true;
+		if ( this.vertexColors === true ) data.vertexColors = true;
 
 		if ( this.opacity < 1 ) data.opacity = this.opacity;
-		if ( this.transparent === true ) data.transparent = this.transparent;
+		if ( this.transparent === true ) data.transparent = true;
 
 		data.depthFunc = this.depthFunc;
 		data.depthTest = this.depthTest;
@@ -8764,17 +8764,17 @@ class Material extends EventDispatcher {
 		if ( this.dithering === true ) data.dithering = true;
 
 		if ( this.alphaTest > 0 ) data.alphaTest = this.alphaTest;
-		if ( this.alphaHash === true ) data.alphaHash = this.alphaHash;
-		if ( this.alphaToCoverage === true ) data.alphaToCoverage = this.alphaToCoverage;
-		if ( this.premultipliedAlpha === true ) data.premultipliedAlpha = this.premultipliedAlpha;
-		if ( this.forceSinglePass === true ) data.forceSinglePass = this.forceSinglePass;
+		if ( this.alphaHash === true ) data.alphaHash = true;
+		if ( this.alphaToCoverage === true ) data.alphaToCoverage = true;
+		if ( this.premultipliedAlpha === true ) data.premultipliedAlpha = true;
+		if ( this.forceSinglePass === true ) data.forceSinglePass = true;
 
-		if ( this.wireframe === true ) data.wireframe = this.wireframe;
+		if ( this.wireframe === true ) data.wireframe = true;
 		if ( this.wireframeLinewidth > 1 ) data.wireframeLinewidth = this.wireframeLinewidth;
 		if ( this.wireframeLinecap !== 'round' ) data.wireframeLinecap = this.wireframeLinecap;
 		if ( this.wireframeLinejoin !== 'round' ) data.wireframeLinejoin = this.wireframeLinejoin;
 
-		if ( this.flatShading === true ) data.flatShading = this.flatShading;
+		if ( this.flatShading === true ) data.flatShading = true;
 
 		if ( this.visible === false ) data.visible = false;
 
@@ -12640,6 +12640,7 @@ class CubeCamera extends Object3D {
 
 		this.renderTarget = renderTarget;
 		this.coordinateSystem = null;
+		this.activeMipmapLevel = 0;
 
 		const cameraPX = new PerspectiveCamera( fov, aspect, near, far );
 		cameraPX.layers = this.layers;
@@ -12737,7 +12738,7 @@ class CubeCamera extends Object3D {
 
 		if ( this.parent === null ) this.updateMatrixWorld();
 
-		const renderTarget = this.renderTarget;
+		const { renderTarget, activeMipmapLevel } = this;
 
 		if ( this.coordinateSystem !== renderer.coordinateSystem ) {
 
@@ -12750,6 +12751,8 @@ class CubeCamera extends Object3D {
 		const [ cameraPX, cameraNX, cameraPY, cameraNY, cameraPZ, cameraNZ ] = this.children;
 
 		const currentRenderTarget = renderer.getRenderTarget();
+		const currentActiveCubeFace = renderer.getActiveCubeFace();
+		const currentActiveMipmapLevel = renderer.getActiveMipmapLevel();
 
 		const currentXrEnabled = renderer.xr.enabled;
 
@@ -12759,27 +12762,30 @@ class CubeCamera extends Object3D {
 
 		renderTarget.texture.generateMipmaps = false;
 
-		renderer.setRenderTarget( renderTarget, 0 );
+		renderer.setRenderTarget( renderTarget, 0, activeMipmapLevel );
 		renderer.render( scene, cameraPX );
 
-		renderer.setRenderTarget( renderTarget, 1 );
+		renderer.setRenderTarget( renderTarget, 1, activeMipmapLevel );
 		renderer.render( scene, cameraNX );
 
-		renderer.setRenderTarget( renderTarget, 2 );
+		renderer.setRenderTarget( renderTarget, 2, activeMipmapLevel );
 		renderer.render( scene, cameraPY );
 
-		renderer.setRenderTarget( renderTarget, 3 );
+		renderer.setRenderTarget( renderTarget, 3, activeMipmapLevel );
 		renderer.render( scene, cameraNY );
 
-		renderer.setRenderTarget( renderTarget, 4 );
+		renderer.setRenderTarget( renderTarget, 4, activeMipmapLevel );
 		renderer.render( scene, cameraPZ );
+
+		// mipmaps are generated during the last call of render()
+		// at this point, all sides of the cube render target are defined
 
 		renderTarget.texture.generateMipmaps = generateMipmaps;
 
-		renderer.setRenderTarget( renderTarget, 5 );
+		renderer.setRenderTarget( renderTarget, 5, activeMipmapLevel );
 		renderer.render( scene, cameraNZ );
 
-		renderer.setRenderTarget( currentRenderTarget );
+		renderer.setRenderTarget( currentRenderTarget, currentActiveCubeFace, currentActiveMipmapLevel );
 
 		renderer.xr.enabled = currentXrEnabled;
 
@@ -30558,6 +30564,7 @@ class FogExp2 {
 
 		return {
 			type: 'FogExp2',
+			name: this.name,
 			color: this.color.getHex(),
 			density: this.density
 		};
@@ -30591,6 +30598,7 @@ class Fog {
 
 		return {
 			type: 'Fog',
+			name: this.name,
 			color: this.color.getHex(),
 			near: this.near,
 			far: this.far
@@ -31196,7 +31204,7 @@ const _uvC = /*@__PURE__*/ new Vector2();
 
 class Sprite extends Object3D {
 
-	constructor( material ) {
+	constructor( material = new SpriteMaterial() ) {
 
 		super();
 
@@ -31224,7 +31232,7 @@ class Sprite extends Object3D {
 		}
 
 		this.geometry = _geometry;
-		this.material = ( material !== undefined ) ? material : new SpriteMaterial();
+		this.material = material;
 
 		this.center = new Vector2( 0.5, 0.5 );
 
@@ -44958,6 +44966,12 @@ class ObjectLoader extends Loader {
 
 					}
 
+					if ( data.fog.name !== '' ) {
+
+						object.fog.name = data.fog.name;
+
+					}
+
 				}
 
 				if ( data.backgroundBlurriness !== undefined ) object.backgroundBlurriness = data.backgroundBlurriness;
@@ -51482,31 +51496,56 @@ if ( typeof window !== 'undefined' ) {
 
 }
 
-class WebGPU$1 {
+if ( window.GPUShaderStage === undefined ) {
 
-	static async isAvailable() {
-		if (navigator.gpu !== undefined) {
+	window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
 
-			try {
-				const adapter = await navigator.gpu.requestAdapter();
+}
 
-				if (adapter !== null) {
-					if (window.GPUShaderStage === undefined) {
+let isAvailable = false;
 
-						window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
+if ( navigator.gpu !== undefined ) {
 
-					}
+	const adapter = await navigator.gpu.requestAdapter();
 
-					return true;
-				}
-			} catch (e) {
-				return false;
-			}
+	if ( adapter !== null ) {
 
-		}
+		isAvailable = true;
 
-		return false;
 	}
+
+}
+
+class WebGPU {
+
+	static isAvailable() {
+
+		return isAvailable;
+
+	}
+
+	static getErrorMessage() {
+
+		const message = 'Your browser does not support <a href="https://gpuweb.github.io/gpuweb/" style="color:blue">WebGPU</a> yet';
+
+		const element = document.createElement( 'div' );
+		element.id = 'webgpumessage';
+		element.style.fontFamily = 'monospace';
+		element.style.fontSize = '13px';
+		element.style.fontWeight = 'normal';
+		element.style.textAlign = 'center';
+		element.style.background = '#fff';
+		element.style.color = '#000';
+		element.style.padding = '1.5em';
+		element.style.maxWidth = '400px';
+		element.style.margin = '5em auto 0';
+
+		element.innerHTML = message;
+
+		return element;
+
+	}
+
 }
 
 class Animation {
@@ -55139,7 +55178,7 @@ class TextureSizeNode extends Node {
 		const textureProperty = this.textureNode.build( builder, 'property' );
 		const levelNode = this.levelNode.build( builder, 'int' );
 
-		return builder.format( `textureDimensions( ${textureProperty}, ${levelNode} )`, this.getNodeType( builder ), output );
+		return builder.format( `${builder.getMethod( 'textureDimensions' )}( ${textureProperty}, ${levelNode} )`, this.getNodeType( builder ), output );
 
 	}
 
@@ -66697,10 +66736,12 @@ class Textures extends DataMap {
 
 	}
 
-	updateRenderTarget( renderTarget ) {
+	updateRenderTarget( renderTarget, activeMipmapLevel = 0 ) {
 
 		const renderTargetData = this.get( renderTarget );
+
 		const sampleCount = renderTarget.samples === 0 ? 1 : renderTarget.samples;
+		const depthTextureMips = renderTargetData.depthTextureMips || ( renderTargetData.depthTextureMips = {} );
 
 		let texture, textures;
 
@@ -66718,7 +66759,10 @@ class Textures extends DataMap {
 
 		const size = this.getSize( texture );
 
-		let depthTexture = renderTarget.depthTexture || renderTargetData.depthTexture;
+		const mipWidth = size.width >> activeMipmapLevel;
+		const mipHeight = size.height >> activeMipmapLevel;
+
+		let depthTexture = renderTarget.depthTexture || depthTextureMips[ activeMipmapLevel ];
 		let textureNeedsUpdate = false;
 
 		if ( depthTexture === undefined ) {
@@ -66726,8 +66770,10 @@ class Textures extends DataMap {
 			depthTexture = new DepthTexture();
 			depthTexture.format = DepthStencilFormat;
 			depthTexture.type = UnsignedInt248Type;
-			depthTexture.image.width = size.width;
-			depthTexture.image.height = size.height;
+			depthTexture.image.width = mipWidth;
+			depthTexture.image.height = mipHeight;
+
+			depthTextureMips[ activeMipmapLevel ] = depthTexture;
 
 		}
 
@@ -66736,8 +66782,8 @@ class Textures extends DataMap {
 			textureNeedsUpdate = true;
 			depthTexture.needsUpdate = true;
 
-			depthTexture.image.width = size.width;
-			depthTexture.image.height = size.height;
+			depthTexture.image.width = mipWidth;
+			depthTexture.image.height = mipHeight;
 
 		}
 
@@ -67631,7 +67677,8 @@ class Renderer {
 		this._clearStencil = 0;
 
 		this._renderTarget = null;
-		this._currentActiveCubeFace = 0;
+		this._activeCubeFace = 0;
+		this._activeMipmapLevel = 0;
 
 		this._initialized = false;
 		this._initPromise = null;
@@ -67733,6 +67780,7 @@ class Renderer {
 		const renderTarget = this._renderTarget;
 		const renderContext = this._renderContexts.get( scene, camera, renderTarget );
 		const activeCubeFace = this._activeCubeFace;
+		const activeMipmapLevel = this._activeMipmapLevel;
 
 		this._currentRenderContext = renderContext;
 
@@ -67784,12 +67832,16 @@ class Renderer {
 		const maxDepth = ( viewport.maxDepth === undefined ) ? 1 : viewport.maxDepth;
 
 		renderContext.viewportValue.copy( viewport ).multiplyScalar( pixelRatio ).floor();
+		renderContext.viewportValue.width >>= activeMipmapLevel;
+		renderContext.viewportValue.height >>= activeMipmapLevel;
 		renderContext.viewportValue.minDepth = minDepth;
 		renderContext.viewportValue.maxDepth = maxDepth;
 		renderContext.viewport = renderContext.viewportValue.equals( _screen ) === false;
 
 		renderContext.scissorValue.copy( scissor ).multiplyScalar( pixelRatio ).floor();
 		renderContext.scissor = this._scissorTest && renderContext.scissorValue.equals( _screen ) === false;
+		renderContext.scissorValue.width >>= activeMipmapLevel;
+		renderContext.scissorValue.height >>= activeMipmapLevel;
 
 		renderContext.depth = this.depth;
 		renderContext.stencil = this.stencil;
@@ -67820,7 +67872,7 @@ class Renderer {
 
 		if ( renderTarget !== null ) {
 
-			this._textures.updateRenderTarget( renderTarget );
+			this._textures.updateRenderTarget( renderTarget, activeMipmapLevel );
 
 			const renderTargetData = this._textures.get( renderTarget );
 
@@ -67838,7 +67890,10 @@ class Renderer {
 
 		}
 
+		renderContext.width >>= activeMipmapLevel;
+		renderContext.height >>= activeMipmapLevel;
 		renderContext.activeCubeFace = activeCubeFace;
+		renderContext.activeMipmapLevel = activeMipmapLevel;
 		renderContext.occlusionQueryCount = renderList.occlusionQueryCount;
 
 		//
@@ -67876,6 +67931,18 @@ class Renderer {
 		//
 
 		sceneRef.onAfterRender( this, scene, camera, renderTarget );
+
+	}
+
+	getActiveCubeFace() {
+
+		return this._activeCubeFace;
+
+	}
+
+	getActiveMipmapLevel() {
+
+		return this._activeMipmapLevel;
 
 	}
 
@@ -68150,10 +68217,11 @@ class Renderer {
 
 	}
 
-	setRenderTarget( renderTarget, activeCubeFace = 0 ) {
+	setRenderTarget( renderTarget, activeCubeFace = 0, activeMipmapLevel = 0 ) {
 
 		this._renderTarget = renderTarget;
 		this._activeCubeFace = activeCubeFace;
+		this._activeMipmapLevel = activeMipmapLevel;
 
 	}
 
@@ -68925,7 +68993,8 @@ class NodeSampledCubeTexture extends NodeSampledTexture {
 }
 
 const glslMethods = {
-	[ MathNode.ATAN2 ]: 'atan'
+	[ MathNode.ATAN2 ]: 'atan',
+	textureDimensions: 'textureSize'
 };
 
 const precisionLib = {
@@ -68955,6 +69024,10 @@ class GLSLNodeBuilder extends NodeBuilder {
 		if ( texture.isTextureCube ) {
 
 			return `textureCube( ${textureProperty}, ${uvSnippet} )`;
+
+		} else if ( texture.isDepthTexture ) {
+
+			return `texture( ${textureProperty}, ${uvSnippet} ).x`;
 
 		} else {
 
@@ -70826,7 +70899,12 @@ class WebGLBackend extends Backend {
 		textureUtils.setTextureParameters( glTextureType, texture );
 
 		gl.bindTexture( glTextureType, textureGPU );
-		gl.texStorage2D( glTextureType, levels, glInternalFormat, width, height );
+
+		if ( ! texture.isVideoTexture ) {
+
+			gl.texStorage2D( glTextureType, levels, glInternalFormat, width, height );
+
+		}
 
 		this.set( texture, {
 			textureGPU,
@@ -70842,7 +70920,7 @@ class WebGLBackend extends Backend {
 
 		const { gl } = this;
 		const { width, height } = options;
-		const { textureGPU, glTextureType, glFormat, glType } = this.get( texture );
+		const { textureGPU, glTextureType, glFormat, glType, glInternalFormat } = this.get( texture );
 
 		const getImage = ( source ) => {
 
@@ -70850,9 +70928,13 @@ class WebGLBackend extends Backend {
 
 				return source.image.data;
 
+			} else if ( source instanceof ImageBitmap || source instanceof OffscreenCanvas ) {
+
+				return source;
+
 			}
 
-			return source;
+			return source.data;
 
 		};
 
@@ -70869,6 +70951,13 @@ class WebGLBackend extends Backend {
 				gl.texSubImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, width, height, glFormat, glType, image );
 
 			}
+
+		} else if ( texture.isVideoTexture ) {
+
+			texture.update();
+
+			gl.texImage2D( glTextureType, 0, glInternalFormat, glFormat, glType, options.image );
+
 
 		} else {
 
@@ -74714,7 +74803,7 @@ class WebGPUBackend extends Backend {
 				const textureData = this.get( textures[ i ] );
 
 				const textureView = textureData.texture.createView( {
-					baseMipLevel: 0,
+					baseMipLevel: renderContext.activeMipmapLevel,
 					mipLevelCount: 1,
 					baseArrayLayer: renderContext.activeCubeFace,
 					dimension: GPUTextureViewDimension.TwoD
@@ -75603,58 +75692,6 @@ class WebGPUBackend extends Backend {
 
 }
 
-if ( window.GPUShaderStage === undefined ) {
-
-	window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
-
-}
-
-let isAvailable = false;
-
-if ( navigator.gpu !== undefined ) {
-
-	const adapter = await navigator.gpu.requestAdapter();
-
-	if ( adapter !== null ) {
-
-		isAvailable = true;
-
-	}
-
-}
-
-class WebGPU {
-
-	static isAvailable() {
-
-		return isAvailable;
-
-	}
-
-	static getErrorMessage() {
-
-		const message = 'Your browser does not support <a href="https://gpuweb.github.io/gpuweb/" style="color:blue">WebGPU</a> yet';
-
-		const element = document.createElement( 'div' );
-		element.id = 'webgpumessage';
-		element.style.fontFamily = 'monospace';
-		element.style.fontSize = '13px';
-		element.style.fontWeight = 'normal';
-		element.style.textAlign = 'center';
-		element.style.background = '#fff';
-		element.style.color = '#000';
-		element.style.padding = '1.5em';
-		element.style.maxWidth = '400px';
-		element.style.margin = '5em auto 0';
-
-		element.innerHTML = message;
-
-		return element;
-
-	}
-
-}
-
 /*
 const debugHandler = {
 
@@ -75696,4 +75733,4 @@ class WebGPURenderer extends Renderer {
 
 }
 
-export { ACESFilmicToneMapping, AddEquation, AddOperation, AdditiveAnimationBlendMode, AdditiveBlending, AlphaFormat, AlwaysCompare, AlwaysDepth, AlwaysStencilFunc, AmbientLight, AnimationAction, AnimationClip, AnimationLoader, AnimationMixer, AnimationObjectGroup, AnimationUtils, ArcCurve, ArrayCamera, ArrowHelper, Audio, AudioAnalyser, AudioContext, AudioListener, AudioLoader, AxesHelper, BackSide, BasicDepthPacking, BasicShadowMap, Bone, BooleanKeyframeTrack, Box2, Box3, Box3Helper, BoxGeometry, BoxHelper, BufferAttribute, BufferGeometry, BufferGeometryLoader, ByteType, Cache, Camera, CameraHelper, CanvasTexture, CapsuleGeometry, CatmullRomCurve3, CineonToneMapping, CircleGeometry, ClampToEdgeWrapping, Clock, Color, ColorKeyframeTrack, ColorManagement, CompressedArrayTexture, CompressedCubeTexture, CompressedTexture, CompressedTextureLoader, ConeGeometry, CubeCamera, CubeReflectionMapping, CubeRefractionMapping, CubeTexture, CubeTextureLoader, CubeUVReflectionMapping, CubicBezierCurve, CubicBezierCurve3, CubicInterpolant, CullFaceBack, CullFaceFront, CullFaceFrontBack, CullFaceNone, Curve, CurvePath, CustomBlending, CustomToneMapping, CylinderGeometry, Cylindrical, Data3DTexture, DataArrayTexture, DataTexture, DataTextureLoader, DataUtils, DecrementStencilOp, DecrementWrapStencilOp, DefaultLoadingManager, DepthFormat, DepthStencilFormat, DepthTexture, DirectionalLight, DirectionalLightHelper, DiscreteInterpolant, DisplayP3ColorSpace, DodecahedronGeometry, DoubleSide, DstAlphaFactor, DstColorFactor, DynamicCopyUsage, DynamicDrawUsage, DynamicReadUsage, EdgesGeometry, EllipseCurve, EqualCompare, EqualDepth, EqualStencilFunc, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Euler, EventDispatcher, ExtrudeGeometry, FileLoader, Float16BufferAttribute, Float32BufferAttribute, Float64BufferAttribute, FloatType, Fog, FogExp2, FramebufferTexture, FrontSide, Frustum, GLBufferAttribute, GLSL1, GLSL3, GreaterCompare, GreaterDepth, GreaterEqualCompare, GreaterEqualDepth, GreaterEqualStencilFunc, GreaterStencilFunc, GridHelper, Group, HalfFloatType, HemisphereLight, HemisphereLightHelper, IcosahedronGeometry, ImageBitmapLoader, ImageLoader, ImageUtils, IncrementStencilOp, IncrementWrapStencilOp, InstancedBufferAttribute, InstancedBufferGeometry, InstancedInterleavedBuffer, InstancedMesh, Int16BufferAttribute, Int32BufferAttribute, Int8BufferAttribute, IntType, InterleavedBuffer, InterleavedBufferAttribute, Interpolant, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InvertStencilOp, KeepStencilOp, KeyframeTrack, LOD, LatheGeometry, Layers, LessCompare, LessDepth, LessEqualCompare, LessEqualDepth, LessEqualStencilFunc, LessStencilFunc, Light, LightProbe, Line, Line3, LineBasicMaterial, LineCurve, LineCurve3, LineDashedMaterial, LineLoop, LineSegments, LinearDisplayP3ColorSpace, LinearEncoding, LinearFilter, LinearInterpolant, LinearMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipmapLinearFilter, LinearMipmapNearestFilter, LinearSRGBColorSpace, LinearToneMapping, LinearTransfer, Loader, LoaderUtils, LoadingManager, LoopOnce, LoopPingPong, LoopRepeat, LuminanceAlphaFormat, LuminanceFormat, MOUSE, Material, MaterialLoader, MathUtils, Matrix3, Matrix4, MaxEquation, Mesh, MeshBasicMaterial, MeshBasicNodeMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshLambertMaterial, MeshMatcapMaterial, MeshNormalMaterial, MeshPhongMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshToonMaterial, MinEquation, MirroredRepeatWrapping, MixOperation, MultiplyBlending, MultiplyOperation, NearestFilter, NearestMipMapLinearFilter, NearestMipMapNearestFilter, NearestMipmapLinearFilter, NearestMipmapNearestFilter, NeverCompare, NeverDepth, NeverStencilFunc, NoBlending, NoColorSpace, NoToneMapping, NormalAnimationBlendMode, NormalBlending, NotEqualCompare, NotEqualDepth, NotEqualStencilFunc, NumberKeyframeTrack, Object3D, ObjectLoader, ObjectSpaceNormalMap, OctahedronGeometry, OneFactor, OneMinusDstAlphaFactor, OneMinusDstColorFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, P3Primaries, PCFShadowMap, PCFSoftShadowMap, PMREMGenerator, Path, PerspectiveCamera, Plane, PlaneGeometry, PlaneHelper, PointLight, PointLightHelper, Points, PointsMaterial, PolarGridHelper, PolyhedronGeometry, PositionalAudio, PropertyBinding, PropertyMixer, QuadraticBezierCurve, QuadraticBezierCurve3, Quaternion, QuaternionKeyframeTrack, QuaternionLinearInterpolant, RED_GREEN_RGTC2_Format, RED_RGTC1_Format, REVISION, RGBADepthPacking, RGBAFormat, RGBAIntegerFormat, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_BPTC_Format, RGBA_ETC2_EAC_Format, RGBA_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGB_PVRTC_2BPPV1_Format, RGB_PVRTC_4BPPV1_Format, RGB_S3TC_DXT1_Format, RGFormat, RGIntegerFormat, RawShaderMaterial, Ray, Raycaster, Rec709Primaries, RectAreaLight, RedFormat, RedIntegerFormat, ReinhardToneMapping, RenderTarget, RepeatWrapping, ReplaceStencilOp, ReverseSubtractEquation, RingGeometry, SIGNED_RED_GREEN_RGTC2_Format, SIGNED_RED_RGTC1_Format, SRGBColorSpace, SRGBTransfer, Scene, ShaderChunk, ShaderLib, ShaderMaterial, ShadowMaterial, Shape, ShapeGeometry, ShapePath, ShapeUtils, ShortType, Skeleton, SkeletonHelper, SkinnedMesh, Source, Sphere, SphereGeometry, Spherical, SphericalHarmonics3, SplineCurve, SpotLight, SpotLightHelper, Sprite, SpriteMaterial, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, StaticCopyUsage, StaticDrawUsage, StaticReadUsage, StereoCamera, StreamCopyUsage, StreamDrawUsage, StreamReadUsage, StringKeyframeTrack, SubtractEquation, SubtractiveBlending, TOUCH, TangentSpaceNormalMap, TetrahedronGeometry, Texture, TextureLoader, TorusGeometry, TorusKnotGeometry, Triangle, TriangleFanDrawMode, TriangleStripDrawMode, TrianglesDrawMode, TubeGeometry, TwoPassDoubleSide, UVMapping, Uint16BufferAttribute, Uint32BufferAttribute, Uint8BufferAttribute, Uint8ClampedBufferAttribute, Uniform$1 as Uniform, UniformsGroup$1 as UniformsGroup, UniformsLib, UniformsUtils, UnsignedByteType, UnsignedInt248Type, UnsignedIntType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedShortType, VSMShadowMap, Vector2, Vector3, Vector4, VectorKeyframeTrack, VideoTexture, WebGL1Renderer, WebGL3DRenderTarget, WebGLArrayRenderTarget, WebGLCoordinateSystem, WebGLCubeRenderTarget, WebGLMultipleRenderTargets, WebGLRenderTarget, WebGLRenderer, WebGLUtils$1 as WebGLUtils, WebGPU$1 as WebGPU, WebGPUCoordinateSystem, WebGPURenderer, WireframeGeometry, WrapAroundEnding, ZeroCurvatureEnding, ZeroFactor, ZeroSlopeEnding, ZeroStencilOp, _SRGBAFormat, createCanvasElement, equirectUV, sRGBEncoding, texture, uv };
+export { ACESFilmicToneMapping, AddEquation, AddOperation, AdditiveAnimationBlendMode, AdditiveBlending, AlphaFormat, AlwaysCompare, AlwaysDepth, AlwaysStencilFunc, AmbientLight, AnimationAction, AnimationClip, AnimationLoader, AnimationMixer, AnimationObjectGroup, AnimationUtils, ArcCurve, ArrayCamera, ArrowHelper, Audio, AudioAnalyser, AudioContext, AudioListener, AudioLoader, AxesHelper, BackSide, BasicDepthPacking, BasicShadowMap, Bone, BooleanKeyframeTrack, Box2, Box3, Box3Helper, BoxGeometry, BoxHelper, BufferAttribute, BufferGeometry, BufferGeometryLoader, ByteType, Cache, Camera, CameraHelper, CanvasTexture, CapsuleGeometry, CatmullRomCurve3, CineonToneMapping, CircleGeometry, ClampToEdgeWrapping, Clock, Color, ColorKeyframeTrack, ColorManagement, CompressedArrayTexture, CompressedCubeTexture, CompressedTexture, CompressedTextureLoader, ConeGeometry, CubeCamera, CubeReflectionMapping, CubeRefractionMapping, CubeTexture, CubeTextureLoader, CubeUVReflectionMapping, CubicBezierCurve, CubicBezierCurve3, CubicInterpolant, CullFaceBack, CullFaceFront, CullFaceFrontBack, CullFaceNone, Curve, CurvePath, CustomBlending, CustomToneMapping, CylinderGeometry, Cylindrical, Data3DTexture, DataArrayTexture, DataTexture, DataTextureLoader, DataUtils, DecrementStencilOp, DecrementWrapStencilOp, DefaultLoadingManager, DepthFormat, DepthStencilFormat, DepthTexture, DirectionalLight, DirectionalLightHelper, DiscreteInterpolant, DisplayP3ColorSpace, DodecahedronGeometry, DoubleSide, DstAlphaFactor, DstColorFactor, DynamicCopyUsage, DynamicDrawUsage, DynamicReadUsage, EdgesGeometry, EllipseCurve, EqualCompare, EqualDepth, EqualStencilFunc, EquirectangularReflectionMapping, EquirectangularRefractionMapping, Euler, EventDispatcher, ExtrudeGeometry, FileLoader, Float16BufferAttribute, Float32BufferAttribute, Float64BufferAttribute, FloatType, Fog, FogExp2, FramebufferTexture, FrontSide, Frustum, GLBufferAttribute, GLSL1, GLSL3, GreaterCompare, GreaterDepth, GreaterEqualCompare, GreaterEqualDepth, GreaterEqualStencilFunc, GreaterStencilFunc, GridHelper, Group, HalfFloatType, HemisphereLight, HemisphereLightHelper, IcosahedronGeometry, ImageBitmapLoader, ImageLoader, ImageUtils, IncrementStencilOp, IncrementWrapStencilOp, InstancedBufferAttribute, InstancedBufferGeometry, InstancedInterleavedBuffer, InstancedMesh, Int16BufferAttribute, Int32BufferAttribute, Int8BufferAttribute, IntType, InterleavedBuffer, InterleavedBufferAttribute, Interpolant, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InvertStencilOp, KeepStencilOp, KeyframeTrack, LOD, LatheGeometry, Layers, LessCompare, LessDepth, LessEqualCompare, LessEqualDepth, LessEqualStencilFunc, LessStencilFunc, Light, LightProbe, Line, Line3, LineBasicMaterial, LineCurve, LineCurve3, LineDashedMaterial, LineLoop, LineSegments, LinearDisplayP3ColorSpace, LinearEncoding, LinearFilter, LinearInterpolant, LinearMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipmapLinearFilter, LinearMipmapNearestFilter, LinearSRGBColorSpace, LinearToneMapping, LinearTransfer, Loader, LoaderUtils, LoadingManager, LoopOnce, LoopPingPong, LoopRepeat, LuminanceAlphaFormat, LuminanceFormat, MOUSE, Material, MaterialLoader, MathUtils, Matrix3, Matrix4, MaxEquation, Mesh, MeshBasicMaterial, MeshBasicNodeMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshLambertMaterial, MeshMatcapMaterial, MeshNormalMaterial, MeshPhongMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshToonMaterial, MinEquation, MirroredRepeatWrapping, MixOperation, MultiplyBlending, MultiplyOperation, NearestFilter, NearestMipMapLinearFilter, NearestMipMapNearestFilter, NearestMipmapLinearFilter, NearestMipmapNearestFilter, NeverCompare, NeverDepth, NeverStencilFunc, NoBlending, NoColorSpace, NoToneMapping, NormalAnimationBlendMode, NormalBlending, NotEqualCompare, NotEqualDepth, NotEqualStencilFunc, NumberKeyframeTrack, Object3D, ObjectLoader, ObjectSpaceNormalMap, OctahedronGeometry, OneFactor, OneMinusDstAlphaFactor, OneMinusDstColorFactor, OneMinusSrcAlphaFactor, OneMinusSrcColorFactor, OrthographicCamera, P3Primaries, PCFShadowMap, PCFSoftShadowMap, PMREMGenerator, Path, PerspectiveCamera, Plane, PlaneGeometry, PlaneHelper, PointLight, PointLightHelper, Points, PointsMaterial, PolarGridHelper, PolyhedronGeometry, PositionalAudio, PropertyBinding, PropertyMixer, QuadraticBezierCurve, QuadraticBezierCurve3, Quaternion, QuaternionKeyframeTrack, QuaternionLinearInterpolant, RED_GREEN_RGTC2_Format, RED_RGTC1_Format, REVISION, RGBADepthPacking, RGBAFormat, RGBAIntegerFormat, RGBA_ASTC_10x10_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_BPTC_Format, RGBA_ETC2_EAC_Format, RGBA_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGB_PVRTC_2BPPV1_Format, RGB_PVRTC_4BPPV1_Format, RGB_S3TC_DXT1_Format, RGFormat, RGIntegerFormat, RawShaderMaterial, Ray, Raycaster, Rec709Primaries, RectAreaLight, RedFormat, RedIntegerFormat, ReinhardToneMapping, RenderTarget, RepeatWrapping, ReplaceStencilOp, ReverseSubtractEquation, RingGeometry, SIGNED_RED_GREEN_RGTC2_Format, SIGNED_RED_RGTC1_Format, SRGBColorSpace, SRGBTransfer, Scene, ShaderChunk, ShaderLib, ShaderMaterial, ShadowMaterial, Shape, ShapeGeometry, ShapePath, ShapeUtils, ShortType, Skeleton, SkeletonHelper, SkinnedMesh, Source, Sphere, SphereGeometry, Spherical, SphericalHarmonics3, SplineCurve, SpotLight, SpotLightHelper, Sprite, SpriteMaterial, SrcAlphaFactor, SrcAlphaSaturateFactor, SrcColorFactor, StaticCopyUsage, StaticDrawUsage, StaticReadUsage, StereoCamera, StreamCopyUsage, StreamDrawUsage, StreamReadUsage, StringKeyframeTrack, SubtractEquation, SubtractiveBlending, TOUCH, TangentSpaceNormalMap, TetrahedronGeometry, Texture, TextureLoader, TorusGeometry, TorusKnotGeometry, Triangle, TriangleFanDrawMode, TriangleStripDrawMode, TrianglesDrawMode, TubeGeometry, TwoPassDoubleSide, UVMapping, Uint16BufferAttribute, Uint32BufferAttribute, Uint8BufferAttribute, Uint8ClampedBufferAttribute, Uniform$1 as Uniform, UniformsGroup$1 as UniformsGroup, UniformsLib, UniformsUtils, UnsignedByteType, UnsignedInt248Type, UnsignedIntType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedShortType, VSMShadowMap, Vector2, Vector3, Vector4, VectorKeyframeTrack, VideoTexture, WebGL1Renderer, WebGL3DRenderTarget, WebGLArrayRenderTarget, WebGLCoordinateSystem, WebGLCubeRenderTarget, WebGLMultipleRenderTargets, WebGLRenderTarget, WebGLRenderer, WebGLUtils$1 as WebGLUtils, WebGPU, WebGPUCoordinateSystem, WebGPURenderer, WireframeGeometry, WrapAroundEnding, ZeroCurvatureEnding, ZeroFactor, ZeroSlopeEnding, ZeroStencilOp, _SRGBAFormat, createCanvasElement, equirectUV, sRGBEncoding, texture, uv };

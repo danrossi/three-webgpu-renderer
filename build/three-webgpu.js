@@ -8738,10 +8738,10 @@ var THREE = (async function (exports) {
 
 			if ( this.blending !== NormalBlending ) data.blending = this.blending;
 			if ( this.side !== FrontSide ) data.side = this.side;
-			if ( this.vertexColors ) data.vertexColors = true;
+			if ( this.vertexColors === true ) data.vertexColors = true;
 
 			if ( this.opacity < 1 ) data.opacity = this.opacity;
-			if ( this.transparent === true ) data.transparent = this.transparent;
+			if ( this.transparent === true ) data.transparent = true;
 
 			data.depthFunc = this.depthFunc;
 			data.depthTest = this.depthTest;
@@ -8772,17 +8772,17 @@ var THREE = (async function (exports) {
 			if ( this.dithering === true ) data.dithering = true;
 
 			if ( this.alphaTest > 0 ) data.alphaTest = this.alphaTest;
-			if ( this.alphaHash === true ) data.alphaHash = this.alphaHash;
-			if ( this.alphaToCoverage === true ) data.alphaToCoverage = this.alphaToCoverage;
-			if ( this.premultipliedAlpha === true ) data.premultipliedAlpha = this.premultipliedAlpha;
-			if ( this.forceSinglePass === true ) data.forceSinglePass = this.forceSinglePass;
+			if ( this.alphaHash === true ) data.alphaHash = true;
+			if ( this.alphaToCoverage === true ) data.alphaToCoverage = true;
+			if ( this.premultipliedAlpha === true ) data.premultipliedAlpha = true;
+			if ( this.forceSinglePass === true ) data.forceSinglePass = true;
 
-			if ( this.wireframe === true ) data.wireframe = this.wireframe;
+			if ( this.wireframe === true ) data.wireframe = true;
 			if ( this.wireframeLinewidth > 1 ) data.wireframeLinewidth = this.wireframeLinewidth;
 			if ( this.wireframeLinecap !== 'round' ) data.wireframeLinecap = this.wireframeLinecap;
 			if ( this.wireframeLinejoin !== 'round' ) data.wireframeLinejoin = this.wireframeLinejoin;
 
-			if ( this.flatShading === true ) data.flatShading = this.flatShading;
+			if ( this.flatShading === true ) data.flatShading = true;
 
 			if ( this.visible === false ) data.visible = false;
 
@@ -12648,6 +12648,7 @@ var THREE = (async function (exports) {
 
 			this.renderTarget = renderTarget;
 			this.coordinateSystem = null;
+			this.activeMipmapLevel = 0;
 
 			const cameraPX = new PerspectiveCamera( fov, aspect, near, far );
 			cameraPX.layers = this.layers;
@@ -12745,7 +12746,7 @@ var THREE = (async function (exports) {
 
 			if ( this.parent === null ) this.updateMatrixWorld();
 
-			const renderTarget = this.renderTarget;
+			const { renderTarget, activeMipmapLevel } = this;
 
 			if ( this.coordinateSystem !== renderer.coordinateSystem ) {
 
@@ -12758,6 +12759,8 @@ var THREE = (async function (exports) {
 			const [ cameraPX, cameraNX, cameraPY, cameraNY, cameraPZ, cameraNZ ] = this.children;
 
 			const currentRenderTarget = renderer.getRenderTarget();
+			const currentActiveCubeFace = renderer.getActiveCubeFace();
+			const currentActiveMipmapLevel = renderer.getActiveMipmapLevel();
 
 			const currentXrEnabled = renderer.xr.enabled;
 
@@ -12767,27 +12770,30 @@ var THREE = (async function (exports) {
 
 			renderTarget.texture.generateMipmaps = false;
 
-			renderer.setRenderTarget( renderTarget, 0 );
+			renderer.setRenderTarget( renderTarget, 0, activeMipmapLevel );
 			renderer.render( scene, cameraPX );
 
-			renderer.setRenderTarget( renderTarget, 1 );
+			renderer.setRenderTarget( renderTarget, 1, activeMipmapLevel );
 			renderer.render( scene, cameraNX );
 
-			renderer.setRenderTarget( renderTarget, 2 );
+			renderer.setRenderTarget( renderTarget, 2, activeMipmapLevel );
 			renderer.render( scene, cameraPY );
 
-			renderer.setRenderTarget( renderTarget, 3 );
+			renderer.setRenderTarget( renderTarget, 3, activeMipmapLevel );
 			renderer.render( scene, cameraNY );
 
-			renderer.setRenderTarget( renderTarget, 4 );
+			renderer.setRenderTarget( renderTarget, 4, activeMipmapLevel );
 			renderer.render( scene, cameraPZ );
+
+			// mipmaps are generated during the last call of render()
+			// at this point, all sides of the cube render target are defined
 
 			renderTarget.texture.generateMipmaps = generateMipmaps;
 
-			renderer.setRenderTarget( renderTarget, 5 );
+			renderer.setRenderTarget( renderTarget, 5, activeMipmapLevel );
 			renderer.render( scene, cameraNZ );
 
-			renderer.setRenderTarget( currentRenderTarget );
+			renderer.setRenderTarget( currentRenderTarget, currentActiveCubeFace, currentActiveMipmapLevel );
 
 			renderer.xr.enabled = currentXrEnabled;
 
@@ -30566,6 +30572,7 @@ var THREE = (async function (exports) {
 
 			return {
 				type: 'FogExp2',
+				name: this.name,
 				color: this.color.getHex(),
 				density: this.density
 			};
@@ -30599,6 +30606,7 @@ var THREE = (async function (exports) {
 
 			return {
 				type: 'Fog',
+				name: this.name,
 				color: this.color.getHex(),
 				near: this.near,
 				far: this.far
@@ -31204,7 +31212,7 @@ var THREE = (async function (exports) {
 
 	class Sprite extends Object3D {
 
-		constructor( material ) {
+		constructor( material = new SpriteMaterial() ) {
 
 			super();
 
@@ -31232,7 +31240,7 @@ var THREE = (async function (exports) {
 			}
 
 			this.geometry = _geometry;
-			this.material = ( material !== undefined ) ? material : new SpriteMaterial();
+			this.material = material;
 
 			this.center = new Vector2( 0.5, 0.5 );
 
@@ -44966,6 +44974,12 @@ var THREE = (async function (exports) {
 
 						}
 
+						if ( data.fog.name !== '' ) {
+
+							object.fog.name = data.fog.name;
+
+						}
+
 					}
 
 					if ( data.backgroundBlurriness !== undefined ) object.backgroundBlurriness = data.backgroundBlurriness;
@@ -51490,31 +51504,56 @@ var THREE = (async function (exports) {
 
 	}
 
-	class WebGPU$1 {
+	if ( window.GPUShaderStage === undefined ) {
 
-		static async isAvailable() {
-			if (navigator.gpu !== undefined) {
+		window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
 
-				try {
-					const adapter = await navigator.gpu.requestAdapter();
+	}
 
-					if (adapter !== null) {
-						if (window.GPUShaderStage === undefined) {
+	let isAvailable = false;
 
-							window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
+	if ( navigator.gpu !== undefined ) {
 
-						}
+		const adapter = await( navigator.gpu.requestAdapter());
 
-						return true;
-					}
-				} catch (e) {
-					return false;
-				}
+		if ( adapter !== null ) {
 
-			}
+			isAvailable = true;
 
-			return false;
 		}
+
+	}
+
+	class WebGPU {
+
+		static isAvailable() {
+
+			return isAvailable;
+
+		}
+
+		static getErrorMessage() {
+
+			const message = 'Your browser does not support <a href="https://gpuweb.github.io/gpuweb/" style="color:blue">WebGPU</a> yet';
+
+			const element = document.createElement( 'div' );
+			element.id = 'webgpumessage';
+			element.style.fontFamily = 'monospace';
+			element.style.fontSize = '13px';
+			element.style.fontWeight = 'normal';
+			element.style.textAlign = 'center';
+			element.style.background = '#fff';
+			element.style.color = '#000';
+			element.style.padding = '1.5em';
+			element.style.maxWidth = '400px';
+			element.style.margin = '5em auto 0';
+
+			element.innerHTML = message;
+
+			return element;
+
+		}
+
 	}
 
 	class Animation {
@@ -55147,7 +55186,7 @@ var THREE = (async function (exports) {
 			const textureProperty = this.textureNode.build( builder, 'property' );
 			const levelNode = this.levelNode.build( builder, 'int' );
 
-			return builder.format( `textureDimensions( ${textureProperty}, ${levelNode} )`, this.getNodeType( builder ), output );
+			return builder.format( `${builder.getMethod( 'textureDimensions' )}( ${textureProperty}, ${levelNode} )`, this.getNodeType( builder ), output );
 
 		}
 
@@ -66705,10 +66744,12 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		}
 
-		updateRenderTarget( renderTarget ) {
+		updateRenderTarget( renderTarget, activeMipmapLevel = 0 ) {
 
 			const renderTargetData = this.get( renderTarget );
+
 			const sampleCount = renderTarget.samples === 0 ? 1 : renderTarget.samples;
+			const depthTextureMips = renderTargetData.depthTextureMips || ( renderTargetData.depthTextureMips = {} );
 
 			let texture, textures;
 
@@ -66726,7 +66767,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			const size = this.getSize( texture );
 
-			let depthTexture = renderTarget.depthTexture || renderTargetData.depthTexture;
+			const mipWidth = size.width >> activeMipmapLevel;
+			const mipHeight = size.height >> activeMipmapLevel;
+
+			let depthTexture = renderTarget.depthTexture || depthTextureMips[ activeMipmapLevel ];
 			let textureNeedsUpdate = false;
 
 			if ( depthTexture === undefined ) {
@@ -66734,8 +66778,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 				depthTexture = new DepthTexture();
 				depthTexture.format = DepthStencilFormat;
 				depthTexture.type = UnsignedInt248Type;
-				depthTexture.image.width = size.width;
-				depthTexture.image.height = size.height;
+				depthTexture.image.width = mipWidth;
+				depthTexture.image.height = mipHeight;
+
+				depthTextureMips[ activeMipmapLevel ] = depthTexture;
 
 			}
 
@@ -66744,8 +66790,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 				textureNeedsUpdate = true;
 				depthTexture.needsUpdate = true;
 
-				depthTexture.image.width = size.width;
-				depthTexture.image.height = size.height;
+				depthTexture.image.width = mipWidth;
+				depthTexture.image.height = mipHeight;
 
 			}
 
@@ -67639,7 +67685,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			this._clearStencil = 0;
 
 			this._renderTarget = null;
-			this._currentActiveCubeFace = 0;
+			this._activeCubeFace = 0;
+			this._activeMipmapLevel = 0;
 
 			this._initialized = false;
 			this._initPromise = null;
@@ -67741,6 +67788,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			const renderTarget = this._renderTarget;
 			const renderContext = this._renderContexts.get( scene, camera, renderTarget );
 			const activeCubeFace = this._activeCubeFace;
+			const activeMipmapLevel = this._activeMipmapLevel;
 
 			this._currentRenderContext = renderContext;
 
@@ -67792,12 +67840,16 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			const maxDepth = ( viewport.maxDepth === undefined ) ? 1 : viewport.maxDepth;
 
 			renderContext.viewportValue.copy( viewport ).multiplyScalar( pixelRatio ).floor();
+			renderContext.viewportValue.width >>= activeMipmapLevel;
+			renderContext.viewportValue.height >>= activeMipmapLevel;
 			renderContext.viewportValue.minDepth = minDepth;
 			renderContext.viewportValue.maxDepth = maxDepth;
 			renderContext.viewport = renderContext.viewportValue.equals( _screen ) === false;
 
 			renderContext.scissorValue.copy( scissor ).multiplyScalar( pixelRatio ).floor();
 			renderContext.scissor = this._scissorTest && renderContext.scissorValue.equals( _screen ) === false;
+			renderContext.scissorValue.width >>= activeMipmapLevel;
+			renderContext.scissorValue.height >>= activeMipmapLevel;
 
 			renderContext.depth = this.depth;
 			renderContext.stencil = this.stencil;
@@ -67828,7 +67880,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			if ( renderTarget !== null ) {
 
-				this._textures.updateRenderTarget( renderTarget );
+				this._textures.updateRenderTarget( renderTarget, activeMipmapLevel );
 
 				const renderTargetData = this._textures.get( renderTarget );
 
@@ -67846,7 +67898,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			}
 
+			renderContext.width >>= activeMipmapLevel;
+			renderContext.height >>= activeMipmapLevel;
 			renderContext.activeCubeFace = activeCubeFace;
+			renderContext.activeMipmapLevel = activeMipmapLevel;
 			renderContext.occlusionQueryCount = renderList.occlusionQueryCount;
 
 			//
@@ -67884,6 +67939,18 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			//
 
 			sceneRef.onAfterRender( this, scene, camera, renderTarget );
+
+		}
+
+		getActiveCubeFace() {
+
+			return this._activeCubeFace;
+
+		}
+
+		getActiveMipmapLevel() {
+
+			return this._activeMipmapLevel;
 
 		}
 
@@ -68158,10 +68225,11 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		}
 
-		setRenderTarget( renderTarget, activeCubeFace = 0 ) {
+		setRenderTarget( renderTarget, activeCubeFace = 0, activeMipmapLevel = 0 ) {
 
 			this._renderTarget = renderTarget;
 			this._activeCubeFace = activeCubeFace;
+			this._activeMipmapLevel = activeMipmapLevel;
 
 		}
 
@@ -68933,7 +69001,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 	}
 
 	const glslMethods = {
-		[ MathNode.ATAN2 ]: 'atan'
+		[ MathNode.ATAN2 ]: 'atan',
+		textureDimensions: 'textureSize'
 	};
 
 	const precisionLib = {
@@ -68963,6 +69032,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			if ( texture.isTextureCube ) {
 
 				return `textureCube( ${textureProperty}, ${uvSnippet} )`;
+
+			} else if ( texture.isDepthTexture ) {
+
+				return `texture( ${textureProperty}, ${uvSnippet} ).x`;
 
 			} else {
 
@@ -70834,7 +70907,12 @@ void main() {
 			textureUtils.setTextureParameters( glTextureType, texture );
 
 			gl.bindTexture( glTextureType, textureGPU );
-			gl.texStorage2D( glTextureType, levels, glInternalFormat, width, height );
+
+			if ( ! texture.isVideoTexture ) {
+
+				gl.texStorage2D( glTextureType, levels, glInternalFormat, width, height );
+
+			}
 
 			this.set( texture, {
 				textureGPU,
@@ -70850,7 +70928,7 @@ void main() {
 
 			const { gl } = this;
 			const { width, height } = options;
-			const { textureGPU, glTextureType, glFormat, glType } = this.get( texture );
+			const { textureGPU, glTextureType, glFormat, glType, glInternalFormat } = this.get( texture );
 
 			const getImage = ( source ) => {
 
@@ -70858,9 +70936,13 @@ void main() {
 
 					return source.image.data;
 
+				} else if ( source instanceof ImageBitmap || source instanceof OffscreenCanvas ) {
+
+					return source;
+
 				}
 
-				return source;
+				return source.data;
 
 			};
 
@@ -70877,6 +70959,13 @@ void main() {
 					gl.texSubImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, width, height, glFormat, glType, image );
 
 				}
+
+			} else if ( texture.isVideoTexture ) {
+
+				texture.update();
+
+				gl.texImage2D( glTextureType, 0, glInternalFormat, glFormat, glType, options.image );
+
 
 			} else {
 
@@ -74722,7 +74811,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 					const textureData = this.get( textures[ i ] );
 
 					const textureView = textureData.texture.createView( {
-						baseMipLevel: 0,
+						baseMipLevel: renderContext.activeMipmapLevel,
 						mipLevelCount: 1,
 						baseArrayLayer: renderContext.activeCubeFace,
 						dimension: GPUTextureViewDimension.TwoD
@@ -75611,58 +75700,6 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 	}
 
-	if ( window.GPUShaderStage === undefined ) {
-
-		window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
-
-	}
-
-	let isAvailable = false;
-
-	if ( navigator.gpu !== undefined ) {
-
-		const adapter = await( navigator.gpu.requestAdapter());
-
-		if ( adapter !== null ) {
-
-			isAvailable = true;
-
-		}
-
-	}
-
-	class WebGPU {
-
-		static isAvailable() {
-
-			return isAvailable;
-
-		}
-
-		static getErrorMessage() {
-
-			const message = 'Your browser does not support <a href="https://gpuweb.github.io/gpuweb/" style="color:blue">WebGPU</a> yet';
-
-			const element = document.createElement( 'div' );
-			element.id = 'webgpumessage';
-			element.style.fontFamily = 'monospace';
-			element.style.fontSize = '13px';
-			element.style.fontWeight = 'normal';
-			element.style.textAlign = 'center';
-			element.style.background = '#fff';
-			element.style.color = '#000';
-			element.style.padding = '1.5em';
-			element.style.maxWidth = '400px';
-			element.style.margin = '5em auto 0';
-
-			element.innerHTML = message;
-
-			return element;
-
-		}
-
-	}
-
 	/*
 	const debugHandler = {
 
@@ -76103,7 +76140,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 	exports.WebGLRenderTarget = WebGLRenderTarget;
 	exports.WebGLRenderer = WebGLRenderer;
 	exports.WebGLUtils = WebGLUtils$1;
-	exports.WebGPU = WebGPU$1;
+	exports.WebGPU = WebGPU;
 	exports.WebGPUCoordinateSystem = WebGPUCoordinateSystem;
 	exports.WebGPURenderer = WebGPURenderer;
 	exports.WireframeGeometry = WireframeGeometry;
