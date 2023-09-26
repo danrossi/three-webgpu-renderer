@@ -1,4 +1,4 @@
-import { Texture, Color, BufferGeometry, Box3, BufferAttribute, DoubleSide, GLSL3, RawShaderMaterial, Mesh, Group, BoxGeometry, MeshBasicMaterial, LinearMipMapLinearFilter, LinearFilter } from 'three';
+import { Texture, Color, BufferGeometry, Box3, BufferAttribute, Mesh, DoubleSide, GLSL3, RawShaderMaterial, Group, BoxGeometry, MeshBasicMaterial, LinearMipMapLinearFilter, LinearFilter } from 'three';
 import { tslFn, color, texture, uniform, max, min, clamp, fwidth, MeshBasicNodeMaterial } from 'three-webgpu';
 
 class BaseShader {
@@ -556,11 +556,14 @@ class TextGeometry extends BufferGeometry {
     }
 }
 
-class TextBitmap {
+class TextBitmap extends Mesh {
 
     constructor(config, isWebGPU) {
         config.color = config.color || '#fff';
         config.lineHeight = config.lineHeight ? config.font.common.lineHeight + config.lineHeight : config.font.common.lineHeight;
+
+        const geometry = new TextGeometry(config);
+        super(geometry, null);
         this.config = config;
         this._text = null;
         this.init(config, isWebGPU);
@@ -571,8 +574,8 @@ class TextBitmap {
     }
 
     init(config, isWebGPU) {
-        const geometry = this.geometry = this.createGeometry(),
-        texture = config.texture;
+        //const geometry = this.geometry = this.createGeometry(),
+        const texture = config.texture;
         //webgl2 = renderer.capabilities.isWebGL2;
 
         this.initTexture(texture, config.maxAnisotropy);
@@ -588,43 +591,39 @@ class TextBitmap {
                 //glslVersion: webgl2 ? GLSL3 : GLSL1
         };
 
-
-        //const material = new RawShaderMaterial(webgl2 ? MSDFShader.createShader2(shaderConf) : MSDFShader.createShader(shaderConf));
-        let material;
-
         if (isWebGPU) {
-            material = new MeshBasicNodeMaterial({ map: texture, color: new Color(config.color), opacity: 1.0, transparent: true, depthTest: false, side: DoubleSide, alphaTest: 0.0001 });
+            this.material = new MeshBasicNodeMaterial({ map: texture, color: new Color(config.color), opacity: 1.0, transparent: true, depthTest: false, side: DoubleSide, alphaTest: 0.0001 });
             const colorNode = MSDFShader.createWebGPUColorShader();
-            material.colorNode = colorNode( { color: material.color });
+            this.material.colorNode = colorNode( { color: this.material.color });
             //material.colorNode = colorNode( { texture: texture, color: material.color, opacity: material.opacity });
 
             const opacityNode = MSDFShader.createWebGPUOpacityShader();
-            material.opacityNode = opacityNode( { texture: texture, color: material.color, opacity: material.opacity });
+            this.material.opacityNode = opacityNode( { texture: texture, color: this.material.color, opacity: this.material.opacity });
 
             //const colorNode = MSDFShader.createWebGPUShader();
             //material.colorNode = colorNode( { texture: texture, color: material.color, opacity: material.opacity });
         } else {
-            material = new RawShaderMaterial(MSDFShader.createShader(shaderConf));
-            material.extensions.derivatives = true;
+            this.material = new RawShaderMaterial(MSDFShader.createShader(shaderConf));
+            this.material.extensions.derivatives = true;
         }
       
         
-        const mesh = this.mesh = new Mesh(geometry, material),
-            group = this.group = new Group();
-        mesh.renderOrder = 1;
+        //const mesh = this.mesh = new Mesh(geometry, material),
+        const  group = this.group = new Group();
+        this.renderOrder = 1;
 
-        this.rotateMesh(mesh);
+        this.rotateMesh();
         
         const s = config.scale || 1;
         group.scale.set(s, s, s);
-        group.add(mesh);
+        group.add(this);
         this.createHitBox(config);
         this.update();
         //if (config.hitbox) this.createHitBox();
     }
 
-    rotateMesh(mesh) {
-      mesh.rotation.x = Math.PI;
+    rotateMesh() {
+      this.rotation.x = Math.PI;
     }
 
     createHitBox(config) {
@@ -661,15 +660,14 @@ class TextBitmap {
     }
 
     update() {
-        const geometry = this.geometry,
-            mesh = this.mesh;
+        const geometry = this.geometry;
         //geometry.update( this.config );
         // centering
         geometry.computeBoundingBox();
         //geometry.computeBoundingSphere();
         //this.hitBox.geometry.computeBoundingSphere();
-        mesh.position.x = -geometry.layout.width / 2;
-        mesh.position.y = -(geometry.boundingBox.max.y - geometry.boundingBox.min.y) / 2; // valign center
+        this.position.x = -geometry.layout.width / 2;
+        this.position.y = -(geometry.boundingBox.max.y - geometry.boundingBox.min.y) / 2; // valign center
         
         //console.log(geometry.boundingSphere);
         //console.log(this.hitBox.geometry.boundingSphere);

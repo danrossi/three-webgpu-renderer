@@ -1455,7 +1455,7 @@ const NodeUpdateType = {
 };
 
 const defaultShaderStages = [ 'fragment', 'vertex' ];
-const defaultBuildStages = [ 'construct', 'analyze', 'generate' ];
+const defaultBuildStages = [ 'setup', 'analyze', 'generate' ];
 const shaderStages = [ ...defaultShaderStages, 'compute' ];
 const vectorComponents = [ 'x', 'y', 'z', 'w' ];
 
@@ -1801,7 +1801,7 @@ class Node extends EventDispatcher {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const nodeProperties = builder.getNodeProperties( this );
 
@@ -1813,6 +1813,12 @@ class Node extends EventDispatcher {
 
 		// return a outputNode if exists
 		return null;
+
+	}
+
+	construct( builder ) { // @deprecated, r157
+
+		return this.setup( builder );
 
 	}
 
@@ -1875,7 +1881,7 @@ class Node extends EventDispatcher {
 		builder.addChain( this );
 
 		/* Build stages expected results:
-			- "construct"	-> Node
+			- "setup"		-> Node
 			- "analyze"		-> null
 			- "generate"	-> String
 		*/
@@ -1883,18 +1889,18 @@ class Node extends EventDispatcher {
 
 		const buildStage = builder.getBuildStage();
 
-		if ( buildStage === 'construct' ) {
+		if ( buildStage === 'setup' ) {
 
 			const properties = builder.getNodeProperties( this );
 
 			if ( properties.initialized !== true || builder.context.tempRead === false ) {
 
-				const stackNodesBeforeConstruct = builder.stack.nodes.length;
+				const stackNodesBeforeSetup = builder.stack.nodes.length;
 
 				properties.initialized = true;
-				properties.outputNode = this.construct( builder );
+				properties.outputNode = this.setup( builder );
 
-				if ( properties.outputNode !== null && builder.stack.nodes.length !== stackNodesBeforeConstruct ) {
+				if ( properties.outputNode !== null && builder.stack.nodes.length !== stackNodesBeforeSetup ) {
 
 					properties.outputNode = builder.stack;
 
@@ -2495,6 +2501,63 @@ class SplitNode extends Node {
 
 addNodeClass( SplitNode );
 
+class SetNode extends TempNode {
+
+	constructor( sourceNode, components, targetNode ) {
+
+		super();
+
+		this.sourceNode = sourceNode;
+		this.components = components;
+		this.targetNode = targetNode;
+
+	}
+
+	getNodeType( builder ) {
+
+		return this.sourceNode.getNodeType( builder );
+
+	}
+
+	generate( builder ) {
+
+		const { sourceNode, components, targetNode } = this;
+
+		const sourceType = this.getNodeType( builder );
+		const targetType = builder.getTypeFromLength( components.length );
+
+		const targetSnippet = targetNode.build( builder, targetType );
+		const sourceSnippet = sourceNode.build( builder, sourceType );
+
+		const length = builder.getTypeLength( sourceType );
+		const snippetValues = [];
+
+		for ( let i = 0; i < length; i ++ ) {
+
+			const component = vectorComponents[ i ];
+
+			if ( component === components[ 0 ] ) {
+
+				snippetValues.push( targetSnippet );
+
+				i += components.length - 1;
+
+			} else {
+
+				snippetValues.push( sourceSnippet + '.' + component );
+
+			}
+
+		}
+
+		return `${ builder.getType( sourceType ) }( ${ snippetValues.join( ', ' ) } )`;
+
+	}
+
+}
+
+addNodeClass( SetNode );
+
 class ConstNode extends InputNode {
 
 	constructor( value, nodeType = null ) {
@@ -2534,9 +2597,11 @@ function addNodeElement( name, nodeElement ) {
 
 }
 
+const parseSwizzle = ( props ) => props.replace( /r|s/g, 'x' ).replace( /g|t/g, 'y' ).replace( /b|p/g, 'z' ).replace( /a|q/g, 'w' );
+
 const shaderNodeHandler = {
 
-	construct( NodeClosure, params ) {
+	setup( NodeClosure, params ) {
 
 		const inputs = params.shift();
 
@@ -2568,19 +2633,31 @@ const shaderNodeHandler = {
 
 				// accessing properties ( swizzle )
 
-				prop = prop
-					.replace( /r|s/g, 'x' )
-					.replace( /g|t/g, 'y' )
-					.replace( /b|p/g, 'z' )
-					.replace( /a|q/g, 'w' );
+				prop = parseSwizzle( prop );
 
 				return nodeObject( new SplitNode( node, prop ) );
 
-			} else if ( prop === 'width' || prop === 'height' ) {
+			} else if ( /^set[XYZWRGBASTPQ]{1,4}$/.test( prop ) === true ) {
+
+				// set properties ( swizzle )
+
+				prop = parseSwizzle( prop.slice( 3 ).toLowerCase() );
+
+				// sort to xyzw sequence
+
+				prop = prop.split( '' ).sort().join( '' );
+
+				return ( value ) => nodeObject( new SetNode( node, prop, value ) );
+
+			} else if ( prop === 'width' || prop === 'height' || prop === 'depth' ) {
 
 				// accessing property
 
-				return nodeObject( new SplitNode( node, prop === 'width' ? 'x' : 'y' ) );
+				if ( prop === 'width' ) prop = 'x';
+				else if ( prop === 'height' ) prop = 'y';
+				else if ( prop === 'depth' ) prop = 'z';
+
+				return nodeObject( new SplitNode( node, prop ) );
 
 			} else if ( /^\d+$/.test( prop ) === true ) {
 
@@ -2698,21 +2775,14 @@ const ShaderNodeImmutable = function ( NodeClass, ...params ) {
 
 };
 
-class ShaderNodeInternal extends Node {
+class ShaderCallNodeInternal extends Node {
 
-	constructor( jsFunc ) {
+	constructor( shaderNode, inputNodes ) {
 
 		super();
 
-		this._jsFunc = jsFunc;
-
-	}
-
-	call( inputs, stack, builder ) {
-
-		inputs = nodeObjects( inputs );
-
-		return nodeObject( this._jsFunc( inputs, stack, builder ) );
+		this.shaderNode = shaderNode;
+		this.inputNodes = inputNodes;
 
 	}
 
@@ -2724,13 +2794,64 @@ class ShaderNodeInternal extends Node {
 
 	}
 
-	construct( builder ) {
+	call( builder ) {
+
+		const { shaderNode, inputNodes } = this;
+
+		const jsFunc = shaderNode.jsFunc;
+		const outputNode = inputNodes !== null ? jsFunc( nodeObjects( inputNodes ), builder.stack, builder ) : jsFunc( builder.stack, builder );
+
+		return nodeObject( outputNode );
+
+	}
+
+	setup( builder ) {
 
 		builder.addStack();
 
-		builder.stack.outputNode = nodeObject( this._jsFunc( builder.stack, builder ) );
+		builder.stack.outputNode = this.call( builder );
 
 		return builder.removeStack();
+
+	}
+
+	generate( builder, output ) {
+
+		const { outputNode } = builder.getNodeProperties( this );
+
+		if ( outputNode === null ) {
+
+			// TSL: It's recommended to use `tslFn` in setup() pass.
+
+			return this.call( builder ).build( builder, output );
+
+		}
+
+		return super.generate( builder, output );
+
+	}
+
+}
+
+class ShaderNodeInternal extends Node {
+
+	constructor( jsFunc ) {
+
+		super();
+
+		this.jsFunc = jsFunc;
+
+	}
+
+	call( inputs = null ) {
+
+		return nodeObject( new ShaderCallNodeInternal( this, inputs ) );
+
+	}
+
+	setup() {
+
+		return this.call();
 
 	}
 
@@ -2843,15 +2964,9 @@ const nodeImmutable = ( ...params ) => new ShaderNodeImmutable( ...params );
 
 const tslFn = ( jsFunc ) => {
 
-	let shaderNode = null;
+	const shaderNode = new ShaderNode( jsFunc );
 
-	return ( ...params ) => {
-
-		if ( shaderNode === null ) shaderNode = new ShaderNode( jsFunc );
-
-		return shaderNode.call( ...params );
-
-	};
+	return ( inputs ) => shaderNode.call( inputs );
 
 };
 
@@ -2967,6 +3082,8 @@ class UniformNode extends InputNode {
 
 		const nodeUniform = builder.getUniformFromNode( sharedNode, sharedNodeType, builder.shaderStage, builder.context.label );
 		const propertyName = builder.getPropertyName( nodeUniform );
+
+		if ( builder.context.label !== undefined ) delete builder.context.label;
 
 		return builder.format( propertyName, type, output );
 
@@ -3294,7 +3411,7 @@ class ContextNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const previousContext = builder.getContext();
 
@@ -4062,7 +4179,7 @@ class MathNode extends TempNode {
 
 		} else if ( method === MathNode.NEGATE ) {
 
-			return builder.format( '-' + a.build( builder, inputType ), type, output );
+			return builder.format( '( - ' + a.build( builder, inputType ) + ' )', type, output );
 
 		} else if ( method === MathNode.ONE_MINUS ) {
 
@@ -4381,7 +4498,7 @@ class ColorSpaceNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { method, node } = this;
 
@@ -4500,7 +4617,7 @@ class TextureNode extends UniformNode {
 
 	}
 
-	getTextureMatrix( uvNode ) {
+	getTransformedUV( uvNode ) {
 
 		const texture = this.value;
 
@@ -4517,7 +4634,7 @@ class TextureNode extends UniformNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const properties = builder.getNodeProperties( this );
 
@@ -4535,7 +4652,7 @@ class TextureNode extends UniformNode {
 
 		if ( this.updateMatrix === true ) {
 
-			uvNode = this.getTextureMatrix( uvNode );
+			uvNode = this.getTransformedUV( uvNode );
 
 		}
 
@@ -4628,7 +4745,7 @@ class TextureNode extends UniformNode {
 
 			if ( builder.needsColorSpaceToLinear( this.value ) ) {
 
-				snippet = colorSpaceToLinear( expression( snippet, nodeType ), this.value.colorSpace ).construct( builder ).build( builder, nodeType );
+				snippet = colorSpaceToLinear( expression( snippet, nodeType ), this.value.colorSpace ).setup( builder ).build( builder, nodeType );
 
 			}
 
@@ -4775,7 +4892,7 @@ class ReferenceNode extends Node {
 
 	}
 
-	construct( /*builder*/ ) {
+	setup( /*builder*/ ) {
 
 		return this.node;
 
@@ -4807,13 +4924,13 @@ class MaterialReferenceNode extends ReferenceNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const material = this.material !== null ? this.material : builder.material;
 
 		this.node.value = material[ this.property ];
 
-		return super.construct( builder );
+		return super.setup( builder );
 
 	}
 
@@ -4869,7 +4986,7 @@ class MaterialNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const material = builder.context.material;
 		const scope = this.scope;
@@ -5857,7 +5974,7 @@ class NormalMapNode extends TempNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const { normalMapType, scaleNode } = this;
 
@@ -5956,7 +6073,7 @@ class BumpMapNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const bumpScale = this.scaleNode !== null ? this.scaleNode : 1;
 		const dHdxy = dHdxy_fwd( { bumpTexture: this.texture, bumpScale } );
@@ -5998,7 +6115,7 @@ class ExtendedMaterialNode extends MaterialNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const material = builder.material;
 		const scope = this.scope;
@@ -6028,7 +6145,7 @@ class ExtendedMaterialNode extends MaterialNode {
 
 		}
 
-		return node || super.construct( builder );
+		return node || super.setup( builder );
 
 	}
 
@@ -6042,7 +6159,7 @@ const materialClearcoatNormal = nodeImmutable( ExtendedMaterialNode, ExtendedMat
 
 addNodeClass( ExtendedMaterialNode );
 
-class ModelViewProjectionNode extends Node {
+class ModelViewProjectionNode extends TempNode {
 
 	constructor( positionNode = positionLocal ) {
 
@@ -6052,7 +6169,7 @@ class ModelViewProjectionNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		return cameraProjectionMatrix.mul( modelViewMatrix ).mul( this.positionNode );
 
@@ -6103,7 +6220,7 @@ class BufferAttributeNode extends InputNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		if ( this.attribute !== null ) return;
 
@@ -6194,7 +6311,7 @@ class InstanceNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		let instanceMatrixNode = this.instanceMatrixNode;
 
@@ -6291,7 +6408,7 @@ class SkinningNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const { skinIndexNode, skinWeightNode, bindMatrixNode, bindMatrixInverseNode, boneMatricesNode } = this;
 
@@ -6364,7 +6481,7 @@ class MorphNode extends Node {
 
 	}
 
-	constructAttribute( builder, name, assignNode = positionLocal ) {
+	setupAttribute( builder, name, assignNode = positionLocal ) {
 
 		const mesh = this.mesh;
 		const attributes = mesh.geometry.morphAttributes[ name ];
@@ -6384,9 +6501,9 @@ class MorphNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
-		this.constructAttribute( builder, 'position' );
+		this.setupAttribute( builder, 'position' );
 
 	}
 
@@ -6426,7 +6543,7 @@ class ReflectVectorNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const reflectView = positionViewDirection.negate().reflect( transformedNormalView );
 
@@ -6531,7 +6648,7 @@ class CubeTextureNode extends TextureNode {
 
 			if ( builder.needsColorSpaceToLinear( this.value ) ) {
 
-				snippet = colorSpaceToLinear( expression( snippet, nodeType ), this.value.colorSpace ).construct( builder ).build( builder, nodeType );
+				snippet = colorSpaceToLinear( expression( snippet, nodeType ), this.value.colorSpace ).setup( builder ).build( builder, nodeType );
 
 			}
 
@@ -6591,7 +6708,7 @@ class AnalyticLightNode extends LightingNode {
 
 	}
 
-	constructShadow( builder ) {
+	setupShadow( builder ) {
 
 		let shadowNode = this.shadowNode;
 
@@ -6690,9 +6807,9 @@ class AnalyticLightNode extends LightingNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
-		if ( this.light.castShadow ) this.constructShadow( builder );
+		if ( this.light.castShadow ) this.setupShadow( builder );
 
 	}
 
@@ -6761,7 +6878,7 @@ class LightsNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const lightNodes = this.lightNodes;
 
@@ -6866,7 +6983,7 @@ class AONode extends LightingNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const aoIntensity = 1;
 		const aoNode = this.aoNode.x.sub( 1.0 ).mul( aoIntensity ).add( 1.0 );
@@ -6897,7 +7014,7 @@ class LightingContextNode extends ContextNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const { lightingModel, backdropNode, backdropAlphaNode } = this;
 
@@ -6951,7 +7068,7 @@ class LightingContextNode extends ContextNode {
 
 		}
 
-		return super.construct( builder );
+		return super.setup( builder );
 
 	}
 
@@ -6984,7 +7101,7 @@ class EquirectUVNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const dir = this.dirNode;
 
@@ -7052,7 +7169,7 @@ class SpecularMIPLevelNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { textureNode, roughnessNode } = this;
 
@@ -7085,7 +7202,7 @@ class EnvironmentNode extends LightingNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		let envNode = this.envNode;
 		const properties = builder.getNodeProperties( this );
@@ -7295,17 +7412,17 @@ class NodeMaterial extends ShaderMaterial {
 
 	build( builder ) {
 
-		this.construct( builder );
+		this.setup( builder );
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		// < VERTEX STAGE >
 
 		builder.addStack();
 
-		builder.stack.outputNode = this.constructPosition( builder );
+		builder.stack.outputNode = this.setupPosition( builder );
 
 		builder.addFlow( 'vertex', builder.removeStack() );
 
@@ -7317,14 +7434,14 @@ class NodeMaterial extends ShaderMaterial {
 
 		if ( this.unlit === false ) {
 
-			if ( this.normals === true ) this.constructNormal( builder );
+			if ( this.normals === true ) this.setupNormal( builder );
 
-			this.constructDiffuseColor( builder );
-			this.constructVariants( builder );
+			this.setupDiffuseColor( builder );
+			this.setupVariants( builder );
 
-			const outgoingLightNode = this.constructLighting( builder );
+			const outgoingLightNode = this.setupLighting( builder );
 
-			outputNode = this.constructOutput( builder, vec4( outgoingLightNode, diffuseColor.a ) );
+			outputNode = this.setupOutput( builder, vec4( outgoingLightNode, diffuseColor.a ) );
 
 			// OUTPUT NODE
 
@@ -7336,7 +7453,7 @@ class NodeMaterial extends ShaderMaterial {
 
 		} else {
 
-			outputNode = this.constructOutput( builder, this.outputNode || vec4( 0, 0, 0, 1 ) );
+			outputNode = this.setupOutput( builder, this.outputNode || vec4( 0, 0, 0, 1 ) );
 
 		}
 
@@ -7346,7 +7463,7 @@ class NodeMaterial extends ShaderMaterial {
 
 	}
 
-	constructPosition( builder ) {
+	setupPosition( builder ) {
 
 		const object = builder.object;
 		const geometry = object.geometry;
@@ -7383,7 +7500,7 @@ class NodeMaterial extends ShaderMaterial {
 
 	}
 
-	constructDiffuseColor( { stack, geometry } ) {
+	setupDiffuseColor( { stack, geometry } ) {
 
 		let colorNode = this.colorNode ? vec4( this.colorNode ) : materialColor;
 
@@ -7416,13 +7533,13 @@ class NodeMaterial extends ShaderMaterial {
 
 	}
 
-	constructVariants( /*builder*/ ) {
+	setupVariants( /*builder*/ ) {
 
 		// Interface function.
 
 	}
 
-	constructNormal( { stack } ) {
+	setupNormal( { stack } ) {
 
 		// NORMAL VIEW
 
@@ -7466,7 +7583,7 @@ class NodeMaterial extends ShaderMaterial {
 
 	}
 
-	constructLights( builder ) {
+	setupLights( builder ) {
 
 		const envNode = this.getEnvNode( builder );
 
@@ -7498,13 +7615,13 @@ class NodeMaterial extends ShaderMaterial {
 
 	}
 
-	constructLightingModel( /*builder*/ ) {
+	setupLightingModel( /*builder*/ ) {
 
 		// Interface function.
 
 	}
 
-	constructLighting( builder ) {
+	setupLighting( builder ) {
 
 		const { material } = builder;
 		const { backdropNode, backdropAlphaNode, emissiveNode } = this;
@@ -7513,13 +7630,13 @@ class NodeMaterial extends ShaderMaterial {
 
 		const lights = this.lights === true || this.lightsNode !== null;
 
-		const lightsNode = lights ? this.constructLights( builder ) : null;
+		const lightsNode = lights ? this.setupLights( builder ) : null;
 
 		let outgoingLightNode = diffuseColor.rgb;
 
 		if ( lightsNode && lightsNode.hasLight !== false ) {
 
-			const lightingModelNode = this.constructLightingModel( builder );
+			const lightingModelNode = this.setupLightingModel( builder );
 
 			outgoingLightNode = lightingContext( lightsNode, lightingModelNode, backdropNode, backdropAlphaNode );
 
@@ -7541,7 +7658,7 @@ class NodeMaterial extends ShaderMaterial {
 
 	}
 
-	constructOutput( builder, outputNode ) {
+	setupOutput( builder, outputNode ) {
 
 		const renderer = builder.renderer;
 
@@ -8160,9 +8277,9 @@ class LoopNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
-		// construct properties
+		// setup properties
 
 		this.getProperties( builder );
 
@@ -8172,12 +8289,10 @@ class LoopNode extends Node {
 
 		const properties = this.getProperties( builder );
 
-		const context$1 = { tempWrite: false };
+		const contextData = { tempWrite: false };
 
 		const params = this.params;
 		const stackNode = properties.stackNode;
-
-		const returnsSnippet = properties.returnsNode ? properties.returnsNode.build( builder ) : '';
 
 		for ( let i = 0, l = params.length - 1; i < l; i ++ ) {
 
@@ -8189,7 +8304,7 @@ class LoopNode extends Node {
 			if ( param.isNode ) {
 
 				start = '0';
-				end = param.generate( builder, 'int' );
+				end = param.build( builder, 'int' );
 				direction = 'forward';
 
 			} else {
@@ -8199,10 +8314,10 @@ class LoopNode extends Node {
 				direction = param.direction;
 
 				if ( typeof start === 'number' ) start = start.toString();
-				else if ( start && start.isNode ) start = start.generate( builder, 'int' );
+				else if ( start && start.isNode ) start = start.build( builder, 'int' );
 
 				if ( typeof end === 'number' ) end = end.toString();
-				else if ( end && end.isNode ) end = end.generate( builder, 'int' );
+				else if ( end && end.isNode ) end = end.build( builder, 'int' );
 
 				if ( start !== undefined && end === undefined ) {
 
@@ -8266,7 +8381,9 @@ class LoopNode extends Node {
 
 		}
 
-		const stackSnippet = context( stackNode, context$1 ).build( builder, 'void' );
+		const stackSnippet = context( stackNode, contextData ).build( builder, 'void' );
+
+		const returnsSnippet = properties.returnsNode ? properties.returnsNode.build( builder ) : '';
 
 		builder.removeFlowTab().addFlowCode( '\n' + builder.tab + stackSnippet );
 
@@ -9341,7 +9458,7 @@ class NodeBuilder {
 
 	build() {
 
-		// construct() -> stage 1: create possible new nodes and returns an output reference node
+		// setup() -> stage 1: create possible new nodes and returns an output reference node
 		// analyze()   -> stage 2: analyze nodes to possible optimization and validation
 		// generate()  -> stage 3: generate shader
 
@@ -9655,9 +9772,9 @@ class OutputStructNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
-		super.construct( builder );
+		super.setup( builder );
 
 		const members = this.members;
 		const types = [];
@@ -9675,15 +9792,19 @@ class OutputStructNode extends Node {
 	generate( builder, output ) {
 
 		const nodeVar = builder.getVarFromNode( this, this.nodeType );
+		nodeVar.isOutputStructVar = true;
+
 		const propertyName = builder.getPropertyName( nodeVar );
 
 		const members = this.members;
+
+		const structPrefix = propertyName !== '' ? propertyName + '.' : '';
 
 		for ( let i = 0; i < members.length; i++ ) {
 
 			const snippet = members[ i ].build( builder, output );
 
-			builder.addLineFlowCode( `${propertyName}.m${i} = ${snippet}` );
+			builder.addLineFlowCode( `${structPrefix}m${i} = ${snippet}` );
 
 		}
 
@@ -9707,7 +9828,7 @@ class HashNode extends Node {
 
 	}
 
-	construct( /*builder*/ ) {
+	setup( /*builder*/ ) {
 
 		// Taken from https://www.shadertoy.com/view/XlGcRh, originally from pcg-random.org
 
@@ -9755,7 +9876,7 @@ class MatcapUVNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const x = vec3( positionViewDirection.z, 0, positionViewDirection.x.negate() ).normalize();
 		const y = positionViewDirection.cross( x );
@@ -9873,7 +9994,7 @@ class OscNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const method = this.method;
 		const timeNode = nodeObject( this.timeNode );
@@ -9949,7 +10070,7 @@ class PackingNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { scope, node } = this;
 
@@ -9998,7 +10119,7 @@ class RemapNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { node, inLowNode, inHighNode, outLowNode, outHighNode, doClamp } = this;
 
@@ -10032,7 +10153,7 @@ class RotateUVNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { uvNode, rotationNode, centerNode } = this;
 
@@ -10070,7 +10191,7 @@ class SpriteSheetUVNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { frameNode, uvNode, countNode } = this;
 
@@ -10111,7 +10232,7 @@ class TriplanarTexturesNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { textureXNode, textureYNode, textureZNode, scaleNode, positionNode, normalNode } = this;
 
@@ -10150,7 +10271,7 @@ addNodeClass( TriplanarTexturesNode );
 
 class LineMaterialNode extends MaterialNode {
 
-	construct( /*builder*/ ) {
+	setup( /*builder*/ ) {
 
 		return this.getFloat( this.scope );
 
@@ -10245,7 +10366,7 @@ class TextureBicubicNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		return textureBicubicMethod( this.textureNode, this.blurNode );
 
@@ -10292,7 +10413,7 @@ class SceneNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const scope = this.scope;
 		const scene = this.scene !== null ? this.scene : builder.scene;
@@ -10434,7 +10555,7 @@ class BlendModeNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { blendMode, baseNode, blendNode } = this;
 		const params = { base: baseNode, blend: blendNode };
@@ -10526,7 +10647,7 @@ class ColorAdjustmentNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { method, colorNode, adjustmentNode } = this;
 
@@ -10582,7 +10703,7 @@ class PosterizeNode extends TempNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { sourceNode, stepsNode } = this;
 
@@ -10698,7 +10819,7 @@ class ToneMappingNode extends TempNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const colorNode = this.colorNode || builder.context.color;
 		const toneMapping = this.toneMapping;
@@ -10780,7 +10901,7 @@ class ViewportNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const scope = this.scope;
 
@@ -10982,7 +11103,7 @@ class ViewportDepthNode extends Node {
 
 	}
 
-	construct( /*builder*/ ) {
+	setup( /*builder*/ ) {
 
 		const { scope } = this;
 
@@ -11371,7 +11492,7 @@ class ScriptableValueNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		return this.value && this.value.isNode ? this.value : float();
 
@@ -11872,7 +11993,7 @@ class ScriptableNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		return this.getDefaultOutputNode();
 
@@ -11945,7 +12066,7 @@ class FogNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		return this.factorNode;
 
@@ -11972,7 +12093,7 @@ class FogRangeNode extends FogNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		return smoothstep( this.nearNode, this.farNode, positionView.z.negate() );
 
@@ -11998,7 +12119,7 @@ class FogExp2Node extends FogNode {
 
 	}
 
-	construct() {
+	setup() {
 
 		const depthNode = positionView.z.negate();
 		const densityNode = this.densityNode;
@@ -12044,7 +12165,7 @@ class RangeNode extends Node {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const object = builder.object;
 
@@ -12200,7 +12321,7 @@ class LightNode extends Node {
 
 	}
 
-	construct() {
+	setup() {
 
 		const { scope, light } = this;
 
@@ -12278,7 +12399,7 @@ class PointLightNode extends AnalyticLightNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const { colorNode, cutoffDistanceNode, decayExponentNode, light } = this;
 
@@ -12321,9 +12442,9 @@ class DirectionalLightNode extends AnalyticLightNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
-		super.construct( builder );
+		super.setup( builder );
 
 		const lightingModel = builder.context.lightingModel;
 
@@ -12381,9 +12502,9 @@ class SpotLightNode extends AnalyticLightNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
-		super.construct( builder );
+		super.setup( builder );
 
 		const lightingModel = builder.context.lightingModel;
 
@@ -12481,7 +12602,7 @@ class AmbientLightNode extends AnalyticLightNode {
 
 	}
 
-	construct( { context } ) {
+	setup( { context } ) {
 
 		context.irradiance.addAssign( this.colorNode );
 
@@ -12518,7 +12639,7 @@ class HemisphereLightNode extends AnalyticLightNode {
 
 	}
 
-	construct( builder ) {
+	setup( builder ) {
 
 		const { colorNode, groundColorNode, lightDirectionNode } = this;
 
@@ -12559,9 +12680,9 @@ class CheckerNode extends TempNode {
 
 	}
 
-	generate( builder ) {
+	setup() {
 
-		return checkerShaderNode( { uv: this.uvNode } ).build( builder );
+		return checkerShaderNode( { uv: this.uvNode } );
 
 	}
 
@@ -12620,7 +12741,7 @@ class LineDashedNodeMaterial extends NodeMaterial {
 
 	}
 
-	constructVariants( { stack } ) {
+	setupVariants( { stack } ) {
 
 		const offsetNode = this.offsetNode;
 		const dashScaleNode = this.dashScaleNode ? float( this.dashScaleNode ) : materialLineScale;
@@ -12669,13 +12790,13 @@ class Line2NodeMaterial extends NodeMaterial {
 		this.dashSizeNode = null;
 		this.gapSizeNode = null;
 
-		this.constructShaders();
+		this.setupShaders();
 
 		this.setValues( params );
 
 	}
 
-	constructShaders() {
+	setupShaders() {
 
 		const useAlphaToCoverage = this.alphaToCoverage;
 		const useColor = this.useColor;
@@ -13025,7 +13146,7 @@ class Line2NodeMaterial extends NodeMaterial {
 		if ( this.useWorldUnits !== value ) {
 
 			this.useWorldUnits = value;
-			this.constructShaders();
+			this.setupShaders();
 
 		}
 
@@ -13043,7 +13164,7 @@ class Line2NodeMaterial extends NodeMaterial {
 		if ( this.useDash !== value ) {
 
 			this.useDash = value;
-			this.constructShaders();
+			this.setupShaders();
 
 		}
 
@@ -13061,7 +13182,7 @@ class Line2NodeMaterial extends NodeMaterial {
 		if ( this.useAlphaToCoverage !== value ) {
 
 			this.useAlphaToCoverage = value;
-			this.constructShaders();
+			this.setupShaders();
 
 		}
 
@@ -13089,7 +13210,7 @@ class MeshNormalNodeMaterial extends NodeMaterial {
 
 	}
 
-	constructDiffuseColor( { stack } ) {
+	setupDiffuseColor( { stack } ) {
 
 		const opacityNode = this.opacityNode ? float( this.opacityNode ) : materialOpacity;
 
@@ -13216,7 +13337,7 @@ class MeshLambertNodeMaterial extends NodeMaterial {
 
 	}
 
-	constructLightingModel( /*builder*/ ) {
+	setupLightingModel( /*builder*/ ) {
 
 		return new PhongLightingModel( false ); // ( specular ) -> force lambert
 
@@ -13247,13 +13368,13 @@ class MeshPhongNodeMaterial extends NodeMaterial {
 
 	}
 
-	constructLightingModel( /*builder*/ ) {
+	setupLightingModel( /*builder*/ ) {
 
 		return new PhongLightingModel();
 
 	}
 
-	constructVariants( { stack } ) {
+	setupVariants( { stack } ) {
 
 		// SHININESS
 
@@ -13794,13 +13915,13 @@ class MeshStandardNodeMaterial extends NodeMaterial {
 
 	}
 
-	constructLightingModel( /*builder*/ ) {
+	setupLightingModel( /*builder*/ ) {
 
 		return new PhysicalLightingModel( false, false ); // ( clearcoat, sheen ) -> standard
 
 	}
 
-	constructVariants( { stack } ) {
+	setupVariants( { stack } ) {
 
 		// METALNESS
 
@@ -13877,15 +13998,15 @@ class MeshPhysicalNodeMaterial extends MeshStandardNodeMaterial {
 
 	}
 
-	constructLightingModel( /*builder*/ ) {
+	setupLightingModel( /*builder*/ ) {
 
 		return new PhysicalLightingModel(); // @TODO: Optimize shader using parameters.
 
 	}
 
-	constructVariants( builder ) {
+	setupVariants( builder ) {
 
-		super.constructVariants( builder );
+		super.setupVariants( builder );
 
 		const { stack } = builder;
 
@@ -13917,9 +14038,9 @@ class MeshPhysicalNodeMaterial extends MeshStandardNodeMaterial {
 
 	}
 
-	constructNormal( builder ) {
+	setupNormal( builder ) {
 
-		super.constructNormal( builder );
+		super.setupNormal( builder );
 
 		// CLEARCOAT NORMAL
 
@@ -14032,7 +14153,7 @@ class SpriteNodeMaterial extends NodeMaterial {
 
 	}
 
-	constructPosition( { object, context } ) {
+	setupPosition( { object, context } ) {
 
 		// < VERTEX STAGE >
 
@@ -15640,7 +15761,7 @@ class Background extends DataMap {
 				} ).mul( backgroundIntensity );
 
 				let viewProj = modelViewProjection();
-				viewProj = vec4( viewProj.x, viewProj.y, viewProj.w, viewProj.w );
+				viewProj = viewProj.setZ( viewProj.w );
 
 				const nodeMaterial = new NodeMaterial();
 				nodeMaterial.outputNode = this.backgroundMeshNode;
@@ -15780,6 +15901,7 @@ class Nodes extends DataMap {
 
 				const nodeBuilder = this.backend.createNodeBuilder( renderObject.object, this.renderer, renderObject.scene );
 				nodeBuilder.material = renderObject.material;
+				nodeBuilder.context.material = renderObject.material;
 				nodeBuilder.lightsNode = renderObject.lightsNode;
 				nodeBuilder.environmentNode = this.getEnvironmentNode( renderObject.scene );
 				nodeBuilder.fogNode = this.getFogNode( renderObject.scene );
@@ -17528,6 +17650,14 @@ class GLSLNodeBuilder extends NodeBuilder {
 
 	}
 
+	getPropertyName( node, shaderStage ) {
+
+		if ( node.isOutputStructVar ) return '';
+
+		return super.getPropertyName( node, shaderStage );
+
+	}
+
 	getTexture( texture, textureProperty, uvSnippet ) {
 
 		if ( texture.isTextureCube ) {
@@ -17552,6 +17682,16 @@ class GLSLNodeBuilder extends NodeBuilder {
 
 	}
 
+	getTextureCompare( texture, textureProperty, uvSnippet, compareSnippet, shaderStage = this.shaderStage ) {
+
+		if ( shaderStage === 'fragment' ) {
+
+			return `texture( ${textureProperty}, vec3( ${uvSnippet}, ${compareSnippet} ) )`;
+
+		}
+
+	}
+
 	getVars( shaderStage ) {
 
 		const snippets = [];
@@ -17559,6 +17699,8 @@ class GLSLNodeBuilder extends NodeBuilder {
 		const vars = this.vars[ shaderStage ];
 
 		for ( const variable of vars ) {
+
+			if ( variable.isOutputStructVar ) continue;
 
 			snippets.push( `${ this.getVar( variable.type, variable.name ) };` );
 
@@ -17582,7 +17724,15 @@ class GLSLNodeBuilder extends NodeBuilder {
 
 			if ( uniform.type === 'texture' ) {
 
-				snippet = `sampler2D ${uniform.name};`;
+				if ( uniform.node.value.compareFunction ) {
+
+					snippet = `sampler2DShadow ${uniform.name};`;
+
+				} else {
+
+					snippet = `sampler2D ${uniform.name};`;
+
+				}
 
 			} else if ( uniform.type === 'cubeTexture' ) {
 
@@ -17655,6 +17805,49 @@ class GLSLNodeBuilder extends NodeBuilder {
 		}
 
 		return snippet;
+
+	}
+
+	getStructMembers( struct ) {
+
+		const snippets = [];
+		const members = struct.getMemberTypes();
+
+		for ( let i = 0; i < members.length; i ++ ) {
+
+			const member = members[ i ];
+			snippets.push( `layout( location = ${i} ) out ${ member} m${i};` );
+
+		}
+
+		return snippets.join( '\n' );
+
+	}
+
+	getStructs( shaderStage ) {
+
+		const snippets = [];
+		const structs = this.structs[ shaderStage ];
+
+		if ( structs.length === 0 ) {
+
+			return "layout( location = 0 ) out vec4 fragColor;\n";
+
+		}
+
+		for ( let index = 0, length = structs.length; index < length; index ++ ) {
+
+			const struct = structs[ index ];
+
+			let snippet = `\n`;
+			snippet += this.getStructMembers( struct );
+			snippet += '\n';
+
+			snippets.push( snippet );
+
+		}
+
+		return snippets.join( '\n\n' );
 
 	}
 
@@ -17769,6 +17962,7 @@ ${ this.getSignature() }
 // precision
 precision highp float;
 precision highp int;
+precision lowp sampler2DShadow;
 
 // uniforms
 ${shaderData.uniforms}
@@ -17779,7 +17973,7 @@ ${shaderData.varyings}
 // codes
 ${shaderData.codes}
 
-layout( location = 0 ) out vec4 fragColor;
+${shaderData.structs}
 
 void main() {
 
@@ -17828,14 +18022,18 @@ void main() {
 					if ( shaderStage === 'vertex' ) {
 
 						flow += 'gl_Position = ';
+						flow += `${ flowSlotData.result };`;
 
 					} else if ( shaderStage === 'fragment' ) {
 
-						flow += 'fragColor = ';
+						if ( ! node.outputNode.isOutputStructNode ) {
+
+							flow += 'fragColor = ';
+							flow += `${ flowSlotData.result };`;
+
+						}
 
 					}
-
-					flow += `${ flowSlotData.result };`;
 
 				}
 
@@ -17847,6 +18045,7 @@ void main() {
 			stageData.attributes = this.getAttributes( shaderStage );
 			stageData.varyings = this.getVaryings( shaderStage );
 			stageData.vars = this.getVars( shaderStage );
+			stageData.structs = this.getStructs( shaderStage );
 			stageData.codes = this.getCodes( shaderStage );
 			stageData.flow = flow;
 
@@ -19069,6 +19268,19 @@ class WebGLTextureUtils {
 
 		}
 
+		if ( glFormat === gl.DEPTH_COMPONENT ) {
+
+			if ( glType === gl.UNSIGNED_INT ) internalFormat = gl.DEPTH_COMPONENT24;
+			if ( glType === gl.FLOAT ) internalFormat = gl.DEPTH_COMPONENT32F;
+
+		}
+
+		if ( glFormat === gl.DEPTH_STENCIL ) {
+
+			if ( glType === gl.UNSIGNED_INT_24_8 ) internalFormat = gl.DEPTH24_STENCIL8;
+
+		}
+
 		if ( internalFormat === gl.R16F || internalFormat === gl.R32F ||
 			internalFormat === gl.RG16F || internalFormat === gl.RG32F ||
 			internalFormat === gl.RGBA16F || internalFormat === gl.RGBA32F ) {
@@ -19190,6 +19402,8 @@ class WebGLBackend extends Backend {
 
 		//
 
+		this._setFramebuffer( renderContext );
+
 		let clear = 0;
 
 		if ( renderContext.clearColor ) clear |= gl.COLOR_BUFFER_BIT;
@@ -19198,8 +19412,26 @@ class WebGLBackend extends Backend {
 
 		const clearColor = renderContext.clearColorValue;
 
-		gl.clearColor( clearColor.x, clearColor.y, clearColor.z, clearColor.a );
-		gl.clear( clear );
+		if ( clear !== 0 ) {
+
+			if ( renderContext.textures === null ) {
+
+				gl.clearColor( clearColor.r, clearColor.g, clearColor.b, clearColor.a );
+				gl.clear( clear );
+
+			} else {
+
+				for ( let i = 0; i < renderContext.textures.length; i ++ ) {
+
+					gl.clearBufferfv( gl.COLOR, i, [ clearColor.r, clearColor.g, clearColor.b, clearColor.a ] );
+
+				}
+
+				gl.clearBufferfi( gl.DEPTH_STENCIL, 0, 1, 1 );
+
+			}
+
+		}
 
 		//
 
@@ -19717,6 +19949,65 @@ class WebGLBackend extends Backend {
 	}
 
 	copyFramebufferToTexture( /*texture, renderContext*/ ) {
+
+	}
+
+	_setFramebuffer( renderContext ) {
+
+		const { gl } = this;
+
+		if ( renderContext.textures !== null ) {
+
+			const renderContextData = this.get( renderContext );
+
+			let fb = renderContextData.framebuffer;
+
+			if ( fb === undefined ) {
+
+				fb = gl.createFramebuffer();
+
+				gl.bindFramebuffer( gl.FRAMEBUFFER, fb );
+
+				const textures = renderContext.textures;
+
+				const drawBuffers = [];
+
+				for ( let i = 0; i < textures.length; i++ ) {
+
+					const texture = textures[ i ];
+					const { textureGPU } = this.get( texture );
+
+					const attachment = gl.COLOR_ATTACHMENT0 + i;
+
+					gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, textureGPU, 0 );
+
+					drawBuffers.push( attachment );
+
+				}
+
+				gl.drawBuffers( drawBuffers );
+
+				if ( renderContext.depthTexture !== null ) {
+
+					const { textureGPU } = this.get( renderContext.depthTexture );
+
+					gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, textureGPU, 0 );
+
+				}
+
+				renderContextData.framebuffer = fb;
+
+			} else {
+
+				gl.bindFramebuffer( gl.FRAMEBUFFER, fb );
+
+			}
+
+		} else {
+
+			gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+		}
 
 	}
 
@@ -22082,17 +22373,17 @@ class WebGPUPipelineUtils {
 		switch ( material.side ) {
 
 			case FrontSide:
-				descriptor.frontFace = GPUFrontFace.CW;
-				descriptor.cullMode = GPUCullMode.Front;
-				break;
-
-			case BackSide:
-				descriptor.frontFace = GPUFrontFace.CW;
+				descriptor.frontFace = GPUFrontFace.CCW;
 				descriptor.cullMode = GPUCullMode.Back;
 				break;
 
+			case BackSide:
+				descriptor.frontFace = GPUFrontFace.CCW;
+				descriptor.cullMode = GPUCullMode.Front;
+				break;
+
 			case DoubleSide:
-				descriptor.frontFace = GPUFrontFace.CW;
+				descriptor.frontFace = GPUFrontFace.CCW;
 				descriptor.cullMode = GPUCullMode.None;
 				break;
 
@@ -22164,7 +22455,7 @@ class WebGPUPipelineUtils {
 
 }
 
-class WebGPUTextureMipmapUtils {
+class WebGPUTexturePassUtils {
 
 	constructor( device ) {
 
@@ -22218,10 +22509,26 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 }
 `;
 
-		this.sampler = device.createSampler( { minFilter: GPUFilterMode.Linear } );
+		const flipYFragmentSource = `
+@group( 0 ) @binding( 0 )
+var imgSampler : sampler;
+
+@group( 0 ) @binding( 1 )
+var img : texture_2d<f32>;
+
+@fragment
+fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
+
+	return textureSample( img, imgSampler, vec2( vTex.x, 1.0 - vTex.y ) );
+
+}
+`;
+		this.mipmapSampler = device.createSampler( { minFilter: GPUFilterMode.Linear } );
+		this.flipYSampler = device.createSampler( { minFilter: GPUFilterMode.Nearest } ); //@TODO?: Consider using textureLoad()
 
 		// We'll need a new pipeline for every texture format used.
-		this.pipelines = {};
+		this.transferPipelines = {};
+		this.flipYPipelines = {};
 
 		this.mipmapVertexShaderModule = device.createShaderModule( {
 			label: 'mipmapVertex',
@@ -22233,11 +22540,16 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 			code: mipmapFragmentSource
 		} );
 
+		this.flipYFragmentShaderModule = device.createShaderModule( {
+			label: 'flipYFragment',
+			code: flipYFragmentSource
+		} );
+
 	}
 
-	getMipmapPipeline( format ) {
+	getTransferPipeline( format ) {
 
-		let pipeline = this.pipelines[ format ];
+		let pipeline = this.transferPipelines[ format ];
 
 		if ( pipeline === undefined ) {
 
@@ -22258,7 +22570,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 				layout: 'auto'
 			} );
 
-			this.pipelines[ format ] = pipeline;
+			this.transferPipelines[ format ] = pipeline;
 
 		}
 
@@ -22266,9 +22578,110 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 	}
 
+	getFlipYPipeline( format ) {
+
+		let pipeline = this.flipYPipelines[ format ];
+
+		if ( pipeline === undefined ) {
+
+			pipeline = this.device.createRenderPipeline( {
+				vertex: {
+					module: this.mipmapVertexShaderModule,
+					entryPoint: 'main'
+				},
+				fragment: {
+					module: this.flipYFragmentShaderModule,
+					entryPoint: 'main',
+					targets: [ { format } ]
+				},
+				primitive: {
+					topology: GPUPrimitiveTopology.TriangleStrip,
+					stripIndexFormat: GPUIndexFormat.Uint32
+				},
+				layout: 'auto'
+			} );
+
+			this.flipYPipelines[ format ] = pipeline;
+
+		}
+
+		return pipeline;
+
+	}
+
+	flipY( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
+
+		const format = textureGPUDescriptor.format;
+		const { width, height } = textureGPUDescriptor.size;
+
+		const transferPipeline = this.getTransferPipeline( format );
+		const flipYPipeline = this.getFlipYPipeline( format );
+
+		const tempTexture = this.device.createTexture( {
+			size: { width, height, depthOrArrayLayers: 1 },
+			format,
+			usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+		} );
+
+		const srcView = textureGPU.createView( {
+			baseMipLevel: 0,
+			mipLevelCount: 1,
+			dimension: GPUTextureViewDimension.TwoD,
+			baseArrayLayer
+		} );
+
+		const dstView = tempTexture.createView( {
+			baseMipLevel: 0,
+			mipLevelCount: 1,
+			dimension: GPUTextureViewDimension.TwoD,
+			baseArrayLayer: 0
+		} );
+
+		const commandEncoder = this.device.createCommandEncoder( {} );
+
+		const pass = ( pipeline, sourceView, destinationView ) => {
+
+			const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
+
+			const bindGroup = this.device.createBindGroup( {
+				layout: bindGroupLayout,
+				entries: [ {
+					binding: 0,
+					resource: this.flipYSampler
+				}, {
+					binding: 1,
+					resource: sourceView
+				} ]
+			} );
+
+			const passEncoder = commandEncoder.beginRenderPass( {
+				colorAttachments: [ {
+					view: destinationView,
+					loadOp: GPULoadOp.Clear,
+					storeOp: GPUStoreOp.Store,
+					clearValue: [ 0, 0, 0, 0 ]
+				} ]
+			} );
+
+			passEncoder.setPipeline( pipeline );
+			passEncoder.setBindGroup( 0, bindGroup );
+			passEncoder.draw( 4, 1, 0, 0 );
+			passEncoder.end();
+
+		};
+
+		pass( transferPipeline, srcView, dstView );
+		pass( flipYPipeline, dstView, srcView );
+
+		this.device.queue.submit( [ commandEncoder.finish() ] );
+
+		tempTexture.destroy();
+
+	}
+
 	generateMipmaps( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
 
-		const pipeline = this.getMipmapPipeline( textureGPUDescriptor.format );
+		const pipeline = this.getTransferPipeline( textureGPUDescriptor.format );
 
 		const commandEncoder = this.device.createCommandEncoder( {} );
 		const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
@@ -22281,6 +22694,17 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 		} );
 
 		for ( let i = 1; i < textureGPUDescriptor.mipLevelCount; i ++ ) {
+
+			const bindGroup = this.device.createBindGroup( {
+				layout: bindGroupLayout,
+				entries: [ {
+					binding: 0,
+					resource: this.mipmapSampler
+				}, {
+					binding: 1,
+					resource: srcView
+				} ]
+			} );
 
 			const dstView = textureGPU.createView( {
 				baseMipLevel: i,
@@ -22295,17 +22719,6 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 					loadOp: GPULoadOp.Clear,
 					storeOp: GPUStoreOp.Store,
 					clearValue: [ 0, 0, 0, 0 ]
-				} ]
-			} );
-
-			const bindGroup = this.device.createBindGroup( {
-				layout: bindGroupLayout,
-				entries: [ {
-					binding: 0,
-					resource: this.sampler
-				}, {
-					binding: 1,
-					resource: srcView
 				} ]
 			} );
 
@@ -22335,13 +22748,15 @@ const _compareToWebGPU = {
 	[ NotEqualCompare ]: 'not-equal'
 };
 
+const _flipMap = [ 0, 1, 3, 2, 4, 5 ];
+
 class WebGPUTextureUtils {
 
 	constructor( backend ) {
 
 		this.backend = backend;
 
-		this.mipmapUtils = null;
+		this._passUtils = null;
 
 		this.defaultTexture = null;
 		this.defaultCubeTexture = null;
@@ -22542,7 +22957,7 @@ class WebGPUTextureUtils {
 
 		if ( texture.isDataTexture || texture.isDataArrayTexture || texture.isData3DTexture ) {
 
-			this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU );
+			this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU, 0, false );
 
 		} else if ( texture.isCompressedTexture ) {
 
@@ -22550,7 +22965,7 @@ class WebGPUTextureUtils {
 
 		} else if ( texture.isCubeTexture ) {
 
-			this._copyCubeMapToTexture( options.images, texture, textureData.texture, textureDescriptorGPU );
+			this._copyCubeMapToTexture( options.images, textureData.texture, textureDescriptorGPU, texture.flipY );
 
 		} else if ( texture.isVideoTexture ) {
 
@@ -22560,7 +22975,7 @@ class WebGPUTextureUtils {
 
 		} else {
 
-			this._copyImageToTexture( options.image, textureData.texture );
+			this._copyImageToTexture( options.image, textureData.texture, textureDescriptorGPU, 0, texture.flipY );
 
 		}
 
@@ -22666,19 +23081,21 @@ class WebGPUTextureUtils {
 
 	}
 
-	_copyCubeMapToTexture( images, texture, textureGPU, textureDescriptorGPU ) {
+	_copyCubeMapToTexture( images, textureGPU, textureDescriptorGPU, flipY ) {
 
 		for ( let i = 0; i < 6; i ++ ) {
 
 			const image = images[ i ];
 
+			const flipIndex = flipY === true ? _flipMap[ i ] : i;
+
 			if ( image.isDataTexture ) {
 
-				this._copyBufferToTexture( image.image, textureGPU, textureDescriptorGPU, i );
+				this._copyBufferToTexture( image.image, textureGPU, textureDescriptorGPU, flipIndex, flipY );
 
 			} else {
 
-				this._copyImageToTexture( image, textureGPU, i );
+				this._copyImageToTexture( image, textureGPU, textureDescriptorGPU, flipIndex, flipY );
 
 			}
 
@@ -22686,7 +23103,7 @@ class WebGPUTextureUtils {
 
 	}
 
-	_copyImageToTexture( image, textureGPU, originDepth = 0 ) {
+	_copyImageToTexture( image, textureGPU, textureDescriptorGPU, originDepth, flipY ) {
 
 		const device = this.backend.device;
 
@@ -22704,21 +23121,41 @@ class WebGPUTextureUtils {
 			}
 		);
 
+		if ( flipY === true ) {
+
+			this._flipY( textureGPU, textureDescriptorGPU, originDepth );
+
+		}
+
+	}
+
+	_getPassUtils() {
+
+		let passUtils = this._passUtils;
+
+		if ( passUtils === null ) {
+
+			this._passUtils = passUtils = new WebGPUTexturePassUtils( this.backend.device );
+
+		}
+
+		return passUtils;
+
 	}
 
 	_generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer = 0 ) {
 
-		if ( this.mipmapUtils === null ) {
-
-			this.mipmapUtils = new WebGPUTextureMipmapUtils( this.backend.device );
-
-		}
-
-		this.mipmapUtils.generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer );
+		this._getPassUtils().generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer );
 
 	}
 
-	_copyBufferToTexture( image, textureGPU, textureDescriptorGPU, originDepth = 0 ) {
+	_flipY( textureGPU, textureDescriptorGPU, originDepth = 0 ) {
+
+		this._getPassUtils().flipY( textureGPU, textureDescriptorGPU, originDepth );
+
+	}
+
+	_copyBufferToTexture( image, textureGPU, textureDescriptorGPU, originDepth, flipY ) {
 
 		// @TODO: Consider to use GPUCommandEncoder.copyBufferToTexture()
 		// @TODO: Consider to support valid buffer layouts with other formats like RGB
@@ -22746,6 +23183,12 @@ class WebGPUTextureUtils {
 				height: image.height,
 				depthOrArrayLayers: ( image.depth !== undefined ) ? image.depth : 1
 			} );
+
+		if ( flipY === true ) {
+
+			this._flipY( textureGPU, textureDescriptorGPU, originDepth );
+
+		}
 
 	}
 
