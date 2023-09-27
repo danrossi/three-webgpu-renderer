@@ -53183,7 +53183,7 @@ var THREE = (async function (exports) {
 
 		get type() {
 
-			return this.constructor.name;
+			return this.constructor.type;
 
 		}
 
@@ -53609,12 +53609,13 @@ var THREE = (async function (exports) {
 
 	}
 
-	function addNodeClass( nodeClass ) {
+	function addNodeClass( type, nodeClass ) {
 
-		if ( typeof nodeClass !== 'function' || ! nodeClass.name ) throw new Error( `Node class ${ nodeClass.name } is not a class` );
-		if ( NodeClasses.has( nodeClass.name ) ) throw new Error( `Redefinition of node class ${ nodeClass.name }` );
+		if ( typeof nodeClass !== 'function' || ! type ) throw new Error( `Node class ${ type } is not a class` );
+		if ( NodeClasses.has( type ) ) throw new Error( `Redefinition of node class ${ type }` );
 
-		NodeClasses.set( nodeClass.name, nodeClass );
+		NodeClasses.set( type, nodeClass );
+		nodeClass.type = type;
 
 	}
 
@@ -53693,7 +53694,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( InputNode );
+	addNodeClass( 'InputNode', InputNode );
 
 	class ArrayElementNode extends Node { // @TODO: If extending from TempNode it breaks webgpu_compute
 
@@ -53723,7 +53724,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( ArrayElementNode );
+	addNodeClass( 'ArrayElementNode', ArrayElementNode );
 
 	class ConvertNode extends Node {
 
@@ -53785,7 +53786,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( ConvertNode );
+	addNodeClass( 'ConvertNode', ConvertNode );
 
 	class TempNode extends Node {
 
@@ -53840,7 +53841,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( TempNode );
+	addNodeClass( 'TempNode', TempNode );
 
 	class JoinNode extends TempNode {
 
@@ -53887,7 +53888,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( JoinNode );
+	addNodeClass( 'JoinNode', JoinNode );
 
 	const stringVectorComponents = vectorComponents.join( '' );
 
@@ -53987,7 +53988,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( SplitNode );
+	addNodeClass( 'SplitNode', SplitNode );
 
 	class SetNode extends TempNode {
 
@@ -54044,7 +54045,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( SetNode );
+	addNodeClass( 'SetNode', SetNode );
 
 	class ConstNode extends InputNode {
 
@@ -54072,7 +54073,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( ConstNode );
+	addNodeClass( 'ConstNode', ConstNode );
 
 	const NodeElements = new Map(); // @TODO: Currently only a few nodes are added, probably also add others
 
@@ -54458,7 +54459,7 @@ var THREE = (async function (exports) {
 
 	};
 
-	addNodeClass( ShaderNode );
+	addNodeClass( 'ShaderNode', ShaderNode );
 
 	// types
 	// @TODO: Maybe export from ConstNode.js?
@@ -54590,7 +54591,7 @@ var THREE = (async function (exports) {
 
 	};
 
-	addNodeClass( UniformNode );
+	addNodeClass( 'UniformNode', UniformNode );
 
 	class ArrayUniformNode extends UniformNode {
 
@@ -54612,7 +54613,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( ArrayUniformNode );
+	addNodeClass( 'ArrayUniformNode', ArrayUniformNode );
 
 	class VaryingNode extends Node {
 
@@ -54676,7 +54677,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'varying', varying );
 
-	addNodeClass( VaryingNode );
+	addNodeClass( 'VaryingNode', VaryingNode );
 
 	class AttributeNode extends Node {
 
@@ -54771,7 +54772,7 @@ var THREE = (async function (exports) {
 
 	const attribute = ( name, nodeType ) => nodeObject( new AttributeNode( name, nodeType ) );
 
-	addNodeClass( AttributeNode );
+	addNodeClass( 'AttributeNode', AttributeNode );
 
 	class BypassNode extends Node {
 
@@ -54812,7 +54813,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'bypass', bypass );
 
-	addNodeClass( BypassNode );
+	addNodeClass( 'BypassNode', BypassNode );
 
 	let id$2 = 0;
 
@@ -54878,7 +54879,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'cache', cache );
 
-	addNodeClass( CacheNode );
+	addNodeClass( 'CacheNode', CacheNode );
 
 	class ContextNode extends Node {
 
@@ -54935,7 +54936,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'context', context );
 	addNodeElement( 'label', label );
 
-	addNodeClass( ContextNode );
+	addNodeClass( 'ContextNode', ContextNode );
 
 	class IndexNode extends Node {
 
@@ -54996,7 +54997,7 @@ var THREE = (async function (exports) {
 	nodeImmutable( IndexNode, IndexNode.VERTEX );
 	const instanceIndex = nodeImmutable( IndexNode, IndexNode.INSTANCE );
 
-	addNodeClass( IndexNode );
+	addNodeClass( 'IndexNode', IndexNode );
 
 	class LightingModel {
 
@@ -55230,7 +55231,7 @@ var THREE = (async function (exports) {
 	const dashSize = nodeImmutable( PropertyNode, 'float', 'dashSize' );
 	const gapSize = nodeImmutable( PropertyNode, 'float', 'gapSize' );
 
-	addNodeClass( PropertyNode );
+	addNodeClass( 'PropertyNode', PropertyNode );
 
 	class UVNode extends AttributeNode {
 
@@ -55272,7 +55273,7 @@ var THREE = (async function (exports) {
 
 	const uv = ( ...params ) => nodeObject( new UVNode( ...params ) );
 
-	addNodeClass( UVNode );
+	addNodeClass( 'UVNode', UVNode );
 
 	class TextureSizeNode extends Node {
 
@@ -55302,7 +55303,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'textureSize', textureSize );
 
-	addNodeClass( TextureSizeNode );
+	addNodeClass( 'TextureSizeNode', TextureSizeNode );
 
 	class OperatorNode extends TempNode {
 
@@ -55566,7 +55567,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'shiftLeft', shiftLeft );
 	addNodeElement( 'shiftRight', shiftRight );
 
-	addNodeClass( OperatorNode );
+	addNodeClass( 'OperatorNode', OperatorNode );
 
 	class MathNode extends TempNode {
 
@@ -55919,7 +55920,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'difference', difference );
 	addNodeElement( 'saturate', saturate );
 
-	addNodeClass( MathNode );
+	addNodeClass( 'MathNode', MathNode );
 
 	const sRGBToLinearShader = tslFn( ( inputs ) => {
 
@@ -56019,7 +56020,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'linearToColorSpace', linearToColorSpace );
 	addNodeElement( 'colorSpaceToLinear', colorSpaceToLinear );
 
-	addNodeClass( ColorSpaceNode );
+	addNodeClass( 'ColorSpaceNode', ColorSpaceNode );
 
 	class ExpressionNode extends Node {
 
@@ -56052,7 +56053,7 @@ var THREE = (async function (exports) {
 
 	const expression = nodeProxy( ExpressionNode );
 
-	addNodeClass( ExpressionNode );
+	addNodeClass( 'ExpressionNode', ExpressionNode );
 
 	class TextureNode extends UniformNode {
 
@@ -56319,7 +56320,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'texture', texture );
 	//addNodeElement( 'textureLevel', textureLevel );
 
-	addNodeClass( TextureNode );
+	addNodeClass( 'TextureNode', TextureNode );
 
 	class ReferenceNode extends Node {
 
@@ -56390,7 +56391,7 @@ var THREE = (async function (exports) {
 
 	const reference = ( name, type, object ) => nodeObject( new ReferenceNode( name, type, object ) );
 
-	addNodeClass( ReferenceNode );
+	addNodeClass( 'ReferenceNode', ReferenceNode );
 
 	class MaterialReferenceNode extends ReferenceNode {
 
@@ -56426,7 +56427,7 @@ var THREE = (async function (exports) {
 
 	const materialReference = ( name, type, material ) => nodeObject( new MaterialReferenceNode( name, type, material ) );
 
-	addNodeClass( MaterialReferenceNode );
+	addNodeClass( 'MaterialReferenceNode', MaterialReferenceNode );
 
 	const _propertyCache = new Map();
 
@@ -56697,7 +56698,7 @@ var THREE = (async function (exports) {
 	const materialIridescenceIOR = nodeImmutable( MaterialNode, MaterialNode.IRIDESCENCE_IOR );
 	const materialIridescenceThickness = nodeImmutable( MaterialNode, MaterialNode.IRIDESCENCE_THICKNESS );
 
-	addNodeClass( MaterialNode );
+	addNodeClass( 'MaterialNode', MaterialNode );
 
 	class Object3DNode extends Node {
 
@@ -56839,7 +56840,7 @@ var THREE = (async function (exports) {
 	nodeProxy( Object3DNode, Object3DNode.SCALE );
 	const objectViewPosition = nodeProxy( Object3DNode, Object3DNode.VIEW_POSITION );
 
-	addNodeClass( Object3DNode );
+	addNodeClass( 'Object3DNode', Object3DNode );
 
 	class CameraNode extends Object3DNode {
 
@@ -56931,7 +56932,7 @@ var THREE = (async function (exports) {
 	nodeImmutable( CameraNode, CameraNode.WORLD_MATRIX );
 	nodeImmutable( CameraNode, CameraNode.POSITION );
 
-	addNodeClass( CameraNode );
+	addNodeClass( 'CameraNode', CameraNode );
 
 	class ModelNode extends Object3DNode {
 
@@ -56959,7 +56960,7 @@ var THREE = (async function (exports) {
 	nodeImmutable( ModelNode, ModelNode.SCALE );
 	nodeImmutable( ModelNode, ModelNode.VIEW_POSITION );
 
-	addNodeClass( ModelNode );
+	addNodeClass( 'ModelNode', ModelNode );
 
 	class NormalNode extends Node {
 
@@ -57045,7 +57046,7 @@ var THREE = (async function (exports) {
 	const transformedNormalWorld = transformedNormalView.transformDirection( cameraViewMatrix ).normalize();
 	const transformedClearcoatNormalView = property( 'vec3', 'TransformedClearcoatNormalView' );
 
-	addNodeClass( NormalNode );
+	addNodeClass( 'NormalNode', NormalNode );
 
 	class VarNode extends Node {
 
@@ -57128,7 +57129,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'temp', temp );
 
-	addNodeClass( VarNode );
+	addNodeClass( 'VarNode', VarNode );
 
 	class TangentNode extends Node {
 
@@ -57221,7 +57222,7 @@ var THREE = (async function (exports) {
 	const transformedTangentView = temp( tangentView, 'TransformedTangentView' );
 	normalize( transformedTangentView.transformDirection( cameraViewMatrix ) );
 
-	addNodeClass( TangentNode );
+	addNodeClass( 'TangentNode', TangentNode );
 
 	class BitangentNode extends Node {
 
@@ -57301,7 +57302,7 @@ var THREE = (async function (exports) {
 	const transformedBitangentView = normalize( transformedNormalView.cross( transformedTangentView ).mul( tangentGeometry.w ) );
 	normalize( transformedBitangentView.transformDirection( cameraViewMatrix ) );
 
-	addNodeClass( BitangentNode );
+	addNodeClass( 'BitangentNode', BitangentNode );
 
 	class PositionNode extends Node {
 
@@ -57397,7 +57398,7 @@ var THREE = (async function (exports) {
 	const positionView = nodeImmutable( PositionNode, PositionNode.VIEW );
 	const positionViewDirection = nodeImmutable( PositionNode, PositionNode.VIEW_DIRECTION );
 
-	addNodeClass( PositionNode );
+	addNodeClass( 'PositionNode', PositionNode );
 
 	class FrontFacingNode extends Node {
 
@@ -57420,7 +57421,7 @@ var THREE = (async function (exports) {
 	const frontFacing = nodeImmutable( FrontFacingNode );
 	const faceDirection = float( frontFacing ).mul( 2.0 ).sub( 1.0 );
 
-	addNodeClass( FrontFacingNode );
+	addNodeClass( 'FrontFacingNode', FrontFacingNode );
 
 	// Normal Mapping Without Precomputed Tangents
 	// http://www.thetenthplanet.de/archives/1180
@@ -57511,7 +57512,7 @@ var THREE = (async function (exports) {
 
 	const TBNViewMatrix = mat3( tangentView, bitangentView, normalView );
 
-	addNodeClass( NormalMapNode );
+	addNodeClass( 'NormalMapNode', NormalMapNode );
 
 	// Bump Mapping Unparametrized Surfaces on the GPU by Morten S. Mikkelsen
 	// https://mmikk.github.io/papers3d/mm_sfgrad_bump.pdf
@@ -57578,7 +57579,7 @@ var THREE = (async function (exports) {
 
 	const bumpMap = nodeProxy( BumpMapNode );
 
-	addNodeClass( BumpMapNode );
+	addNodeClass( 'BumpMapNode', BumpMapNode );
 
 	class ExtendedMaterialNode extends MaterialNode {
 
@@ -57645,7 +57646,7 @@ var THREE = (async function (exports) {
 	const materialNormal = nodeImmutable( ExtendedMaterialNode, ExtendedMaterialNode.NORMAL );
 	const materialClearcoatNormal = nodeImmutable( ExtendedMaterialNode, ExtendedMaterialNode.CLEARCOAT_NORMAL );
 
-	addNodeClass( ExtendedMaterialNode );
+	addNodeClass( 'ExtendedMaterialNode', ExtendedMaterialNode );
 
 	class ModelViewProjectionNode extends TempNode {
 
@@ -57667,7 +57668,7 @@ var THREE = (async function (exports) {
 
 	const modelViewProjection = nodeProxy( ModelViewProjectionNode );
 
-	addNodeClass( ModelViewProjectionNode );
+	addNodeClass( 'ModelViewProjectionNode', ModelViewProjectionNode );
 
 	class BufferAttributeNode extends InputNode {
 
@@ -57785,7 +57786,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'toAttribute', ( bufferNode ) => bufferAttribute( bufferNode.value ) );
 
-	addNodeClass( BufferAttributeNode );
+	addNodeClass( 'BufferAttributeNode', BufferAttributeNode );
 
 	class InstanceNode extends Node {
 
@@ -57848,7 +57849,7 @@ var THREE = (async function (exports) {
 
 	const instance = nodeProxy( InstanceNode );
 
-	addNodeClass( InstanceNode );
+	addNodeClass( 'InstanceNode', InstanceNode );
 
 	class BufferNode extends UniformNode {
 
@@ -57873,7 +57874,7 @@ var THREE = (async function (exports) {
 
 	const buffer = ( value, type, count ) => nodeObject( new BufferNode( value, type, count ) );
 
-	addNodeClass( BufferNode );
+	addNodeClass( 'BufferNode', BufferNode );
 
 	class SkinningNode extends Node {
 
@@ -57954,7 +57955,7 @@ var THREE = (async function (exports) {
 
 	const skinning = nodeProxy( SkinningNode );
 
-	addNodeClass( SkinningNode );
+	addNodeClass( 'SkinningNode', SkinningNode );
 
 	class MorphNode extends Node {
 
@@ -58015,7 +58016,7 @@ var THREE = (async function (exports) {
 
 	const morph = nodeProxy( MorphNode );
 
-	addNodeClass( MorphNode );
+	addNodeClass( 'MorphNode', MorphNode );
 
 	class ReflectVectorNode extends Node {
 
@@ -58043,7 +58044,7 @@ var THREE = (async function (exports) {
 
 	const reflectVector = nodeImmutable( ReflectVectorNode );
 
-	addNodeClass( ReflectVectorNode );
+	addNodeClass( 'ReflectVectorNode', ReflectVectorNode );
 
 	class CubeTextureNode extends TextureNode {
 
@@ -58152,7 +58153,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'cubeTexture', cubeTexture );
 
-	addNodeClass( CubeTextureNode );
+	addNodeClass( 'CubeTextureNode', CubeTextureNode );
 
 	class LightingNode extends Node {
 
@@ -58168,7 +58169,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( LightingNode );
+	addNodeClass( 'LightingNode', LightingNode );
 
 	let depthMaterial = null;
 
@@ -58338,7 +58339,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( AnalyticLightNode );
+	addNodeClass( 'AnalyticLightNode', AnalyticLightNode );
 
 	const LightNodes = new WeakMap();
 
@@ -58482,7 +58483,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( AONode );
+	addNodeClass( 'AONode', AONode );
 
 	class LightingContextNode extends ContextNode {
 
@@ -58577,7 +58578,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'lightingContext', lightingContext );
 
-	addNodeClass( LightingContextNode );
+	addNodeClass( 'LightingContextNode', LightingContextNode );
 
 	class EquirectUVNode extends TempNode {
 
@@ -58604,7 +58605,7 @@ var THREE = (async function (exports) {
 
 	const equirectUV = nodeProxy( EquirectUVNode );
 
-	addNodeClass( EquirectUVNode );
+	addNodeClass( 'EquirectUVNode', EquirectUVNode );
 
 	class MaxMipLevelNode extends UniformNode {
 
@@ -58644,7 +58645,7 @@ var THREE = (async function (exports) {
 
 	const maxMipLevel = nodeProxy( MaxMipLevelNode );
 
-	addNodeClass( MaxMipLevelNode );
+	addNodeClass( 'MaxMipLevelNode', MaxMipLevelNode );
 
 	class SpecularMIPLevelNode extends Node {
 
@@ -58676,7 +58677,7 @@ var THREE = (async function (exports) {
 
 	const specularMIPLevel = nodeProxy( SpecularMIPLevelNode );
 
-	addNodeClass( SpecularMIPLevelNode );
+	addNodeClass( 'SpecularMIPLevelNode', SpecularMIPLevelNode );
 
 	const envNodeCache = new WeakMap();
 
@@ -58852,7 +58853,7 @@ var THREE = (async function (exports) {
 
 	};
 
-	addNodeClass( EnvironmentNode );
+	addNodeClass( 'EnvironmentNode', EnvironmentNode );
 
 	const NodeMaterials = new Map();
 
@@ -58864,7 +58865,7 @@ var THREE = (async function (exports) {
 
 			this.isNodeMaterial = true;
 
-			this.type = this.constructor.name;
+			this.type = this.constructor.type;
 
 			this.forceSinglePass = false;
 
@@ -59354,12 +59355,13 @@ var THREE = (async function (exports) {
 
 	}
 
-	function addNodeMaterial( nodeMaterial ) {
+	function addNodeMaterial( type, nodeMaterial ) {
 
-		if ( typeof nodeMaterial !== 'function' || ! nodeMaterial.name ) throw new Error( `Node material ${ nodeMaterial.name } is not a class` );
-		if ( NodeMaterials.has( nodeMaterial.name ) ) throw new Error( `Redefinition of node material ${ nodeMaterial.name }` );
+		if ( typeof nodeMaterial !== 'function' || ! type ) throw new Error( `Node material ${ type } is not a class` );
+		if ( NodeMaterials.has( type ) ) throw new Error( `Redefinition of node material ${ type }` );
 
-		NodeMaterials.set( nodeMaterial.name, nodeMaterial );
+		NodeMaterials.set( type, nodeMaterial );
+		nodeMaterial.type = type;
 
 	}
 
@@ -59375,7 +59377,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( NodeMaterial );
+	addNodeMaterial( 'NodeMaterial', NodeMaterial );
 
 	class Uniform {
 
@@ -59714,7 +59716,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'cond', cond );
 
-	addNodeClass( CondNode );
+	addNodeClass( 'CondNode', CondNode );
 
 	class LoopNode extends Node {
 
@@ -59893,7 +59895,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'loop', ( returns, ...params ) => bypass( returns, loop( ...params ) ) );
 
-	addNodeClass( LoopNode );
+	addNodeClass( 'LoopNode', LoopNode );
 
 	class StackNode extends Node {
 
@@ -59983,7 +59985,7 @@ var THREE = (async function (exports) {
 
 	const stack = nodeProxy( StackNode );
 
-	addNodeClass( StackNode );
+	addNodeClass( 'StackNode', StackNode );
 
 	// @TODO: Consider rename WebGLCubeRenderTarget to just CubeRenderTarget
 
@@ -61247,7 +61249,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( StructTypeNode );
+	addNodeClass( 'StructTypeNode', StructTypeNode );
 
 	class OutputStructNode extends Node {
 
@@ -61304,7 +61306,7 @@ var THREE = (async function (exports) {
 
 	nodeProxy( OutputStructNode );
 
-	addNodeClass( OutputStructNode );
+	addNodeClass( 'OutputStructNode', OutputStructNode );
 
 	class HashNode extends Node {
 
@@ -61334,7 +61336,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'hash', hash );
 
-	addNodeClass( HashNode );
+	addNodeClass( 'HashNode', HashNode );
 
 	let discardExpression;
 
@@ -61354,7 +61356,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'discard', discard );
 
-	addNodeClass( DiscardNode );
+	addNodeClass( 'DiscardNode', DiscardNode );
 
 	class MatcapUVNode extends TempNode {
 
@@ -61377,7 +61379,7 @@ var THREE = (async function (exports) {
 
 	nodeImmutable( MatcapUVNode );
 
-	addNodeClass( MatcapUVNode );
+	addNodeClass( 'MatcapUVNode', MatcapUVNode );
 
 	class TimerNode extends UniformNode {
 
@@ -61461,9 +61463,9 @@ var THREE = (async function (exports) {
 
 	// @TODO: add support to use node in timeScale
 	const timerLocal = ( timeScale, value = 0 ) => nodeObject( new TimerNode( TimerNode.LOCAL, timeScale, value ) );
-	nodeImmutable( TimerNode, TimerNode.FRAME );
+	nodeImmutable( TimerNode, TimerNode.FRAME ).uint();
 
-	addNodeClass( TimerNode );
+	addNodeClass( 'TimerNode', TimerNode );
 
 	class OscNode extends Node {
 
@@ -61539,7 +61541,7 @@ var THREE = (async function (exports) {
 	nodeProxy( OscNode, OscNode.TRIANGLE );
 	nodeProxy( OscNode, OscNode.SAWTOOTH );
 
-	addNodeClass( OscNode );
+	addNodeClass( 'OscNode', OscNode );
 
 	class PackingNode extends TempNode {
 
@@ -61589,7 +61591,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'directionToColor', directionToColor );
 	addNodeElement( 'colorToDirection', colorToDirection );
 
-	addNodeClass( PackingNode );
+	addNodeClass( 'PackingNode', PackingNode );
 
 	class RemapNode extends Node {
 
@@ -61627,7 +61629,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'remap', remap );
 	addNodeElement( 'remapClamp', remapClamp );
 
-	addNodeClass( RemapNode );
+	addNodeClass( 'RemapNode', RemapNode );
 
 	class RotateUVNode extends TempNode {
 
@@ -61665,7 +61667,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'rotateUV', rotateUV );
 
-	addNodeClass( RotateUVNode );
+	addNodeClass( 'RotateUVNode', RotateUVNode );
 
 	class SpriteSheetUVNode extends Node {
 
@@ -61701,7 +61703,7 @@ var THREE = (async function (exports) {
 
 	nodeProxy( SpriteSheetUVNode );
 
-	addNodeClass( SpriteSheetUVNode );
+	addNodeClass( 'SpriteSheetUVNode', SpriteSheetUVNode );
 
 	class TriplanarTexturesNode extends Node {
 
@@ -61755,7 +61757,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'triplanarTexture', triplanarTexture );
 
-	addNodeClass( TriplanarTexturesNode );
+	addNodeClass( 'TriplanarTexturesNode', TriplanarTexturesNode );
 
 	class LineMaterialNode extends MaterialNode {
 
@@ -61779,7 +61781,7 @@ var THREE = (async function (exports) {
 	const materialLineGapSize = nodeImmutable( LineMaterialNode, LineMaterialNode.GAP_SIZE );
 	const materialLineWidth = nodeImmutable( LineMaterialNode, LineMaterialNode.LINEWIDTH );
 
-	addNodeClass( LineMaterialNode );
+	addNodeClass( 'LineMaterialNode', LineMaterialNode );
 
 	// Mipped Bicubic Texture Filtering by N8
 	// https://www.shadertoy.com/view/Dl2SDW
@@ -61866,7 +61868,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'bicubic', textureBicubic );
 
-	addNodeClass( TextureBicubicNode );
+	addNodeClass( 'TextureBicubicNode', TextureBicubicNode );
 
 	class PointUVNode extends Node {
 
@@ -61888,7 +61890,7 @@ var THREE = (async function (exports) {
 
 	nodeImmutable( PointUVNode );
 
-	addNodeClass( PointUVNode );
+	addNodeClass( 'PointUVNode', PointUVNode );
 
 	class SceneNode extends Node {
 
@@ -61930,7 +61932,7 @@ var THREE = (async function (exports) {
 	const backgroundBlurriness = nodeImmutable( SceneNode, SceneNode.BACKGROUND_BLURRINESS );
 	const backgroundIntensity = nodeImmutable( SceneNode, SceneNode.BACKGROUND_INTENSITY );
 
-	addNodeClass( SceneNode );
+	addNodeClass( 'SceneNode', SceneNode );
 
 	class StorageBufferNode extends BufferNode {
 
@@ -61950,7 +61952,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( StorageBufferNode );
+	addNodeClass( 'StorageBufferNode', StorageBufferNode );
 
 	class TextureStoreNode extends TextureNode {
 
@@ -61974,7 +61976,7 @@ var THREE = (async function (exports) {
 
 	nodeProxy( TextureStoreNode );
 
-	addNodeClass( TextureStoreNode );
+	addNodeClass( 'TextureStoreNode', TextureStoreNode );
 
 	class UserDataNode extends ReferenceNode {
 
@@ -61996,7 +61998,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( UserDataNode );
+	addNodeClass( 'UserDataNode', UserDataNode );
 
 	const BurnNode = tslFn( ( { base, blend } ) => {
 
@@ -62089,7 +62091,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'overlay', overlay );
 	addNodeElement( 'screen', screen );
 
-	addNodeClass( BlendModeNode );
+	addNodeClass( 'BlendModeNode', BlendModeNode );
 
 	const saturationNode = tslFn( ( { color, adjustment } ) => {
 
@@ -62178,7 +62180,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'vibrance', vibrance );
 	addNodeElement( 'hue', hue );
 
-	addNodeClass( ColorAdjustmentNode );
+	addNodeClass( 'ColorAdjustmentNode', ColorAdjustmentNode );
 
 	class PosterizeNode extends TempNode {
 
@@ -62205,7 +62207,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'posterize', posterize );
 
-	addNodeClass( PosterizeNode );
+	addNodeClass( 'PosterizeNode', PosterizeNode );
 
 	// exposure only
 	const LinearToneMappingNode = tslFn( ( { color, exposure } ) => {
@@ -62337,7 +62339,7 @@ var THREE = (async function (exports) {
 
 	const toneMapping = ( mapping, exposure, color ) => nodeObject( new ToneMappingNode( mapping, nodeObject( exposure ), nodeObject( color ) ) );
 
-	addNodeClass( ToneMappingNode );
+	addNodeClass( 'ToneMappingNode', ToneMappingNode );
 
 	let resolution, viewportResult;
 
@@ -62458,7 +62460,7 @@ var THREE = (async function (exports) {
 	nodeImmutable( ViewportNode, ViewportNode.TOP_RIGHT );
 	nodeImmutable( ViewportNode, ViewportNode.BOTTOM_RIGHT );
 
-	addNodeClass( ViewportNode );
+	addNodeClass( 'ViewportNode', ViewportNode );
 
 	const _size$1 = new Vector2();
 
@@ -62525,7 +62527,7 @@ var THREE = (async function (exports) {
 	addNodeElement( 'viewportTexture', viewportTexture );
 	addNodeElement( 'viewportMipTexture', viewportMipTexture );
 
-	addNodeClass( ViewportTextureNode );
+	addNodeClass( 'ViewportTextureNode', ViewportTextureNode );
 
 	let sharedFramebuffer = null;
 
@@ -62549,7 +62551,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'viewportSharedTexture', viewportSharedTexture );
 
-	addNodeClass( ViewportSharedTextureNode );
+	addNodeClass( 'ViewportSharedTextureNode', ViewportSharedTextureNode );
 
 	let sharedDepthbuffer = null;
 
@@ -62576,7 +62578,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'viewportDepthTexture', viewportDepthTexture );
 
-	addNodeClass( ViewportDepthTextureNode );
+	addNodeClass( 'ViewportDepthTextureNode', ViewportDepthTextureNode );
 
 	class ViewportDepthNode extends Node {
 
@@ -62630,7 +62632,7 @@ var THREE = (async function (exports) {
 	nodeImmutable( ViewportDepthNode, ViewportDepthNode.DEPTH );
 	nodeProxy( ViewportDepthNode, ViewportDepthNode.DEPTH_TEXTURE );
 
-	addNodeClass( ViewportDepthNode );
+	addNodeClass( 'ViewportDepthNode', ViewportDepthNode );
 
 	class CodeNode extends Node {
 
@@ -62701,7 +62703,7 @@ var THREE = (async function (exports) {
 	const code = nodeProxy( CodeNode );
 	const glsl = ( src, includes ) => code( src, includes, 'glsl' );
 
-	addNodeClass( CodeNode );
+	addNodeClass( 'CodeNode', CodeNode );
 
 	class FunctionCallNode extends TempNode {
 
@@ -62792,7 +62794,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'call', call );
 
-	addNodeClass( FunctionCallNode );
+	addNodeClass( 'FunctionCallNode', FunctionCallNode );
 
 	class FunctionNode extends CodeNode {
 
@@ -62889,7 +62891,34 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeClass( FunctionNode );
+	const nativeFn = ( code, includes = [], language = '' ) => {
+
+		for ( let i = 0; i < includes.length; i ++ ) {
+
+			const include = includes[ i ];
+
+			// TSL Function: glslFn, wgslFn
+
+			if ( typeof include === 'function' ) {
+
+				includes[ i ] = include.functionNode;
+
+			}
+
+		}
+
+		const functionNode = nodeObject( new FunctionNode( code, includes, language ) );
+
+		const fn = ( ...params ) => functionNode.call( ...params );
+		fn.functionNode = functionNode;
+
+		return fn;
+
+	};
+
+	const glslFn = ( code, includes ) => nativeFn( code, includes, 'glsl' );
+
+	addNodeClass( 'FunctionNode', FunctionNode );
 
 	class ScriptableValueNode extends Node {
 
@@ -63050,7 +63079,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'scriptableValue', scriptableValue );
 
-	addNodeClass( ScriptableValueNode );
+	addNodeClass( 'ScriptableValueNode', ScriptableValueNode );
 
 	class Resources extends Map {
 
@@ -63533,7 +63562,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'scriptable', scriptable );
 
-	addNodeClass( ScriptableNode );
+	addNodeClass( 'ScriptableNode', ScriptableNode );
 
 	class FogNode extends Node {
 
@@ -63566,7 +63595,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'fog', fog );
 
-	addNodeClass( FogNode );
+	addNodeClass( 'FogNode', FogNode );
 
 	class FogRangeNode extends FogNode {
 
@@ -63593,7 +63622,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'rangeFog', rangeFog );
 
-	addNodeClass( FogRangeNode );
+	addNodeClass( 'FogRangeNode', FogRangeNode );
 
 	class FogExp2Node extends FogNode {
 
@@ -63622,7 +63651,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'densityFog', densityFog );
 
-	addNodeClass( FogExp2Node );
+	addNodeClass( 'FogExp2Node', FogExp2Node );
 
 	let min = null;
 	let max = null;
@@ -63716,7 +63745,7 @@ var THREE = (async function (exports) {
 
 	nodeProxy( RangeNode );
 
-	addNodeClass( RangeNode );
+	addNodeClass( 'RangeNode', RangeNode );
 
 	class ComputeNode extends Node {
 
@@ -63796,7 +63825,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'compute', compute );
 
-	addNodeClass( ComputeNode );
+	addNodeClass( 'ComputeNode', ComputeNode );
 
 	class LightNode extends Node {
 
@@ -63847,7 +63876,7 @@ var THREE = (async function (exports) {
 
 	const lightTargetDirection = nodeProxy( LightNode, LightNode.TARGET_DIRECTION );
 
-	addNodeClass( LightNode );
+	addNodeClass( 'LightNode', LightNode );
 
 	const getDistanceAttenuation = tslFn( ( inputs ) => {
 
@@ -63920,7 +63949,7 @@ var THREE = (async function (exports) {
 
 	addLightNode( PointLight, PointLightNode );
 
-	addNodeClass( PointLightNode );
+	addNodeClass( 'PointLightNode', PointLightNode );
 
 	class DirectionalLightNode extends AnalyticLightNode {
 
@@ -63952,7 +63981,7 @@ var THREE = (async function (exports) {
 
 	addLightNode( DirectionalLight, DirectionalLightNode );
 
-	addNodeClass( DirectionalLightNode );
+	addNodeClass( 'DirectionalLightNode', DirectionalLightNode );
 
 	class SpotLightNode extends AnalyticLightNode {
 
@@ -64028,7 +64057,7 @@ var THREE = (async function (exports) {
 
 	addLightNode( SpotLight, SpotLightNode );
 
-	addNodeClass( SpotLightNode );
+	addNodeClass( 'SpotLightNode', SpotLightNode );
 
 	class IESSpotLight extends SpotLight {
 
@@ -64080,7 +64109,7 @@ var THREE = (async function (exports) {
 
 	addLightNode( IESSpotLight, IESSpotLightNode );
 
-	addNodeClass( IESSpotLightNode );
+	addNodeClass( 'IESSpotLightNode', IESSpotLightNode );
 
 	class AmbientLightNode extends AnalyticLightNode {
 
@@ -64100,7 +64129,7 @@ var THREE = (async function (exports) {
 
 	addLightNode( AmbientLight, AmbientLightNode );
 
-	addNodeClass( AmbientLightNode );
+	addNodeClass( 'AmbientLightNode', AmbientLightNode );
 
 	class HemisphereLightNode extends AnalyticLightNode {
 
@@ -64144,7 +64173,7 @@ var THREE = (async function (exports) {
 
 	addLightNode( HemisphereLight, HemisphereLightNode );
 
-	addNodeClass( HemisphereLightNode );
+	addNodeClass( 'HemisphereLightNode', HemisphereLightNode );
 
 	const checkerShaderNode = tslFn( ( inputs ) => {
 
@@ -64180,7 +64209,7 @@ var THREE = (async function (exports) {
 
 	addNodeElement( 'checker', checker );
 
-	addNodeClass( CheckerNode );
+	addNodeClass( 'CheckerNode', CheckerNode );
 
 	const defaultValues$a = new LineBasicMaterial();
 
@@ -64203,7 +64232,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( LineBasicNodeMaterial );
+	addNodeMaterial( 'LineBasicNodeMaterial', LineBasicNodeMaterial );
 
 	const defaultValues$9 = new LineDashedMaterial();
 
@@ -64248,7 +64277,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( LineDashedNodeMaterial );
+	addNodeMaterial( 'LineDashedNodeMaterial', LineDashedNodeMaterial );
 
 	const defaultValues$8 = new LineDashedMaterial();
 
@@ -64678,7 +64707,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( Line2NodeMaterial );
+	addNodeMaterial( 'Line2NodeMaterial', Line2NodeMaterial );
 
 	const defaultValues$7 = new MeshNormalMaterial();
 
@@ -64708,7 +64737,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( MeshNormalNodeMaterial );
+	addNodeMaterial( 'MeshNormalNodeMaterial', MeshNormalNodeMaterial );
 
 	const defaultValues$6 = new MeshBasicMaterial();
 
@@ -64730,7 +64759,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( MeshBasicNodeMaterial );
+	addNodeMaterial( 'MeshBasicNodeMaterial', MeshBasicNodeMaterial );
 
 	const F_Schlick = tslFn( ( { f0, f90, dotVH } ) => {
 
@@ -64833,7 +64862,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( MeshLambertNodeMaterial );
+	addNodeMaterial( 'MeshLambertNodeMaterial', MeshLambertNodeMaterial );
 
 	const defaultValues$4 = new MeshPhongMaterial();
 
@@ -64889,7 +64918,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( MeshPhongNodeMaterial );
+	addNodeMaterial( 'MeshPhongNodeMaterial', MeshPhongNodeMaterial );
 
 	const getGeometryRoughness = tslFn( () => {
 
@@ -65449,7 +65478,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( MeshStandardNodeMaterial );
+	addNodeMaterial( 'MeshStandardNodeMaterial', MeshStandardNodeMaterial );
 
 	const defaultValues$2 = new MeshPhysicalMaterial();
 
@@ -65565,7 +65594,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( MeshPhysicalNodeMaterial );
+	addNodeMaterial( 'MeshPhysicalNodeMaterial', MeshPhysicalNodeMaterial );
 
 	const defaultValues$1 = new PointsMaterial();
 
@@ -65609,7 +65638,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( PointsNodeMaterial );
+	addNodeMaterial( 'PointsNodeMaterial', PointsNodeMaterial );
 
 	const defaultValues = new SpriteMaterial();
 
@@ -65701,7 +65730,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	addNodeMaterial( SpriteNodeMaterial );
+	addNodeMaterial( 'SpriteNodeMaterial', SpriteNodeMaterial );
 
 	const superFromTypeFunction = MaterialLoader.createMaterialFromType;
 
@@ -65907,7 +65936,7 @@ var THREE = (async function (exports) {
 	// Original shader code from:
 	// https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_noise.glsl
 
-	glsl( `float mx_select(bool b, float t, float f)
+	const mx_noise = glsl( `float mx_select(bool b, float t, float f)
 {
     return b ? t : f;
 }
@@ -66503,10 +66532,82 @@ vec3 mx_worley_noise_vec3(vec3 p, float jitter, int metric)
     return sqdist;
 }` );
 
+	const includes$1 = [ mx_noise ];
+
+	glslFn( 'float mx_perlin_noise_float( any p )', includes$1 );
+	glslFn( 'vec2 mx_perlin_noise_vec2( any p )', includes$1 );
+	glslFn( 'vec3 mx_perlin_noise_vec3( any p )', includes$1 );
+
+	glslFn( 'float mx_cell_noise_float( vec3 p )', includes$1 );
+
+	glslFn( 'float mx_worley_noise_float( any p, float jitter, int metric )', includes$1 );
+	glslFn( 'float mx_worley_noise_vec2( any p, float jitter, int metric )', includes$1 );
+	glslFn( 'float mx_worley_noise_vec3( any p, float jitter, int metric )', includes$1 );
+
+	glslFn( 'float mx_fractal_noise_float( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	glslFn( 'float mx_fractal_noise_vec2( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	glslFn( 'float mx_fractal_noise_vec3( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	glslFn( 'float mx_fractal_noise_vec4( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+
+	// Original shader code from:
+	// https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_hsv.glsl
+
+	glslFn( `vec3 mx_hsvtorgb(vec3 hsv)
+{
+    // Reference for this technique: Foley & van Dam
+    float h = hsv.x; float s = hsv.y; float v = hsv.z;
+    if (s < 0.0001f) {
+      return vec3 (v, v, v);
+    } else {
+        h = 6.0f * (h - floor(h));  // expand to [0..6)
+        int hi = int(trunc(h));
+        float f = h - float(hi);
+        float p = v * (1.0f-s);
+        float q = v * (1.0f-s*f);
+        float t = v * (1.0f-s*(1.0f-f));
+        if (hi == 0)
+            return vec3 (v, t, p);
+        else if (hi == 1)
+            return vec3 (q, v, p);
+        else if (hi == 2)
+            return vec3 (p, v, t);
+        else if (hi == 3)
+            return vec3 (p, q, v);
+        else if (hi == 4)
+            return vec3 (t, p, v);
+        return vec3 (v, p, q);
+    }
+}` );
+
+	glslFn( `vec3 mx_rgbtohsv(vec3 c)
+{
+    // See Foley & van Dam
+    float r = c.x; float g = c.y; float b = c.z;
+    float mincomp = min (r, min(g, b));
+    float maxcomp = max (r, max(g, b));
+    float delta = maxcomp - mincomp;  // chroma
+    float h, s, v;
+    v = maxcomp;
+    if (maxcomp > 0.0f)
+        s = delta / maxcomp;
+    else s = 0.0f;
+    if (s <= 0.0f)
+        h = 0.0f;
+    else {
+        if      (r >= maxcomp) h = (g-b) / delta;
+        else if (g >= maxcomp) h = 2.0f + (b-r) / delta;
+        else                   h = 4.0f + (r-g) / delta;
+        h *= (1.0f/6.0f);
+        if (h < 0.0f)
+            h += 1.0f;
+    }
+    return vec3(h, s, v);
+}` );
+
 	// Original shader code from:
 	// https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_transform_color.glsl
 
-	glsl( `#define M_AP1_TO_REC709 mat3(1.705079555511475, -0.1297005265951157, -0.02416634373366833, -0.6242334842681885, 1.138468623161316, -0.1246141716837883, -0.0808461606502533, -0.008768022060394287, 1.148780584335327)
+	const mx_transform_color = glsl( `#define M_AP1_TO_REC709 mat3(1.705079555511475, -0.1297005265951157, -0.02416634373366833, -0.6242334842681885, 1.138468623161316, -0.1246141716837883, -0.0808461606502533, -0.008768022060394287, 1.148780584335327)
 
 vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 {
@@ -66515,6 +66616,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
     vec3 powSeg = pow(max(color + vec3(0.055), vec3(0.0)) / 1.055, vec3(2.4));
     return mix(linSeg, powSeg, isAbove);
 }` );
+
+	const includes = [ mx_transform_color ];
+
+	glslFn( 'vec3 mx_srgb_texture_to_lin_rec709( vec3 color )', includes );
 
 	function painterSortStable( a, b ) {
 
@@ -67759,6 +67864,8 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			this.depth = true;
 			this.stencil = true;
 
+			this.info = new Info();
+
 			// internals
 
 			this._pixelRatio = 1;
@@ -67769,7 +67876,6 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			this._scissor = new Vector4( 0, 0, this._width, this._height );
 			this._scissorTest = false;
 
-			this._info = null;
 			this._properties = null;
 			this._attributes = null;
 			this._geometries = null;
@@ -67844,15 +67950,14 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 				}
 
-				this._info = new Info();
 				this._nodes = new Nodes( this, backend );
 				this._attributes = new Attributes( backend );
 				this._background = new Background( this, this._nodes );
-				this._geometries = new Geometries( this._attributes, this._info );
-				this._textures = new Textures( backend, this._info );
+				this._geometries = new Geometries( this._attributes, this.info );
+				this._textures = new Textures( backend, this.info );
 				this._pipelines = new Pipelines( backend, this._nodes );
-				this._bindings = new Bindings( backend, this._nodes, this._textures, this._attributes, this._pipelines, this._info );
-				this._objects = new RenderObjects( this, this._nodes, this._geometries, this._pipelines, this._bindings, this._info );
+				this._bindings = new Bindings( backend, this._nodes, this._textures, this._attributes, this._pipelines, this.info );
+				this._objects = new RenderObjects( this, this._nodes, this._geometries, this._pipelines, this._bindings, this.info );
 				this._renderLists = new RenderLists();
 				this._renderContexts = new RenderContexts();
 
@@ -67925,9 +68030,9 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			if ( camera.parent === null && camera.matrixWorldAutoUpdate === true ) camera.updateMatrixWorld();
 
-			if ( this._info.autoReset === true ) this._info.reset();
+			if ( this.info.autoReset === true ) this.info.reset();
 
-			this._info.render.frame ++;
+			this.info.render.frame ++;
 
 			//
 
@@ -68321,12 +68426,13 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 		dispose() {
 
+			this.info.dispose();
+
 			this._objects.dispose();
 			this._properties.dispose();
 			this._pipelines.dispose();
 			this._nodes.dispose();
 			this._bindings.dispose();
-			this._info.dispose();
 			this._renderLists.dispose();
 			this._renderContexts.dispose();
 			this._textures.dispose();
@@ -68626,7 +68732,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			//
 
-			this.backend.draw( renderObject, this._info );
+			this.backend.draw( renderObject, this.info );
 
 		}
 
@@ -71828,6 +71934,1126 @@ void main() {
 
 	}
 
+	class WebGPUTexturePassUtils {
+
+		constructor( device ) {
+
+			this.device = device;
+
+			const mipmapVertexSource = `
+struct VarysStruct {
+	@builtin( position ) Position: vec4<f32>,
+	@location( 0 ) vTex : vec2<f32>
+};
+
+@vertex
+fn main( @builtin( vertex_index ) vertexIndex : u32 ) -> VarysStruct {
+
+	var Varys : VarysStruct;
+
+	var pos = array< vec2<f32>, 4 >(
+		vec2<f32>( -1.0,  1.0 ),
+		vec2<f32>(  1.0,  1.0 ),
+		vec2<f32>( -1.0, -1.0 ),
+		vec2<f32>(  1.0, -1.0 )
+	);
+
+	var tex = array< vec2<f32>, 4 >(
+		vec2<f32>( 0.0, 0.0 ),
+		vec2<f32>( 1.0, 0.0 ),
+		vec2<f32>( 0.0, 1.0 ),
+		vec2<f32>( 1.0, 1.0 )
+	);
+
+	Varys.vTex = tex[ vertexIndex ];
+	Varys.Position = vec4<f32>( pos[ vertexIndex ], 0.0, 1.0 );
+
+	return Varys;
+
+}
+`;
+
+			const mipmapFragmentSource = `
+@group( 0 ) @binding( 0 )
+var imgSampler : sampler;
+
+@group( 0 ) @binding( 1 )
+var img : texture_2d<f32>;
+
+@fragment
+fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
+
+	return textureSample( img, imgSampler, vTex );
+
+}
+`;
+
+			const flipYFragmentSource = `
+@group( 0 ) @binding( 0 )
+var imgSampler : sampler;
+
+@group( 0 ) @binding( 1 )
+var img : texture_2d<f32>;
+
+@fragment
+fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
+
+	return textureSample( img, imgSampler, vec2( vTex.x, 1.0 - vTex.y ) );
+
+}
+`;
+			this.mipmapSampler = device.createSampler( { minFilter: GPUFilterMode.Linear } );
+			this.flipYSampler = device.createSampler( { minFilter: GPUFilterMode.Nearest } ); //@TODO?: Consider using textureLoad()
+
+			// We'll need a new pipeline for every texture format used.
+			this.transferPipelines = {};
+			this.flipYPipelines = {};
+
+			this.mipmapVertexShaderModule = device.createShaderModule( {
+				label: 'mipmapVertex',
+				code: mipmapVertexSource
+			} );
+
+			this.mipmapFragmentShaderModule = device.createShaderModule( {
+				label: 'mipmapFragment',
+				code: mipmapFragmentSource
+			} );
+
+			this.flipYFragmentShaderModule = device.createShaderModule( {
+				label: 'flipYFragment',
+				code: flipYFragmentSource
+			} );
+
+		}
+
+		getTransferPipeline( format ) {
+
+			let pipeline = this.transferPipelines[ format ];
+
+			if ( pipeline === undefined ) {
+
+				pipeline = this.device.createRenderPipeline( {
+					vertex: {
+						module: this.mipmapVertexShaderModule,
+						entryPoint: 'main'
+					},
+					fragment: {
+						module: this.mipmapFragmentShaderModule,
+						entryPoint: 'main',
+						targets: [ { format } ]
+					},
+					primitive: {
+						topology: GPUPrimitiveTopology.TriangleStrip,
+						stripIndexFormat: GPUIndexFormat.Uint32
+					},
+					layout: 'auto'
+				} );
+
+				this.transferPipelines[ format ] = pipeline;
+
+			}
+
+			return pipeline;
+
+		}
+
+		getFlipYPipeline( format ) {
+
+			let pipeline = this.flipYPipelines[ format ];
+
+			if ( pipeline === undefined ) {
+
+				pipeline = this.device.createRenderPipeline( {
+					vertex: {
+						module: this.mipmapVertexShaderModule,
+						entryPoint: 'main'
+					},
+					fragment: {
+						module: this.flipYFragmentShaderModule,
+						entryPoint: 'main',
+						targets: [ { format } ]
+					},
+					primitive: {
+						topology: GPUPrimitiveTopology.TriangleStrip,
+						stripIndexFormat: GPUIndexFormat.Uint32
+					},
+					layout: 'auto'
+				} );
+
+				this.flipYPipelines[ format ] = pipeline;
+
+			}
+
+			return pipeline;
+
+		}
+
+		flipY( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
+
+			const format = textureGPUDescriptor.format;
+			const { width, height } = textureGPUDescriptor.size;
+
+			const transferPipeline = this.getTransferPipeline( format );
+			const flipYPipeline = this.getFlipYPipeline( format );
+
+			const tempTexture = this.device.createTexture( {
+				size: { width, height, depthOrArrayLayers: 1 },
+				format,
+				usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+			} );
+
+			const srcView = textureGPU.createView( {
+				baseMipLevel: 0,
+				mipLevelCount: 1,
+				dimension: GPUTextureViewDimension.TwoD,
+				baseArrayLayer
+			} );
+
+			const dstView = tempTexture.createView( {
+				baseMipLevel: 0,
+				mipLevelCount: 1,
+				dimension: GPUTextureViewDimension.TwoD,
+				baseArrayLayer: 0
+			} );
+
+			const commandEncoder = this.device.createCommandEncoder( {} );
+
+			const pass = ( pipeline, sourceView, destinationView ) => {
+
+				const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
+
+				const bindGroup = this.device.createBindGroup( {
+					layout: bindGroupLayout,
+					entries: [ {
+						binding: 0,
+						resource: this.flipYSampler
+					}, {
+						binding: 1,
+						resource: sourceView
+					} ]
+				} );
+
+				const passEncoder = commandEncoder.beginRenderPass( {
+					colorAttachments: [ {
+						view: destinationView,
+						loadOp: GPULoadOp.Clear,
+						storeOp: GPUStoreOp.Store,
+						clearValue: [ 0, 0, 0, 0 ]
+					} ]
+				} );
+
+				passEncoder.setPipeline( pipeline );
+				passEncoder.setBindGroup( 0, bindGroup );
+				passEncoder.draw( 4, 1, 0, 0 );
+				passEncoder.end();
+
+			};
+
+			pass( transferPipeline, srcView, dstView );
+			pass( flipYPipeline, dstView, srcView );
+
+			this.device.queue.submit( [ commandEncoder.finish() ] );
+
+			tempTexture.destroy();
+
+		}
+
+		generateMipmaps( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
+
+			const pipeline = this.getTransferPipeline( textureGPUDescriptor.format );
+
+			const commandEncoder = this.device.createCommandEncoder( {} );
+			const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
+
+			let srcView = textureGPU.createView( {
+				baseMipLevel: 0,
+				mipLevelCount: 1,
+				dimension: GPUTextureViewDimension.TwoD,
+				baseArrayLayer
+			} );
+
+			for ( let i = 1; i < textureGPUDescriptor.mipLevelCount; i ++ ) {
+
+				const bindGroup = this.device.createBindGroup( {
+					layout: bindGroupLayout,
+					entries: [ {
+						binding: 0,
+						resource: this.mipmapSampler
+					}, {
+						binding: 1,
+						resource: srcView
+					} ]
+				} );
+
+				const dstView = textureGPU.createView( {
+					baseMipLevel: i,
+					mipLevelCount: 1,
+					dimension: GPUTextureViewDimension.TwoD,
+					baseArrayLayer
+				} );
+
+				const passEncoder = commandEncoder.beginRenderPass( {
+					colorAttachments: [ {
+						view: dstView,
+						loadOp: GPULoadOp.Clear,
+						storeOp: GPUStoreOp.Store,
+						clearValue: [ 0, 0, 0, 0 ]
+					} ]
+				} );
+
+				passEncoder.setPipeline( pipeline );
+				passEncoder.setBindGroup( 0, bindGroup );
+				passEncoder.draw( 4, 1, 0, 0 );
+				passEncoder.end();
+
+				srcView = dstView;
+
+			}
+
+			this.device.queue.submit( [ commandEncoder.finish() ] );
+
+		}
+
+	}
+
+	const _compareToWebGPU = {
+		[ NeverCompare ]: 'never',
+		[ LessCompare ]: 'less',
+		[ EqualCompare ]: 'equal',
+		[ LessEqualCompare ]: 'less-equal',
+		[ GreaterCompare ]: 'greater',
+		[ GreaterEqualCompare ]: 'greater-equal',
+		[ AlwaysCompare ]: 'always',
+		[ NotEqualCompare ]: 'not-equal'
+	};
+
+	const _flipMap = [ 0, 1, 3, 2, 4, 5 ];
+
+	class WebGPUTextureUtils {
+
+		constructor( backend ) {
+
+			this.backend = backend;
+
+			this._passUtils = null;
+
+			this.defaultTexture = null;
+			this.defaultCubeTexture = null;
+
+		}
+
+		createSampler( texture ) {
+
+			const backend = this.backend;
+			const device = backend.device;
+
+			const textureGPU = backend.get( texture );
+
+			const samplerDescriptorGPU = {
+				addressModeU: this._convertAddressMode( texture.wrapS ),
+				addressModeV: this._convertAddressMode( texture.wrapT ),
+				addressModeW: this._convertAddressMode( texture.wrapR ),
+				magFilter: this._convertFilterMode( texture.magFilter ),
+				minFilter: this._convertFilterMode( texture.minFilter ),
+				mipmapFilter: this._convertFilterMode( texture.minFilter ),
+				maxAnisotropy: texture.anisotropy
+			};
+
+			if ( texture.isDepthTexture && texture.compareFunction !== null ) {
+
+				samplerDescriptorGPU.compare = _compareToWebGPU[ texture.compareFunction ];
+
+			}
+
+			textureGPU.sampler = device.createSampler( samplerDescriptorGPU );
+
+		}
+
+		createDefaultTexture( texture ) {
+
+			let textureGPU;
+
+			if ( texture.isCubeTexture ) {
+
+				textureGPU = this._getDefaultCubeTextureGPU();
+
+			} else {
+
+				textureGPU = this._getDefaultTextureGPU();
+
+			}
+
+			this.backend.get( texture ).texture = textureGPU;
+
+		}
+
+		createTexture( texture, options = {} ) {
+
+			const backend = this.backend;
+			const textureData = backend.get( texture );
+
+			if ( textureData.initialized ) {
+
+				throw new Error( 'WebGPUTextureUtils: Texture already initialized.' );
+
+			}
+
+			if ( options.needsMipmaps === undefined ) options.needsMipmaps = false;
+			if ( options.levels === undefined ) options.levels = 1;
+			if ( options.depth === undefined ) options.depth = 1;
+
+			const { width, height, depth, levels } = options;
+
+			const dimension = this._getDimension( texture );
+			const format = texture.internalFormat || getFormat( texture, this.device );
+
+			const sampleCount = options.sampleCount !== undefined ? options.sampleCount : 1;
+			const primarySampleCount = texture.isRenderTargetTexture ? 1 : sampleCount;
+
+			let usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC;
+
+			if ( texture.isStorageTexture === true ) {
+
+				usage |= GPUTextureUsage.STORAGE_BINDING;
+
+			}
+
+			if ( texture.isCompressedTexture !== true ) {
+
+				usage |= GPUTextureUsage.RENDER_ATTACHMENT;
+
+			}
+
+			const textureDescriptorGPU = {
+				label: texture.name,
+				size: {
+					width: width,
+					height: height,
+					depthOrArrayLayers: depth,
+				},
+				mipLevelCount: levels,
+				sampleCount: primarySampleCount,
+				dimension: dimension,
+				format: format,
+				usage: usage
+			};
+
+			// texture creation
+
+			if ( texture.isVideoTexture ) {
+
+				const video = texture.source.data;
+				const videoFrame = new VideoFrame( video );
+
+				textureDescriptorGPU.size.width = videoFrame.displayWidth;
+				textureDescriptorGPU.size.height = videoFrame.displayHeight;
+
+				videoFrame.close();
+
+				textureData.externalTexture = video;
+
+			} else {
+
+				if ( format === undefined ) {
+
+					return this.createDefaultTexture( texture );
+
+				}
+
+				textureData.texture = backend.device.createTexture( textureDescriptorGPU );
+
+			}
+
+			if ( texture.isRenderTargetTexture && sampleCount > 1 ) {
+
+				const msaaTextureDescriptorGPU = Object.assign( {}, textureDescriptorGPU );
+
+				msaaTextureDescriptorGPU.label = msaaTextureDescriptorGPU.label + '-msaa';
+				msaaTextureDescriptorGPU.sampleCount = sampleCount;
+
+				textureData.msaaTexture = backend.device.createTexture( msaaTextureDescriptorGPU );
+
+			}
+
+			textureData.initialized = true;
+
+			textureData.textureDescriptorGPU = textureDescriptorGPU;
+
+		}
+
+		destroyTexture( texture ) {
+
+			const backend = this.backend;
+			const textureData = backend.get( texture );
+
+			textureData.texture.destroy();
+
+			if ( textureData.msaaTexture !== undefined ) textureData.msaaTexture.destroy();
+
+			backend.delete( texture );
+
+		}
+
+		destroySampler( texture ) {
+
+			const backend = this.backend;
+			const textureData = backend.get( texture );
+
+			delete textureData.sampler;
+
+		}
+
+		generateMipmaps( texture ) {
+
+			const textureData = this.backend.get( texture );
+
+			if ( texture.isCubeTexture ) {
+
+				for ( let i = 0; i < 6; i ++ ) {
+
+					this._generateMipmaps( textureData.texture, textureData.textureDescriptorGPU, i );
+
+				}
+
+			} else {
+
+				this._generateMipmaps( textureData.texture, textureData.textureDescriptorGPU );
+
+			}
+
+		}
+
+		updateTexture( texture, options ) {
+
+			const textureData = this.backend.get( texture );
+
+			const { textureDescriptorGPU } = textureData;
+
+			if ( texture.isRenderTargetTexture || ( textureDescriptorGPU === undefined /* unsupported texture format */ ) )
+				return;
+
+			// transfer texture data
+
+			if ( texture.isDataTexture || texture.isDataArrayTexture || texture.isData3DTexture ) {
+
+				this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU, 0, false );
+
+			} else if ( texture.isCompressedTexture ) {
+
+				this._copyCompressedBufferToTexture( texture.mipmaps, textureData.texture, textureDescriptorGPU );
+
+			} else if ( texture.isCubeTexture ) {
+
+				this._copyCubeMapToTexture( options.images, textureData.texture, textureDescriptorGPU, texture.flipY );
+
+			} else if ( texture.isVideoTexture ) {
+
+				const video = texture.source.data;
+
+				textureData.externalTexture = video;
+
+			} else {
+
+				this._copyImageToTexture( options.image, textureData.texture, textureDescriptorGPU, 0, texture.flipY );
+
+			}
+
+			//
+
+			textureData.version = texture.version;
+
+			if ( texture.onUpdate ) texture.onUpdate( texture );
+
+		}
+
+		async copyTextureToBuffer( texture, x, y, width, height ) {
+
+			const device = this.backend.device;
+
+			const textureData = this.backend.get( texture );
+			const textureGPU = textureData.texture;
+			const format = textureData.textureDescriptorGPU.format;
+			const bytesPerTexel = this._getBytesPerTexel( format );
+
+			const readBuffer = device.createBuffer(
+				{
+					size: width * height * bytesPerTexel,
+					usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+				}
+			);
+
+			const encoder = device.createCommandEncoder();
+
+			encoder.copyTextureToBuffer(
+				{
+					texture: textureGPU,
+					origin: { x, y },
+				},
+				{
+					buffer: readBuffer,
+					bytesPerRow: width * bytesPerTexel
+				},
+				{
+					width: width,
+					height: height
+				}
+
+			);
+
+			const typedArrayType = this._getTypedArrayType( format );
+
+			device.queue.submit( [ encoder.finish() ] );
+
+			await readBuffer.mapAsync( GPUMapMode.READ );
+
+			const buffer = readBuffer.getMappedRange();
+
+			return new typedArrayType( buffer );
+
+		}
+
+		_isEnvironmentTexture( texture ) {
+
+			const mapping = texture.mapping;
+
+			return ( mapping === EquirectangularReflectionMapping || mapping === EquirectangularRefractionMapping ) || ( mapping === CubeReflectionMapping || mapping === CubeRefractionMapping );
+
+		}
+
+		_getDefaultTextureGPU() {
+
+			let defaultTexture = this.defaultTexture;
+
+			if ( defaultTexture === null ) {
+
+				const texture = new Texture();
+				texture.minFilter = NearestFilter;
+				texture.magFilter = NearestFilter;
+
+				this.createTexture( texture, { width: 1, height: 1 } );
+
+				this.defaultTexture = defaultTexture = texture;
+
+			}
+
+			return this.backend.get( defaultTexture ).texture;
+
+		}
+
+		_getDefaultCubeTextureGPU() {
+
+			let defaultCubeTexture = this.defaultTexture;
+
+			if ( defaultCubeTexture === null ) {
+
+				const texture = new CubeTexture();
+				texture.minFilter = NearestFilter;
+				texture.magFilter = NearestFilter;
+
+				this.createTexture( texture, { width: 1, height: 1, depth: 6 } );
+
+				this.defaultCubeTexture = defaultCubeTexture = texture;
+
+			}
+
+			return this.backend.get( defaultCubeTexture ).texture;
+
+		}
+
+		_copyCubeMapToTexture( images, textureGPU, textureDescriptorGPU, flipY ) {
+
+			for ( let i = 0; i < 6; i ++ ) {
+
+				const image = images[ i ];
+
+				const flipIndex = flipY === true ? _flipMap[ i ] : i;
+
+				if ( image.isDataTexture ) {
+
+					this._copyBufferToTexture( image.image, textureGPU, textureDescriptorGPU, flipIndex, flipY );
+
+				} else {
+
+					this._copyImageToTexture( image, textureGPU, textureDescriptorGPU, flipIndex, flipY );
+
+				}
+
+			}
+
+		}
+
+		_copyImageToTexture( image, textureGPU, textureDescriptorGPU, originDepth, flipY ) {
+
+			const device = this.backend.device;
+
+			device.queue.copyExternalImageToTexture(
+				{
+					source: image
+				}, {
+					texture: textureGPU,
+					mipLevel: 0,
+					origin: { x: 0, y: 0, z: originDepth }
+				}, {
+					width: image.width,
+					height: image.height,
+					depthOrArrayLayers: 1
+				}
+			);
+
+			if ( flipY === true ) {
+
+				this._flipY( textureGPU, textureDescriptorGPU, originDepth );
+
+			}
+
+		}
+
+		_getPassUtils() {
+
+			let passUtils = this._passUtils;
+
+			if ( passUtils === null ) {
+
+				this._passUtils = passUtils = new WebGPUTexturePassUtils( this.backend.device );
+
+			}
+
+			return passUtils;
+
+		}
+
+		_generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer = 0 ) {
+
+			this._getPassUtils().generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer );
+
+		}
+
+		_flipY( textureGPU, textureDescriptorGPU, originDepth = 0 ) {
+
+			this._getPassUtils().flipY( textureGPU, textureDescriptorGPU, originDepth );
+
+		}
+
+		_copyBufferToTexture( image, textureGPU, textureDescriptorGPU, originDepth, flipY ) {
+
+			// @TODO: Consider to use GPUCommandEncoder.copyBufferToTexture()
+			// @TODO: Consider to support valid buffer layouts with other formats like RGB
+
+			const device = this.backend.device;
+
+			const data = image.data;
+
+			const bytesPerTexel = this._getBytesPerTexel( textureDescriptorGPU.format );
+			const bytesPerRow = image.width * bytesPerTexel;
+
+			device.queue.writeTexture(
+				{
+					texture: textureGPU,
+					mipLevel: 0,
+					origin: { x: 0, y: 0, z: originDepth }
+				},
+				data,
+				{
+					offset: 0,
+					bytesPerRow
+				},
+				{
+					width: image.width,
+					height: image.height,
+					depthOrArrayLayers: ( image.depth !== undefined ) ? image.depth : 1
+				} );
+
+			if ( flipY === true ) {
+
+				this._flipY( textureGPU, textureDescriptorGPU, originDepth );
+
+			}
+
+		}
+
+		_copyCompressedBufferToTexture( mipmaps, textureGPU, textureDescriptorGPU ) {
+
+			// @TODO: Consider to use GPUCommandEncoder.copyBufferToTexture()
+
+			const device = this.backend.device;
+
+			const blockData = this._getBlockData( textureDescriptorGPU.format );
+
+			for ( let i = 0; i < mipmaps.length; i ++ ) {
+
+				const mipmap = mipmaps[ i ];
+
+				const width = mipmap.width;
+				const height = mipmap.height;
+
+				const bytesPerRow = Math.ceil( width / blockData.width ) * blockData.byteLength;
+
+				device.queue.writeTexture(
+					{
+						texture: textureGPU,
+						mipLevel: i
+					},
+					mipmap.data,
+					{
+						offset: 0,
+						bytesPerRow
+					},
+					{
+						width: Math.ceil( width / blockData.width ) * blockData.width,
+						height: Math.ceil( height / blockData.width ) * blockData.width,
+						depthOrArrayLayers: 1
+					}
+				);
+
+			}
+
+		}
+
+		_getBlockData( format ) {
+
+			// this method is only relevant for compressed texture formats
+
+			if ( format === GPUTextureFormat.BC1RGBAUnorm || format === GPUTextureFormat.BC1RGBAUnormSRGB ) return { byteLength: 8, width: 4, height: 4 }; // DXT1
+			if ( format === GPUTextureFormat.BC2RGBAUnorm || format === GPUTextureFormat.BC2RGBAUnormSRGB ) return { byteLength: 16, width: 4, height: 4 }; // DXT3
+			if ( format === GPUTextureFormat.BC3RGBAUnorm || format === GPUTextureFormat.BC3RGBAUnormSRGB ) return { byteLength: 16, width: 4, height: 4 }; // DXT5
+			if ( format === GPUTextureFormat.BC4RUnorm || format === GPUTextureFormat.BC4RSNorm ) return { byteLength: 8, width: 4, height: 4 }; // RGTC1
+			if ( format === GPUTextureFormat.BC5RGUnorm || format === GPUTextureFormat.BC5RGSnorm ) return { byteLength: 16, width: 4, height: 4 }; // RGTC2
+			if ( format === GPUTextureFormat.BC6HRGBUFloat || format === GPUTextureFormat.BC6HRGBFloat ) return { byteLength: 16, width: 4, height: 4 }; // BPTC (float)
+			if ( format === GPUTextureFormat.BC7RGBAUnorm || format === GPUTextureFormat.BC7RGBAUnormSRGB ) return { byteLength: 16, width: 4, height: 4 }; // BPTC (unorm)
+
+			if ( format === GPUTextureFormat.ETC2RGB8Unorm || format === GPUTextureFormat.ETC2RGB8UnormSRGB ) return { byteLength: 8, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.ETC2RGB8A1Unorm || format === GPUTextureFormat.ETC2RGB8A1UnormSRGB ) return { byteLength: 8, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.ETC2RGBA8Unorm || format === GPUTextureFormat.ETC2RGBA8UnormSRGB ) return { byteLength: 16, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.EACR11Unorm ) return { byteLength: 8, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.EACR11Snorm ) return { byteLength: 8, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.EACRG11Unorm ) return { byteLength: 16, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.EACRG11Snorm ) return { byteLength: 16, width: 4, height: 4 };
+
+			if ( format === GPUTextureFormat.ASTC4x4Unorm || format === GPUTextureFormat.ASTC4x4UnormSRGB ) return { byteLength: 16, width: 4, height: 4 };
+			if ( format === GPUTextureFormat.ASTC5x4Unorm || format === GPUTextureFormat.ASTC5x4UnormSRGB ) return { byteLength: 16, width: 5, height: 4 };
+			if ( format === GPUTextureFormat.ASTC5x5Unorm || format === GPUTextureFormat.ASTC5x5UnormSRGB ) return { byteLength: 16, width: 5, height: 5 };
+			if ( format === GPUTextureFormat.ASTC6x5Unorm || format === GPUTextureFormat.ASTC6x5UnormSRGB ) return { byteLength: 16, width: 6, height: 5 };
+			if ( format === GPUTextureFormat.ASTC6x6Unorm || format === GPUTextureFormat.ASTC6x6UnormSRGB ) return { byteLength: 16, width: 6, height: 6 };
+			if ( format === GPUTextureFormat.ASTC8x5Unorm || format === GPUTextureFormat.ASTC8x5UnormSRGB ) return { byteLength: 16, width: 8, height: 5 };
+			if ( format === GPUTextureFormat.ASTC8x6Unorm || format === GPUTextureFormat.ASTC8x6UnormSRGB ) return { byteLength: 16, width: 8, height: 6 };
+			if ( format === GPUTextureFormat.ASTC8x8Unorm || format === GPUTextureFormat.ASTC8x8UnormSRGB ) return { byteLength: 16, width: 8, height: 8 };
+			if ( format === GPUTextureFormat.ASTC10x5Unorm || format === GPUTextureFormat.ASTC10x5UnormSRGB ) return { byteLength: 16, width: 10, height: 5 };
+			if ( format === GPUTextureFormat.ASTC10x6Unorm || format === GPUTextureFormat.ASTC10x6UnormSRGB ) return { byteLength: 16, width: 10, height: 6 };
+			if ( format === GPUTextureFormat.ASTC10x8Unorm || format === GPUTextureFormat.ASTC10x8UnormSRGB ) return { byteLength: 16, width: 10, height: 8 };
+			if ( format === GPUTextureFormat.ASTC10x10Unorm || format === GPUTextureFormat.ASTC10x10UnormSRGB ) return { byteLength: 16, width: 10, height: 10 };
+			if ( format === GPUTextureFormat.ASTC12x10Unorm || format === GPUTextureFormat.ASTC12x10UnormSRGB ) return { byteLength: 16, width: 12, height: 10 };
+			if ( format === GPUTextureFormat.ASTC12x12Unorm || format === GPUTextureFormat.ASTC12x12UnormSRGB ) return { byteLength: 16, width: 12, height: 12 };
+
+		}
+
+		_convertAddressMode( value ) {
+
+			let addressMode = GPUAddressMode.ClampToEdge;
+
+			if ( value === RepeatWrapping ) {
+
+				addressMode = GPUAddressMode.Repeat;
+
+			} else if ( value === MirroredRepeatWrapping ) {
+
+				addressMode = GPUAddressMode.MirrorRepeat;
+
+			}
+
+			return addressMode;
+
+		}
+
+		_convertFilterMode( value ) {
+
+			let filterMode = GPUFilterMode.Linear;
+
+			if ( value === NearestFilter || value === NearestMipmapNearestFilter || value === NearestMipmapLinearFilter ) {
+
+				filterMode = GPUFilterMode.Nearest;
+
+			}
+
+			return filterMode;
+
+		}
+
+		_getBytesPerTexel( format ) {
+
+			if ( format === GPUTextureFormat.R8Unorm ) return 1;
+			if ( format === GPUTextureFormat.R16Float ) return 2;
+			if ( format === GPUTextureFormat.RG8Unorm ) return 2;
+			if ( format === GPUTextureFormat.RG16Float ) return 4;
+			if ( format === GPUTextureFormat.R32Float ) return 4;
+			if ( format === GPUTextureFormat.RGBA8Unorm || format === GPUTextureFormat.RGBA8UnormSRGB ) return 4;
+			if ( format === GPUTextureFormat.RG32Float ) return 8;
+			if ( format === GPUTextureFormat.RGBA16Float ) return 8;
+			if ( format === GPUTextureFormat.RGBA32Float ) return 16;
+
+		}
+
+		_getTypedArrayType( format ) {
+
+			if ( format === GPUTextureFormat.R8Uint ) return Uint8Array;
+			if ( format === GPUTextureFormat.R8Sint ) return Int8Array;
+			if ( format === GPUTextureFormat.R8Unorm ) return Uint8Array;
+			if ( format === GPUTextureFormat.R8Snorm ) return Int8Array;
+			if ( format === GPUTextureFormat.RG8Uint ) return Uint8Array;
+			if ( format === GPUTextureFormat.RG8Sint ) return Int8Array;
+			if ( format === GPUTextureFormat.RG8Unorm ) return Uint8Array;
+			if ( format === GPUTextureFormat.RG8Snorm ) return Int8Array;
+			if ( format === GPUTextureFormat.RGBA8Uint ) return Uint8Array;
+			if ( format === GPUTextureFormat.RGBA8Sint ) return Int8Array;
+			if ( format === GPUTextureFormat.RGBA8Unorm ) return Uint8Array;
+			if ( format === GPUTextureFormat.RGBA8Snorm ) return Int8Array;
+
+
+			if ( format === GPUTextureFormat.R16Uint ) return Uint16Array;
+			if ( format === GPUTextureFormat.R16Sint ) return Int16Array;
+			if ( format === GPUTextureFormat.RG16Uint ) return Uint16Array;
+			if ( format === GPUTextureFormat.RG16Sint ) return Int16Array;
+			if ( format === GPUTextureFormat.RGBA16Uint ) return Uint16Array;
+			if ( format === GPUTextureFormat.RGBA16Sint ) return Int16Array;
+
+
+			if ( format === GPUTextureFormat.R32Uint ) return Uint32Array;
+			if ( format === GPUTextureFormat.R32Sint ) return Int32Array;
+			if ( format === GPUTextureFormat.R32Float ) return Float32Array;
+			if ( format === GPUTextureFormat.RG32Uint ) return Uint32Array;
+			if ( format === GPUTextureFormat.RG32Sint ) return Int32Array;
+			if ( format === GPUTextureFormat.RG32Float ) return Float32Array;
+			if ( format === GPUTextureFormat.RGBA32Uint ) return Uint32Array;
+			if ( format === GPUTextureFormat.RGBA32Sint ) return Int32Array;
+			if ( format === GPUTextureFormat.RGBA32Float ) return Float32Array;
+
+		}
+
+		_getDimension( texture ) {
+
+			let dimension;
+
+			if ( texture.isData3DTexture ) {
+
+				dimension = GPUTextureDimension.ThreeD;
+
+			} else {
+
+				dimension = GPUTextureDimension.TwoD;
+
+			}
+
+			return dimension;
+
+		}
+
+	}
+
+	function getFormat( texture, device = null ) {
+
+		const format = texture.format;
+		const type = texture.type;
+		const colorSpace = texture.colorSpace;
+
+		let formatGPU;
+
+		if ( /*texture.isRenderTargetTexture === true ||*/ texture.isFramebufferTexture === true ) {
+
+			formatGPU = GPUTextureFormat.BGRA8Unorm;
+
+		} else if ( texture.isCompressedTexture === true ) {
+
+			switch ( format ) {
+
+				case RGBA_S3TC_DXT1_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.BC1RGBAUnormSRGB : GPUTextureFormat.BC1RGBAUnorm;
+					break;
+
+				case RGBA_S3TC_DXT3_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.BC2RGBAUnormSRGB : GPUTextureFormat.BC2RGBAUnorm;
+					break;
+
+				case RGBA_S3TC_DXT5_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.BC3RGBAUnormSRGB : GPUTextureFormat.BC3RGBAUnorm;
+					break;
+
+				case RGB_ETC2_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ETC2RGB8UnormSRGB : GPUTextureFormat.ETC2RGB8Unorm;
+					break;
+
+				case RGBA_ETC2_EAC_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ETC2RGBA8UnormSRGB : GPUTextureFormat.ETC2RGBA8Unorm;
+					break;
+
+				case RGBA_ASTC_4x4_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC4x4UnormSRGB : GPUTextureFormat.ASTC4x4Unorm;
+					break;
+
+				case RGBA_ASTC_5x4_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC5x4UnormSRGB : GPUTextureFormat.ASTC5x4Unorm;
+					break;
+
+				case RGBA_ASTC_5x5_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC5x5UnormSRGB : GPUTextureFormat.ASTC5x5Unorm;
+					break;
+
+				case RGBA_ASTC_6x5_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC6x5UnormSRGB : GPUTextureFormat.ASTC6x5Unorm;
+					break;
+
+				case RGBA_ASTC_6x6_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC6x6UnormSRGB : GPUTextureFormat.ASTC6x6Unorm;
+					break;
+
+				case RGBA_ASTC_8x5_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC8x5UnormSRGB : GPUTextureFormat.ASTC8x5Unorm;
+					break;
+
+				case RGBA_ASTC_8x6_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC8x6UnormSRGB : GPUTextureFormat.ASTC8x6Unorm;
+					break;
+
+				case RGBA_ASTC_8x8_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC8x8UnormSRGB : GPUTextureFormat.ASTC8x8Unorm;
+					break;
+
+				case RGBA_ASTC_10x5_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x5UnormSRGB : GPUTextureFormat.ASTC10x5Unorm;
+					break;
+
+				case RGBA_ASTC_10x6_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x6UnormSRGB : GPUTextureFormat.ASTC10x6Unorm;
+					break;
+
+				case RGBA_ASTC_10x8_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x8UnormSRGB : GPUTextureFormat.ASTC10x8Unorm;
+					break;
+
+				case RGBA_ASTC_10x10_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x10UnormSRGB : GPUTextureFormat.ASTC10x10Unorm;
+					break;
+
+				case RGBA_ASTC_12x10_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC12x10UnormSRGB : GPUTextureFormat.ASTC12x10Unorm;
+					break;
+
+				case RGBA_ASTC_12x12_Format:
+					formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC12x12UnormSRGB : GPUTextureFormat.ASTC12x12Unorm;
+					break;
+
+			}
+
+		} else {
+
+			switch ( format ) {
+
+				case RGBAFormat:
+
+					switch ( type ) {
+
+						case UnsignedByteType:
+							formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.RGBA8UnormSRGB : GPUTextureFormat.RGBA8Unorm;
+							break;
+
+						case HalfFloatType:
+							formatGPU = GPUTextureFormat.RGBA16Float;
+							break;
+
+						case FloatType:
+							formatGPU = GPUTextureFormat.RGBA32Float;
+							break;
+
+					}
+
+					break;
+
+				case RedFormat:
+
+					switch ( type ) {
+
+						case UnsignedByteType:
+							formatGPU = GPUTextureFormat.R8Unorm;
+							break;
+
+						case HalfFloatType:
+							formatGPU = GPUTextureFormat.R16Float;
+							break;
+
+						case FloatType:
+							formatGPU = GPUTextureFormat.R32Float;
+							break;
+
+					}
+
+					break;
+
+				case RGFormat:
+
+					switch ( type ) {
+
+						case UnsignedByteType:
+							formatGPU = GPUTextureFormat.RG8Unorm;
+							break;
+
+						case HalfFloatType:
+							formatGPU = GPUTextureFormat.RG16Float;
+							break;
+
+						case FloatType:
+							formatGPU = GPUTextureFormat.RG32Float;
+							break;
+
+					}
+
+					break;
+
+				case DepthFormat:
+
+					switch ( type ) {
+
+						case UnsignedShortType:
+							formatGPU = GPUTextureFormat.Depth16Unorm;
+							break;
+
+						case UnsignedIntType:
+							formatGPU = GPUTextureFormat.Depth24Plus;
+							break;
+
+						case FloatType:
+							formatGPU = GPUTextureFormat.Depth32Float;
+							break;
+
+					}
+
+					break;
+
+				case DepthStencilFormat:
+
+					switch ( type ) {
+
+						case UnsignedInt248Type:
+							formatGPU = GPUTextureFormat.Depth24PlusStencil8;
+							break;
+
+						case FloatType:
+
+							if ( device && device.features.has( GPUFeatureName.Depth32FloatStencil8 ) === false ) ;
+
+							formatGPU = GPUTextureFormat.Depth32FloatStencil8;
+
+							break;
+
+					}
+
+					break;
+
+			}
+
+		}
+
+		return formatGPU;
+
+	}
+
 	const declarationRegexp = /^[fn]*\s*([a-z_0-9]+)?\s*\(([\s\S]*?)\)\s*[\-\>]*\s*([a-z_0-9]+)?/i;
 	const propertiesRegexp = /[a-z_0-9]+|<(.*?)>+/ig;
 
@@ -72576,8 +73802,9 @@ fn threejs_repeatWrapping( uv : vec2<f32>, dimension : vec2<u32> ) -> vec2<u32> 
 
 					} else if ( uniform.node.isStoreTextureNode === true ) {
 
-						// @TODO: Add support for other formats
-						textureType = 'texture_storage_2d<rgba8unorm, write>';
+						const format = getFormat( texture );
+
+						textureType = 'texture_storage_2d<' + format + ', write>';
 
 					} else {
 
@@ -73943,1126 +75170,6 @@ var<${access}> ${name} : ${structName};`;
 
 	}
 
-	class WebGPUTexturePassUtils {
-
-		constructor( device ) {
-
-			this.device = device;
-
-			const mipmapVertexSource = `
-struct VarysStruct {
-	@builtin( position ) Position: vec4<f32>,
-	@location( 0 ) vTex : vec2<f32>
-};
-
-@vertex
-fn main( @builtin( vertex_index ) vertexIndex : u32 ) -> VarysStruct {
-
-	var Varys : VarysStruct;
-
-	var pos = array< vec2<f32>, 4 >(
-		vec2<f32>( -1.0,  1.0 ),
-		vec2<f32>(  1.0,  1.0 ),
-		vec2<f32>( -1.0, -1.0 ),
-		vec2<f32>(  1.0, -1.0 )
-	);
-
-	var tex = array< vec2<f32>, 4 >(
-		vec2<f32>( 0.0, 0.0 ),
-		vec2<f32>( 1.0, 0.0 ),
-		vec2<f32>( 0.0, 1.0 ),
-		vec2<f32>( 1.0, 1.0 )
-	);
-
-	Varys.vTex = tex[ vertexIndex ];
-	Varys.Position = vec4<f32>( pos[ vertexIndex ], 0.0, 1.0 );
-
-	return Varys;
-
-}
-`;
-
-			const mipmapFragmentSource = `
-@group( 0 ) @binding( 0 )
-var imgSampler : sampler;
-
-@group( 0 ) @binding( 1 )
-var img : texture_2d<f32>;
-
-@fragment
-fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
-
-	return textureSample( img, imgSampler, vTex );
-
-}
-`;
-
-			const flipYFragmentSource = `
-@group( 0 ) @binding( 0 )
-var imgSampler : sampler;
-
-@group( 0 ) @binding( 1 )
-var img : texture_2d<f32>;
-
-@fragment
-fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
-
-	return textureSample( img, imgSampler, vec2( vTex.x, 1.0 - vTex.y ) );
-
-}
-`;
-			this.mipmapSampler = device.createSampler( { minFilter: GPUFilterMode.Linear } );
-			this.flipYSampler = device.createSampler( { minFilter: GPUFilterMode.Nearest } ); //@TODO?: Consider using textureLoad()
-
-			// We'll need a new pipeline for every texture format used.
-			this.transferPipelines = {};
-			this.flipYPipelines = {};
-
-			this.mipmapVertexShaderModule = device.createShaderModule( {
-				label: 'mipmapVertex',
-				code: mipmapVertexSource
-			} );
-
-			this.mipmapFragmentShaderModule = device.createShaderModule( {
-				label: 'mipmapFragment',
-				code: mipmapFragmentSource
-			} );
-
-			this.flipYFragmentShaderModule = device.createShaderModule( {
-				label: 'flipYFragment',
-				code: flipYFragmentSource
-			} );
-
-		}
-
-		getTransferPipeline( format ) {
-
-			let pipeline = this.transferPipelines[ format ];
-
-			if ( pipeline === undefined ) {
-
-				pipeline = this.device.createRenderPipeline( {
-					vertex: {
-						module: this.mipmapVertexShaderModule,
-						entryPoint: 'main'
-					},
-					fragment: {
-						module: this.mipmapFragmentShaderModule,
-						entryPoint: 'main',
-						targets: [ { format } ]
-					},
-					primitive: {
-						topology: GPUPrimitiveTopology.TriangleStrip,
-						stripIndexFormat: GPUIndexFormat.Uint32
-					},
-					layout: 'auto'
-				} );
-
-				this.transferPipelines[ format ] = pipeline;
-
-			}
-
-			return pipeline;
-
-		}
-
-		getFlipYPipeline( format ) {
-
-			let pipeline = this.flipYPipelines[ format ];
-
-			if ( pipeline === undefined ) {
-
-				pipeline = this.device.createRenderPipeline( {
-					vertex: {
-						module: this.mipmapVertexShaderModule,
-						entryPoint: 'main'
-					},
-					fragment: {
-						module: this.flipYFragmentShaderModule,
-						entryPoint: 'main',
-						targets: [ { format } ]
-					},
-					primitive: {
-						topology: GPUPrimitiveTopology.TriangleStrip,
-						stripIndexFormat: GPUIndexFormat.Uint32
-					},
-					layout: 'auto'
-				} );
-
-				this.flipYPipelines[ format ] = pipeline;
-
-			}
-
-			return pipeline;
-
-		}
-
-		flipY( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
-
-			const format = textureGPUDescriptor.format;
-			const { width, height } = textureGPUDescriptor.size;
-
-			const transferPipeline = this.getTransferPipeline( format );
-			const flipYPipeline = this.getFlipYPipeline( format );
-
-			const tempTexture = this.device.createTexture( {
-				size: { width, height, depthOrArrayLayers: 1 },
-				format,
-				usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-			} );
-
-			const srcView = textureGPU.createView( {
-				baseMipLevel: 0,
-				mipLevelCount: 1,
-				dimension: GPUTextureViewDimension.TwoD,
-				baseArrayLayer
-			} );
-
-			const dstView = tempTexture.createView( {
-				baseMipLevel: 0,
-				mipLevelCount: 1,
-				dimension: GPUTextureViewDimension.TwoD,
-				baseArrayLayer: 0
-			} );
-
-			const commandEncoder = this.device.createCommandEncoder( {} );
-
-			const pass = ( pipeline, sourceView, destinationView ) => {
-
-				const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
-
-				const bindGroup = this.device.createBindGroup( {
-					layout: bindGroupLayout,
-					entries: [ {
-						binding: 0,
-						resource: this.flipYSampler
-					}, {
-						binding: 1,
-						resource: sourceView
-					} ]
-				} );
-
-				const passEncoder = commandEncoder.beginRenderPass( {
-					colorAttachments: [ {
-						view: destinationView,
-						loadOp: GPULoadOp.Clear,
-						storeOp: GPUStoreOp.Store,
-						clearValue: [ 0, 0, 0, 0 ]
-					} ]
-				} );
-
-				passEncoder.setPipeline( pipeline );
-				passEncoder.setBindGroup( 0, bindGroup );
-				passEncoder.draw( 4, 1, 0, 0 );
-				passEncoder.end();
-
-			};
-
-			pass( transferPipeline, srcView, dstView );
-			pass( flipYPipeline, dstView, srcView );
-
-			this.device.queue.submit( [ commandEncoder.finish() ] );
-
-			tempTexture.destroy();
-
-		}
-
-		generateMipmaps( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
-
-			const pipeline = this.getTransferPipeline( textureGPUDescriptor.format );
-
-			const commandEncoder = this.device.createCommandEncoder( {} );
-			const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
-
-			let srcView = textureGPU.createView( {
-				baseMipLevel: 0,
-				mipLevelCount: 1,
-				dimension: GPUTextureViewDimension.TwoD,
-				baseArrayLayer
-			} );
-
-			for ( let i = 1; i < textureGPUDescriptor.mipLevelCount; i ++ ) {
-
-				const bindGroup = this.device.createBindGroup( {
-					layout: bindGroupLayout,
-					entries: [ {
-						binding: 0,
-						resource: this.mipmapSampler
-					}, {
-						binding: 1,
-						resource: srcView
-					} ]
-				} );
-
-				const dstView = textureGPU.createView( {
-					baseMipLevel: i,
-					mipLevelCount: 1,
-					dimension: GPUTextureViewDimension.TwoD,
-					baseArrayLayer
-				} );
-
-				const passEncoder = commandEncoder.beginRenderPass( {
-					colorAttachments: [ {
-						view: dstView,
-						loadOp: GPULoadOp.Clear,
-						storeOp: GPUStoreOp.Store,
-						clearValue: [ 0, 0, 0, 0 ]
-					} ]
-				} );
-
-				passEncoder.setPipeline( pipeline );
-				passEncoder.setBindGroup( 0, bindGroup );
-				passEncoder.draw( 4, 1, 0, 0 );
-				passEncoder.end();
-
-				srcView = dstView;
-
-			}
-
-			this.device.queue.submit( [ commandEncoder.finish() ] );
-
-		}
-
-	}
-
-	const _compareToWebGPU = {
-		[ NeverCompare ]: 'never',
-		[ LessCompare ]: 'less',
-		[ EqualCompare ]: 'equal',
-		[ LessEqualCompare ]: 'less-equal',
-		[ GreaterCompare ]: 'greater',
-		[ GreaterEqualCompare ]: 'greater-equal',
-		[ AlwaysCompare ]: 'always',
-		[ NotEqualCompare ]: 'not-equal'
-	};
-
-	const _flipMap = [ 0, 1, 3, 2, 4, 5 ];
-
-	class WebGPUTextureUtils {
-
-		constructor( backend ) {
-
-			this.backend = backend;
-
-			this._passUtils = null;
-
-			this.defaultTexture = null;
-			this.defaultCubeTexture = null;
-
-		}
-
-		createSampler( texture ) {
-
-			const backend = this.backend;
-			const device = backend.device;
-
-			const textureGPU = backend.get( texture );
-
-			const samplerDescriptorGPU = {
-				addressModeU: this._convertAddressMode( texture.wrapS ),
-				addressModeV: this._convertAddressMode( texture.wrapT ),
-				addressModeW: this._convertAddressMode( texture.wrapR ),
-				magFilter: this._convertFilterMode( texture.magFilter ),
-				minFilter: this._convertFilterMode( texture.minFilter ),
-				mipmapFilter: this._convertFilterMode( texture.minFilter ),
-				maxAnisotropy: texture.anisotropy
-			};
-
-			if ( texture.isDepthTexture && texture.compareFunction !== null ) {
-
-				samplerDescriptorGPU.compare = _compareToWebGPU[ texture.compareFunction ];
-
-			}
-
-			textureGPU.sampler = device.createSampler( samplerDescriptorGPU );
-
-		}
-
-		createDefaultTexture( texture ) {
-
-			let textureGPU;
-
-			if ( texture.isCubeTexture ) {
-
-				textureGPU = this._getDefaultCubeTextureGPU();
-
-			} else {
-
-				textureGPU = this._getDefaultTextureGPU();
-
-			}
-
-			this.backend.get( texture ).texture = textureGPU;
-
-		}
-
-		createTexture( texture, options = {} ) {
-
-			const backend = this.backend;
-			const textureData = backend.get( texture );
-
-			if ( textureData.initialized ) {
-
-				throw new Error( 'WebGPUTextureUtils: Texture already initialized.' );
-
-			}
-
-			if ( options.needsMipmaps === undefined ) options.needsMipmaps = false;
-			if ( options.levels === undefined ) options.levels = 1;
-			if ( options.depth === undefined ) options.depth = 1;
-
-			const { width, height, depth, levels } = options;
-
-			const dimension = this._getDimension( texture );
-			const format = texture.internalFormat || this._getFormat( texture );
-
-			const sampleCount = options.sampleCount !== undefined ? options.sampleCount : 1;
-			const primarySampleCount = texture.isRenderTargetTexture ? 1 : sampleCount;
-
-			let usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC;
-
-			if ( texture.isStorageTexture === true ) {
-
-				usage |= GPUTextureUsage.STORAGE_BINDING;
-
-			}
-
-			if ( texture.isCompressedTexture !== true ) {
-
-				usage |= GPUTextureUsage.RENDER_ATTACHMENT;
-
-			}
-
-			const textureDescriptorGPU = {
-				label: texture.name,
-				size: {
-					width: width,
-					height: height,
-					depthOrArrayLayers: depth,
-				},
-				mipLevelCount: levels,
-				sampleCount: primarySampleCount,
-				dimension: dimension,
-				format: format,
-				usage: usage
-			};
-
-			// texture creation
-
-			if ( texture.isVideoTexture ) {
-
-				const video = texture.source.data;
-				const videoFrame = new VideoFrame( video );
-
-				textureDescriptorGPU.size.width = videoFrame.displayWidth;
-				textureDescriptorGPU.size.height = videoFrame.displayHeight;
-
-				videoFrame.close();
-
-				textureData.externalTexture = video;
-
-			} else {
-
-				if ( format === undefined ) {
-
-					return this.createDefaultTexture( texture );
-
-				}
-
-				textureData.texture = backend.device.createTexture( textureDescriptorGPU );
-
-			}
-
-			if ( texture.isRenderTargetTexture && sampleCount > 1 ) {
-
-				const msaaTextureDescriptorGPU = Object.assign( {}, textureDescriptorGPU );
-
-				msaaTextureDescriptorGPU.label = msaaTextureDescriptorGPU.label + '-msaa';
-				msaaTextureDescriptorGPU.sampleCount = sampleCount;
-
-				textureData.msaaTexture = backend.device.createTexture( msaaTextureDescriptorGPU );
-
-			}
-
-			textureData.initialized = true;
-
-			textureData.textureDescriptorGPU = textureDescriptorGPU;
-
-		}
-
-		destroyTexture( texture ) {
-
-			const backend = this.backend;
-			const textureData = backend.get( texture );
-
-			textureData.texture.destroy();
-
-			if ( textureData.msaaTexture !== undefined ) textureData.msaaTexture.destroy();
-
-			backend.delete( texture );
-
-		}
-
-		destroySampler( texture ) {
-
-			const backend = this.backend;
-			const textureData = backend.get( texture );
-
-			delete textureData.sampler;
-
-		}
-
-		generateMipmaps( texture ) {
-
-			const textureData = this.backend.get( texture );
-
-			if ( texture.isCubeTexture ) {
-
-				for ( let i = 0; i < 6; i ++ ) {
-
-					this._generateMipmaps( textureData.texture, textureData.textureDescriptorGPU, i );
-
-				}
-
-			} else {
-
-				this._generateMipmaps( textureData.texture, textureData.textureDescriptorGPU );
-
-			}
-
-		}
-
-		updateTexture( texture, options ) {
-
-			const textureData = this.backend.get( texture );
-
-			const { textureDescriptorGPU } = textureData;
-
-			if ( texture.isRenderTargetTexture || ( textureDescriptorGPU === undefined /* unsupported texture format */ ) )
-				return;
-
-			// transfer texture data
-
-			if ( texture.isDataTexture || texture.isDataArrayTexture || texture.isData3DTexture ) {
-
-				this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU, 0, false );
-
-			} else if ( texture.isCompressedTexture ) {
-
-				this._copyCompressedBufferToTexture( texture.mipmaps, textureData.texture, textureDescriptorGPU );
-
-			} else if ( texture.isCubeTexture ) {
-
-				this._copyCubeMapToTexture( options.images, textureData.texture, textureDescriptorGPU, texture.flipY );
-
-			} else if ( texture.isVideoTexture ) {
-
-				const video = texture.source.data;
-
-				textureData.externalTexture = video;
-
-			} else {
-
-				this._copyImageToTexture( options.image, textureData.texture, textureDescriptorGPU, 0, texture.flipY );
-
-			}
-
-			//
-
-			textureData.version = texture.version;
-
-			if ( texture.onUpdate ) texture.onUpdate( texture );
-
-		}
-
-		async copyTextureToBuffer( texture, x, y, width, height ) {
-
-			const device = this.backend.device;
-
-			const textureData = this.backend.get( texture );
-			const textureGPU = textureData.texture;
-			const format = textureData.textureDescriptorGPU.format;
-			const bytesPerTexel = this._getBytesPerTexel( format );
-
-			const readBuffer = device.createBuffer(
-				{
-					size: width * height * bytesPerTexel,
-					usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-				}
-			);
-
-			const encoder = device.createCommandEncoder();
-
-			encoder.copyTextureToBuffer(
-				{
-					texture: textureGPU,
-					origin: { x, y },
-				},
-				{
-					buffer: readBuffer,
-					bytesPerRow: width * bytesPerTexel
-				},
-				{
-					width: width,
-					height: height
-				}
-
-			);
-
-			const typedArrayType = this._getTypedArrayType( format );
-
-			device.queue.submit( [ encoder.finish() ] );
-
-			await readBuffer.mapAsync( GPUMapMode.READ );
-
-			const buffer = readBuffer.getMappedRange();
-
-			return new typedArrayType( buffer );
-
-		}
-
-		_isEnvironmentTexture( texture ) {
-
-			const mapping = texture.mapping;
-
-			return ( mapping === EquirectangularReflectionMapping || mapping === EquirectangularRefractionMapping ) || ( mapping === CubeReflectionMapping || mapping === CubeRefractionMapping );
-
-		}
-
-		_getDefaultTextureGPU() {
-
-			let defaultTexture = this.defaultTexture;
-
-			if ( defaultTexture === null ) {
-
-				const texture = new Texture();
-				texture.minFilter = NearestFilter;
-				texture.magFilter = NearestFilter;
-
-				this.createTexture( texture, { width: 1, height: 1 } );
-
-				this.defaultTexture = defaultTexture = texture;
-
-			}
-
-			return this.backend.get( defaultTexture ).texture;
-
-		}
-
-		_getDefaultCubeTextureGPU() {
-
-			let defaultCubeTexture = this.defaultTexture;
-
-			if ( defaultCubeTexture === null ) {
-
-				const texture = new CubeTexture();
-				texture.minFilter = NearestFilter;
-				texture.magFilter = NearestFilter;
-
-				this.createTexture( texture, { width: 1, height: 1, depth: 6 } );
-
-				this.defaultCubeTexture = defaultCubeTexture = texture;
-
-			}
-
-			return this.backend.get( defaultCubeTexture ).texture;
-
-		}
-
-		_copyCubeMapToTexture( images, textureGPU, textureDescriptorGPU, flipY ) {
-
-			for ( let i = 0; i < 6; i ++ ) {
-
-				const image = images[ i ];
-
-				const flipIndex = flipY === true ? _flipMap[ i ] : i;
-
-				if ( image.isDataTexture ) {
-
-					this._copyBufferToTexture( image.image, textureGPU, textureDescriptorGPU, flipIndex, flipY );
-
-				} else {
-
-					this._copyImageToTexture( image, textureGPU, textureDescriptorGPU, flipIndex, flipY );
-
-				}
-
-			}
-
-		}
-
-		_copyImageToTexture( image, textureGPU, textureDescriptorGPU, originDepth, flipY ) {
-
-			const device = this.backend.device;
-
-			device.queue.copyExternalImageToTexture(
-				{
-					source: image
-				}, {
-					texture: textureGPU,
-					mipLevel: 0,
-					origin: { x: 0, y: 0, z: originDepth }
-				}, {
-					width: image.width,
-					height: image.height,
-					depthOrArrayLayers: 1
-				}
-			);
-
-			if ( flipY === true ) {
-
-				this._flipY( textureGPU, textureDescriptorGPU, originDepth );
-
-			}
-
-		}
-
-		_getPassUtils() {
-
-			let passUtils = this._passUtils;
-
-			if ( passUtils === null ) {
-
-				this._passUtils = passUtils = new WebGPUTexturePassUtils( this.backend.device );
-
-			}
-
-			return passUtils;
-
-		}
-
-		_generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer = 0 ) {
-
-			this._getPassUtils().generateMipmaps( textureGPU, textureDescriptorGPU, baseArrayLayer );
-
-		}
-
-		_flipY( textureGPU, textureDescriptorGPU, originDepth = 0 ) {
-
-			this._getPassUtils().flipY( textureGPU, textureDescriptorGPU, originDepth );
-
-		}
-
-		_copyBufferToTexture( image, textureGPU, textureDescriptorGPU, originDepth, flipY ) {
-
-			// @TODO: Consider to use GPUCommandEncoder.copyBufferToTexture()
-			// @TODO: Consider to support valid buffer layouts with other formats like RGB
-
-			const device = this.backend.device;
-
-			const data = image.data;
-
-			const bytesPerTexel = this._getBytesPerTexel( textureDescriptorGPU.format );
-			const bytesPerRow = image.width * bytesPerTexel;
-
-			device.queue.writeTexture(
-				{
-					texture: textureGPU,
-					mipLevel: 0,
-					origin: { x: 0, y: 0, z: originDepth }
-				},
-				data,
-				{
-					offset: 0,
-					bytesPerRow
-				},
-				{
-					width: image.width,
-					height: image.height,
-					depthOrArrayLayers: ( image.depth !== undefined ) ? image.depth : 1
-				} );
-
-			if ( flipY === true ) {
-
-				this._flipY( textureGPU, textureDescriptorGPU, originDepth );
-
-			}
-
-		}
-
-		_copyCompressedBufferToTexture( mipmaps, textureGPU, textureDescriptorGPU ) {
-
-			// @TODO: Consider to use GPUCommandEncoder.copyBufferToTexture()
-
-			const device = this.backend.device;
-
-			const blockData = this._getBlockData( textureDescriptorGPU.format );
-
-			for ( let i = 0; i < mipmaps.length; i ++ ) {
-
-				const mipmap = mipmaps[ i ];
-
-				const width = mipmap.width;
-				const height = mipmap.height;
-
-				const bytesPerRow = Math.ceil( width / blockData.width ) * blockData.byteLength;
-
-				device.queue.writeTexture(
-					{
-						texture: textureGPU,
-						mipLevel: i
-					},
-					mipmap.data,
-					{
-						offset: 0,
-						bytesPerRow
-					},
-					{
-						width: Math.ceil( width / blockData.width ) * blockData.width,
-						height: Math.ceil( height / blockData.width ) * blockData.width,
-						depthOrArrayLayers: 1
-					}
-				);
-
-			}
-
-		}
-
-		_getBlockData( format ) {
-
-			// this method is only relevant for compressed texture formats
-
-			if ( format === GPUTextureFormat.BC1RGBAUnorm || format === GPUTextureFormat.BC1RGBAUnormSRGB ) return { byteLength: 8, width: 4, height: 4 }; // DXT1
-			if ( format === GPUTextureFormat.BC2RGBAUnorm || format === GPUTextureFormat.BC2RGBAUnormSRGB ) return { byteLength: 16, width: 4, height: 4 }; // DXT3
-			if ( format === GPUTextureFormat.BC3RGBAUnorm || format === GPUTextureFormat.BC3RGBAUnormSRGB ) return { byteLength: 16, width: 4, height: 4 }; // DXT5
-			if ( format === GPUTextureFormat.BC4RUnorm || format === GPUTextureFormat.BC4RSNorm ) return { byteLength: 8, width: 4, height: 4 }; // RGTC1
-			if ( format === GPUTextureFormat.BC5RGUnorm || format === GPUTextureFormat.BC5RGSnorm ) return { byteLength: 16, width: 4, height: 4 }; // RGTC2
-			if ( format === GPUTextureFormat.BC6HRGBUFloat || format === GPUTextureFormat.BC6HRGBFloat ) return { byteLength: 16, width: 4, height: 4 }; // BPTC (float)
-			if ( format === GPUTextureFormat.BC7RGBAUnorm || format === GPUTextureFormat.BC7RGBAUnormSRGB ) return { byteLength: 16, width: 4, height: 4 }; // BPTC (unorm)
-
-			if ( format === GPUTextureFormat.ETC2RGB8Unorm || format === GPUTextureFormat.ETC2RGB8UnormSRGB ) return { byteLength: 8, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.ETC2RGB8A1Unorm || format === GPUTextureFormat.ETC2RGB8A1UnormSRGB ) return { byteLength: 8, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.ETC2RGBA8Unorm || format === GPUTextureFormat.ETC2RGBA8UnormSRGB ) return { byteLength: 16, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.EACR11Unorm ) return { byteLength: 8, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.EACR11Snorm ) return { byteLength: 8, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.EACRG11Unorm ) return { byteLength: 16, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.EACRG11Snorm ) return { byteLength: 16, width: 4, height: 4 };
-
-			if ( format === GPUTextureFormat.ASTC4x4Unorm || format === GPUTextureFormat.ASTC4x4UnormSRGB ) return { byteLength: 16, width: 4, height: 4 };
-			if ( format === GPUTextureFormat.ASTC5x4Unorm || format === GPUTextureFormat.ASTC5x4UnormSRGB ) return { byteLength: 16, width: 5, height: 4 };
-			if ( format === GPUTextureFormat.ASTC5x5Unorm || format === GPUTextureFormat.ASTC5x5UnormSRGB ) return { byteLength: 16, width: 5, height: 5 };
-			if ( format === GPUTextureFormat.ASTC6x5Unorm || format === GPUTextureFormat.ASTC6x5UnormSRGB ) return { byteLength: 16, width: 6, height: 5 };
-			if ( format === GPUTextureFormat.ASTC6x6Unorm || format === GPUTextureFormat.ASTC6x6UnormSRGB ) return { byteLength: 16, width: 6, height: 6 };
-			if ( format === GPUTextureFormat.ASTC8x5Unorm || format === GPUTextureFormat.ASTC8x5UnormSRGB ) return { byteLength: 16, width: 8, height: 5 };
-			if ( format === GPUTextureFormat.ASTC8x6Unorm || format === GPUTextureFormat.ASTC8x6UnormSRGB ) return { byteLength: 16, width: 8, height: 6 };
-			if ( format === GPUTextureFormat.ASTC8x8Unorm || format === GPUTextureFormat.ASTC8x8UnormSRGB ) return { byteLength: 16, width: 8, height: 8 };
-			if ( format === GPUTextureFormat.ASTC10x5Unorm || format === GPUTextureFormat.ASTC10x5UnormSRGB ) return { byteLength: 16, width: 10, height: 5 };
-			if ( format === GPUTextureFormat.ASTC10x6Unorm || format === GPUTextureFormat.ASTC10x6UnormSRGB ) return { byteLength: 16, width: 10, height: 6 };
-			if ( format === GPUTextureFormat.ASTC10x8Unorm || format === GPUTextureFormat.ASTC10x8UnormSRGB ) return { byteLength: 16, width: 10, height: 8 };
-			if ( format === GPUTextureFormat.ASTC10x10Unorm || format === GPUTextureFormat.ASTC10x10UnormSRGB ) return { byteLength: 16, width: 10, height: 10 };
-			if ( format === GPUTextureFormat.ASTC12x10Unorm || format === GPUTextureFormat.ASTC12x10UnormSRGB ) return { byteLength: 16, width: 12, height: 10 };
-			if ( format === GPUTextureFormat.ASTC12x12Unorm || format === GPUTextureFormat.ASTC12x12UnormSRGB ) return { byteLength: 16, width: 12, height: 12 };
-
-		}
-
-		_convertAddressMode( value ) {
-
-			let addressMode = GPUAddressMode.ClampToEdge;
-
-			if ( value === RepeatWrapping ) {
-
-				addressMode = GPUAddressMode.Repeat;
-
-			} else if ( value === MirroredRepeatWrapping ) {
-
-				addressMode = GPUAddressMode.MirrorRepeat;
-
-			}
-
-			return addressMode;
-
-		}
-
-		_convertFilterMode( value ) {
-
-			let filterMode = GPUFilterMode.Linear;
-
-			if ( value === NearestFilter || value === NearestMipmapNearestFilter || value === NearestMipmapLinearFilter ) {
-
-				filterMode = GPUFilterMode.Nearest;
-
-			}
-
-			return filterMode;
-
-		}
-
-		_getBytesPerTexel( format ) {
-
-			if ( format === GPUTextureFormat.R8Unorm ) return 1;
-			if ( format === GPUTextureFormat.R16Float ) return 2;
-			if ( format === GPUTextureFormat.RG8Unorm ) return 2;
-			if ( format === GPUTextureFormat.RG16Float ) return 4;
-			if ( format === GPUTextureFormat.R32Float ) return 4;
-			if ( format === GPUTextureFormat.RGBA8Unorm || format === GPUTextureFormat.RGBA8UnormSRGB ) return 4;
-			if ( format === GPUTextureFormat.RG32Float ) return 8;
-			if ( format === GPUTextureFormat.RGBA16Float ) return 8;
-			if ( format === GPUTextureFormat.RGBA32Float ) return 16;
-
-		}
-
-		_getTypedArrayType( format ) {
-
-			if ( format === GPUTextureFormat.R8Uint ) return Uint8Array;
-			if ( format === GPUTextureFormat.R8Sint ) return Int8Array;
-			if ( format === GPUTextureFormat.R8Unorm ) return Uint8Array;
-			if ( format === GPUTextureFormat.R8Snorm ) return Int8Array;
-			if ( format === GPUTextureFormat.RG8Uint ) return Uint8Array;
-			if ( format === GPUTextureFormat.RG8Sint ) return Int8Array;
-			if ( format === GPUTextureFormat.RG8Unorm ) return Uint8Array;
-			if ( format === GPUTextureFormat.RG8Snorm ) return Int8Array;
-			if ( format === GPUTextureFormat.RGBA8Uint ) return Uint8Array;
-			if ( format === GPUTextureFormat.RGBA8Sint ) return Int8Array;
-			if ( format === GPUTextureFormat.RGBA8Unorm ) return Uint8Array;
-			if ( format === GPUTextureFormat.RGBA8Snorm ) return Int8Array;
-
-
-			if ( format === GPUTextureFormat.R16Uint ) return Uint16Array;
-			if ( format === GPUTextureFormat.R16Sint ) return Int16Array;
-			if ( format === GPUTextureFormat.RG16Uint ) return Uint16Array;
-			if ( format === GPUTextureFormat.RG16Sint ) return Int16Array;
-			if ( format === GPUTextureFormat.RGBA16Uint ) return Uint16Array;
-			if ( format === GPUTextureFormat.RGBA16Sint ) return Int16Array;
-
-
-			if ( format === GPUTextureFormat.R32Uint ) return Uint32Array;
-			if ( format === GPUTextureFormat.R32Sint ) return Int32Array;
-			if ( format === GPUTextureFormat.R32Float ) return Float32Array;
-			if ( format === GPUTextureFormat.RG32Uint ) return Uint32Array;
-			if ( format === GPUTextureFormat.RG32Sint ) return Int32Array;
-			if ( format === GPUTextureFormat.RG32Float ) return Float32Array;
-			if ( format === GPUTextureFormat.RGBA32Uint ) return Uint32Array;
-			if ( format === GPUTextureFormat.RGBA32Sint ) return Int32Array;
-			if ( format === GPUTextureFormat.RGBA32Float ) return Float32Array;
-
-		}
-
-		_getDimension( texture ) {
-
-			let dimension;
-
-			if ( texture.isData3DTexture ) {
-
-				dimension = GPUTextureDimension.ThreeD;
-
-			} else {
-
-				dimension = GPUTextureDimension.TwoD;
-
-			}
-
-			return dimension;
-
-		}
-
-		_getFormat( texture ) {
-
-			const format = texture.format;
-			const type = texture.type;
-			const colorSpace = texture.colorSpace;
-
-			let formatGPU;
-
-			if ( /*texture.isRenderTargetTexture === true ||*/ texture.isFramebufferTexture === true ) {
-
-				formatGPU = GPUTextureFormat.BGRA8Unorm;
-
-			} else if ( texture.isCompressedTexture === true ) {
-
-				switch ( format ) {
-
-					case RGBA_S3TC_DXT1_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.BC1RGBAUnormSRGB : GPUTextureFormat.BC1RGBAUnorm;
-						break;
-
-					case RGBA_S3TC_DXT3_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.BC2RGBAUnormSRGB : GPUTextureFormat.BC2RGBAUnorm;
-						break;
-
-					case RGBA_S3TC_DXT5_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.BC3RGBAUnormSRGB : GPUTextureFormat.BC3RGBAUnorm;
-						break;
-
-					case RGB_ETC2_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ETC2RGB8UnormSRGB : GPUTextureFormat.ETC2RGB8Unorm;
-						break;
-
-					case RGBA_ETC2_EAC_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ETC2RGBA8UnormSRGB : GPUTextureFormat.ETC2RGBA8Unorm;
-						break;
-
-					case RGBA_ASTC_4x4_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC4x4UnormSRGB : GPUTextureFormat.ASTC4x4Unorm;
-						break;
-
-					case RGBA_ASTC_5x4_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC5x4UnormSRGB : GPUTextureFormat.ASTC5x4Unorm;
-						break;
-
-					case RGBA_ASTC_5x5_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC5x5UnormSRGB : GPUTextureFormat.ASTC5x5Unorm;
-						break;
-
-					case RGBA_ASTC_6x5_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC6x5UnormSRGB : GPUTextureFormat.ASTC6x5Unorm;
-						break;
-
-					case RGBA_ASTC_6x6_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC6x6UnormSRGB : GPUTextureFormat.ASTC6x6Unorm;
-						break;
-
-					case RGBA_ASTC_8x5_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC8x5UnormSRGB : GPUTextureFormat.ASTC8x5Unorm;
-						break;
-
-					case RGBA_ASTC_8x6_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC8x6UnormSRGB : GPUTextureFormat.ASTC8x6Unorm;
-						break;
-
-					case RGBA_ASTC_8x8_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC8x8UnormSRGB : GPUTextureFormat.ASTC8x8Unorm;
-						break;
-
-					case RGBA_ASTC_10x5_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x5UnormSRGB : GPUTextureFormat.ASTC10x5Unorm;
-						break;
-
-					case RGBA_ASTC_10x6_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x6UnormSRGB : GPUTextureFormat.ASTC10x6Unorm;
-						break;
-
-					case RGBA_ASTC_10x8_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x8UnormSRGB : GPUTextureFormat.ASTC10x8Unorm;
-						break;
-
-					case RGBA_ASTC_10x10_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC10x10UnormSRGB : GPUTextureFormat.ASTC10x10Unorm;
-						break;
-
-					case RGBA_ASTC_12x10_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC12x10UnormSRGB : GPUTextureFormat.ASTC12x10Unorm;
-						break;
-
-					case RGBA_ASTC_12x12_Format:
-						formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.ASTC12x12UnormSRGB : GPUTextureFormat.ASTC12x12Unorm;
-						break;
-
-				}
-
-			} else {
-
-				switch ( format ) {
-
-					case RGBAFormat:
-
-						switch ( type ) {
-
-							case UnsignedByteType:
-								formatGPU = ( colorSpace === SRGBColorSpace ) ? GPUTextureFormat.RGBA8UnormSRGB : GPUTextureFormat.RGBA8Unorm;
-								break;
-
-							case HalfFloatType:
-								formatGPU = GPUTextureFormat.RGBA16Float;
-								break;
-
-							case FloatType:
-								formatGPU = GPUTextureFormat.RGBA32Float;
-								break;
-
-						}
-
-						break;
-
-					case RedFormat:
-
-						switch ( type ) {
-
-							case UnsignedByteType:
-								formatGPU = GPUTextureFormat.R8Unorm;
-								break;
-
-							case HalfFloatType:
-								formatGPU = GPUTextureFormat.R16Float;
-								break;
-
-							case FloatType:
-								formatGPU = GPUTextureFormat.R32Float;
-								break;
-
-						}
-
-						break;
-
-					case RGFormat:
-
-						switch ( type ) {
-
-							case UnsignedByteType:
-								formatGPU = GPUTextureFormat.RG8Unorm;
-								break;
-
-							case HalfFloatType:
-								formatGPU = GPUTextureFormat.RG16Float;
-								break;
-
-							case FloatType:
-								formatGPU = GPUTextureFormat.RG32Float;
-								break;
-
-						}
-
-						break;
-
-					case DepthFormat:
-
-						switch ( type ) {
-
-							case UnsignedShortType:
-								formatGPU = GPUTextureFormat.Depth16Unorm;
-								break;
-
-							case UnsignedIntType:
-								formatGPU = GPUTextureFormat.Depth24Plus;
-								break;
-
-							case FloatType:
-								formatGPU = GPUTextureFormat.Depth32Float;
-								break;
-
-						}
-
-						break;
-
-					case DepthStencilFormat:
-
-						switch ( type ) {
-
-							case UnsignedInt248Type:
-								formatGPU = GPUTextureFormat.Depth24PlusStencil8;
-								break;
-
-							case FloatType:
-
-								if ( this.device.features.has( GPUFeatureName.Depth32FloatStencil8 ) === false ) ;
-
-								formatGPU = GPUTextureFormat.Depth32FloatStencil8;
-
-								break;
-
-						}
-
-						break;
-
-				}
-
-			}
-
-			return formatGPU;
-
-		}
-
-	}
-
 	/*// debugger tools
 	import 'https://greggman.github.io/webgpu-avoid-redundant-state-setting/webgpu-check-redundant-state-setting.js';
 	//*/
@@ -75519,7 +75626,7 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 
 					if ( results[ i ] !== 0n ) {
 
-						occluded.add( currentOcclusionQueryObjects[ i ], true );
+						occluded.add( currentOcclusionQueryObjects[ i ] );
 
 					}
 
