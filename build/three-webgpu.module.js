@@ -58446,9 +58446,9 @@ const lightsWithoutWrap = nodeProxy( LightsNode );
 
 function addLightNode( lightClass, lightNodeClass ) {
 
-	if ( LightNodes.has( lightClass ) ) throw new Error( `Redefinition of light node ${ lightNodeClass.name }` );
-	if ( typeof lightClass !== 'function' || ! lightClass.name ) throw new Error( `Light ${ lightClass.name } is not a class` );
-	if ( typeof lightNodeClass !== 'function' || ! lightNodeClass.name ) throw new Error( `Light node ${ lightNodeClass.name } is not a class` );
+	if ( LightNodes.has( lightClass ) ) throw new Error( `Redefinition of light node ${ lightNodeClass.type }` );
+	if ( typeof lightClass !== 'function' ) throw new Error( `Light ${ lightClass.name } is not a class` );
+	if ( typeof lightNodeClass !== 'function' || ! lightNodeClass.type ) throw new Error( `Light node ${ lightNodeClass.type } is not a class` );
 
 	LightNodes.set( lightClass, lightNodeClass );
 
@@ -60067,10 +60067,10 @@ const toFloat = ( value ) => {
 
 class NodeBuilder {
 
-	constructor( object, renderer, parser, scene = null ) {
+	constructor( object, renderer, parser, scene = null, material = null ) {
 
 		this.object = object;
-		this.material = ( object && object.material ) || null;
+		this.material = material || ( object && object.material ) || null;
 		this.geometry = ( object && object.geometry ) || null;
 		this.renderer = renderer;
 		this.parser = parser;
@@ -63939,9 +63939,9 @@ class PointLightNode extends AnalyticLightNode {
 
 }
 
-addLightNode( PointLight, PointLightNode );
-
 addNodeClass( 'PointLightNode', PointLightNode );
+
+addLightNode( PointLight, PointLightNode );
 
 class DirectionalLightNode extends AnalyticLightNode {
 
@@ -63971,9 +63971,9 @@ class DirectionalLightNode extends AnalyticLightNode {
 
 }
 
-addLightNode( DirectionalLight, DirectionalLightNode );
-
 addNodeClass( 'DirectionalLightNode', DirectionalLightNode );
+
+addLightNode( DirectionalLight, DirectionalLightNode );
 
 class SpotLightNode extends AnalyticLightNode {
 
@@ -64047,9 +64047,9 @@ class SpotLightNode extends AnalyticLightNode {
 
 }
 
-addLightNode( SpotLight, SpotLightNode );
-
 addNodeClass( 'SpotLightNode', SpotLightNode );
+
+addLightNode( SpotLight, SpotLightNode );
 
 class IESSpotLight extends SpotLight {
 
@@ -64099,9 +64099,9 @@ class IESSpotLightNode extends SpotLightNode {
 
 }
 
-addLightNode( IESSpotLight, IESSpotLightNode );
-
 addNodeClass( 'IESSpotLightNode', IESSpotLightNode );
+
+addLightNode( IESSpotLight, IESSpotLightNode );
 
 class AmbientLightNode extends AnalyticLightNode {
 
@@ -64119,9 +64119,9 @@ class AmbientLightNode extends AnalyticLightNode {
 
 }
 
-addLightNode( AmbientLight, AmbientLightNode );
-
 addNodeClass( 'AmbientLightNode', AmbientLightNode );
+
+addLightNode( AmbientLight, AmbientLightNode );
 
 class HemisphereLightNode extends AnalyticLightNode {
 
@@ -64163,9 +64163,9 @@ class HemisphereLightNode extends AnalyticLightNode {
 
 }
 
-addLightNode( HemisphereLight, HemisphereLightNode );
-
 addNodeClass( 'HemisphereLightNode', HemisphereLightNode );
+
+addLightNode( HemisphereLight, HemisphereLightNode );
 
 const checkerShaderNode = tslFn( ( inputs ) => {
 

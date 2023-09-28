@@ -58454,9 +58454,9 @@ var THREE = (async function (exports) {
 
 	function addLightNode( lightClass, lightNodeClass ) {
 
-		if ( LightNodes.has( lightClass ) ) throw new Error( `Redefinition of light node ${ lightNodeClass.name }` );
-		if ( typeof lightClass !== 'function' || ! lightClass.name ) throw new Error( `Light ${ lightClass.name } is not a class` );
-		if ( typeof lightNodeClass !== 'function' || ! lightNodeClass.name ) throw new Error( `Light node ${ lightNodeClass.name } is not a class` );
+		if ( LightNodes.has( lightClass ) ) throw new Error( `Redefinition of light node ${ lightNodeClass.type }` );
+		if ( typeof lightClass !== 'function' ) throw new Error( `Light ${ lightClass.name } is not a class` );
+		if ( typeof lightNodeClass !== 'function' || ! lightNodeClass.type ) throw new Error( `Light node ${ lightNodeClass.type } is not a class` );
 
 		LightNodes.set( lightClass, lightNodeClass );
 
@@ -60075,10 +60075,10 @@ var THREE = (async function (exports) {
 
 	class NodeBuilder {
 
-		constructor( object, renderer, parser, scene = null ) {
+		constructor( object, renderer, parser, scene = null, material = null ) {
 
 			this.object = object;
-			this.material = ( object && object.material ) || null;
+			this.material = material || ( object && object.material ) || null;
 			this.geometry = ( object && object.geometry ) || null;
 			this.renderer = renderer;
 			this.parser = parser;
@@ -63947,9 +63947,9 @@ var THREE = (async function (exports) {
 
 	}
 
-	addLightNode( PointLight, PointLightNode );
-
 	addNodeClass( 'PointLightNode', PointLightNode );
+
+	addLightNode( PointLight, PointLightNode );
 
 	class DirectionalLightNode extends AnalyticLightNode {
 
@@ -63979,9 +63979,9 @@ var THREE = (async function (exports) {
 
 	}
 
-	addLightNode( DirectionalLight, DirectionalLightNode );
-
 	addNodeClass( 'DirectionalLightNode', DirectionalLightNode );
+
+	addLightNode( DirectionalLight, DirectionalLightNode );
 
 	class SpotLightNode extends AnalyticLightNode {
 
@@ -64055,9 +64055,9 @@ var THREE = (async function (exports) {
 
 	}
 
-	addLightNode( SpotLight, SpotLightNode );
-
 	addNodeClass( 'SpotLightNode', SpotLightNode );
+
+	addLightNode( SpotLight, SpotLightNode );
 
 	class IESSpotLight extends SpotLight {
 
@@ -64107,9 +64107,9 @@ var THREE = (async function (exports) {
 
 	}
 
-	addLightNode( IESSpotLight, IESSpotLightNode );
-
 	addNodeClass( 'IESSpotLightNode', IESSpotLightNode );
+
+	addLightNode( IESSpotLight, IESSpotLightNode );
 
 	class AmbientLightNode extends AnalyticLightNode {
 
@@ -64127,9 +64127,9 @@ var THREE = (async function (exports) {
 
 	}
 
-	addLightNode( AmbientLight, AmbientLightNode );
-
 	addNodeClass( 'AmbientLightNode', AmbientLightNode );
+
+	addLightNode( AmbientLight, AmbientLightNode );
 
 	class HemisphereLightNode extends AnalyticLightNode {
 
@@ -64171,9 +64171,9 @@ var THREE = (async function (exports) {
 
 	}
 
-	addLightNode( HemisphereLight, HemisphereLightNode );
-
 	addNodeClass( 'HemisphereLightNode', HemisphereLightNode );
+
+	addLightNode( HemisphereLight, HemisphereLightNode );
 
 	const checkerShaderNode = tslFn( ( inputs ) => {
 

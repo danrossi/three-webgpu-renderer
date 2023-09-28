@@ -74,7 +74,7 @@ export default [
 				debugger: true
 			}),
 			terser({
-                keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
+               // keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
             }),
 			header(),
 			gzipPlugin({
@@ -124,7 +124,7 @@ export default [
 				debugger: true
 			}),
 			terser({
-                keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
+                //keep_classnames: /ArrayUniformNode|StorageBufferNode|UserDataNode|IESSpotLight|Material|PointLightHelper|FunctionNode|DirectionalLightHelper|SpotLightHelper|RectAreaLight|LightsNode|ToneMappingNode|HemisphereLightHelper/
             }),
 			header(),
 			gzipPlugin({
