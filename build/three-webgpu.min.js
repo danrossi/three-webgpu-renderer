@@ -11,7 +11,7 @@ var THREE = (async function (exports) {
 	 * Copyright 2010-2023 Three.js Authors
 	 * SPDX-License-Identifier: MIT
 	 */
-	const REVISION = '157dev';
+	const REVISION = '157';
 
 	const MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 	const TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -34539,7 +34539,8 @@ var THREE = (async function (exports) {
 
 			if ( ! startPoint.equals( endPoint ) ) {
 
-				this.curves.push( new LineCurve( endPoint, startPoint ) );
+				const lineType = ( startPoint.isVector2 === true ) ? 'LineCurve' : 'LineCurve3';
+				this.curves.push( new Curves[ lineType ]( endPoint, startPoint ) );
 
 			}
 
@@ -53209,16 +53210,9 @@ var THREE = (async function (exports) {
 
 		* getChildren() {
 
-			const self = this;
+			for ( const { childNode } of getNodeChildren( this ) ) {
 
-			for ( const { property, index, childNode } of getNodeChildren( this ) ) {
-
-				yield { childNode, replaceNode( node ) {
-
-					if ( index === undefined ) self[ property ] = node;
-					else self[ property ][ index ] = node;
-
-				} };
+				yield childNode;
 
 			}
 
@@ -53230,13 +53224,13 @@ var THREE = (async function (exports) {
 
 		}
 
-		traverse( callback, replaceNode = null ) {
+		traverse( callback ) {
 
-			callback( this, replaceNode );
+			callback( this );
 
-			for ( const { childNode, replaceNode } of this.getChildren() ) {
+			for ( const childNode of this.getChildren() ) {
 
-				childNode.traverse( callback, replaceNode );
+				childNode.traverse( callback );
 
 			}
 
@@ -53293,7 +53287,7 @@ var THREE = (async function (exports) {
 
 			const nodeProperties = builder.getNodeProperties( this );
 
-			for ( const { childNode } of this.getChildren() ) {
+			for ( const childNode of this.getChildren() ) {
 
 				nodeProperties[ '_node' + childNode.id ] = childNode;
 
@@ -53705,6 +53699,8 @@ var THREE = (async function (exports) {
 			this.node = node;
 			this.indexNode = indexNode;
 
+			this.isArrayElementNode = true;
+
 		}
 
 		getNodeType( builder ) {
@@ -53821,7 +53817,7 @@ var THREE = (async function (exports) {
 
 					const snippet = super.build( builder, type );
 
-					const nodeVar = builder.getVarFromNode( this, type );
+					const nodeVar = builder.getVarFromNode( this, null, type );
 					const propertyName = builder.getPropertyName( nodeVar );
 
 					builder.addLineFlowCode( `${propertyName} = ${snippet}` );
@@ -53900,6 +53896,8 @@ var THREE = (async function (exports) {
 
 			this.node = node;
 			this.components = components;
+
+			this.isSplitNode = true;
 
 		}
 
@@ -54106,7 +54104,7 @@ var THREE = (async function (exports) {
 
 					const nodeElement = NodeElements.get( prop );
 
-					return ( ...params ) => nodeElement( nodeObj, ...params );
+					return node.isStackNode ? ( ...params ) => nodeObj.add( nodeElement( ...params ) ) : ( ...params ) => nodeElement( nodeObj, ...params );
 
 				} else if ( prop === 'self' ) {
 
@@ -54116,7 +54114,7 @@ var THREE = (async function (exports) {
 
 					const nodeElement = NodeElements.get( prop.slice( 0, prop.length - 'Assign'.length ) );
 
-					return ( ...params ) => nodeObj.assign( nodeElement( nodeObj, ...params ) );
+					return node.isStackNode ? ( ...params ) => nodeObj.assign( params[ 0 ], nodeElement( ...params ) ) : ( ...params ) => nodeObj.assign( nodeElement( nodeObj, ...params ) );
 
 				} else if ( /^[xyzwrgbastpq]{1,4}$/.test( prop ) === true ) {
 
@@ -54624,6 +54622,8 @@ var THREE = (async function (exports) {
 			this.node = node;
 			this.name = name;
 
+			this.isVaryingNode = true;
+
 		}
 
 		isGlobal() {
@@ -55001,7 +55001,9 @@ var THREE = (async function (exports) {
 
 	class LightingModel {
 
-		init( /*input, stack, builder*/ ) { }
+		start( /*input, stack, builder*/ ) { }
+
+		finish( /*input, stack, builder*/ ) { }
 
 		direct( /*input, stack, builder*/ ) { }
 
@@ -55012,6 +55014,59 @@ var THREE = (async function (exports) {
 		ambientOcclusion( /*input, stack, builder*/ ) { }
 
 	}
+
+	class VarNode extends Node {
+
+		constructor( node, name = null ) {
+
+			super();
+
+			this.node = node;
+			this.name = name;
+
+		}
+
+		isGlobal() {
+
+			return true;
+
+		}
+
+		getHash( builder ) {
+
+			return this.name || super.getHash( builder );
+
+		}
+
+		getNodeType( builder ) {
+
+			return this.node.getNodeType( builder );
+
+		}
+
+		generate( builder ) {
+
+			const { node, name } = this;
+
+			const nodeVar = builder.getVarFromNode( this, name, builder.getVectorType( this.getNodeType( builder ) ) );
+
+			const propertyName = builder.getPropertyName( nodeVar );
+
+			const snippet = node.build( builder, nodeVar.type );
+
+			builder.addLineFlowCode( `${propertyName} = ${snippet}` );
+
+			return propertyName;
+
+		}
+
+	}
+
+	const temp = nodeProxy( VarNode );
+
+	addNodeElement( 'temp', temp );
+
+	addNodeClass( 'VarNode', VarNode );
 
 	class NodeAttribute {
 
@@ -55182,6 +55237,8 @@ var THREE = (async function (exports) {
 
 			this.name = name;
 
+			this.isPropertyNode = true;
+
 		}
 
 		getHash( builder ) {
@@ -55198,16 +55255,7 @@ var THREE = (async function (exports) {
 
 		generate( builder ) {
 
-			const nodeVary = builder.getVarFromNode( this, this.getNodeType( builder ) );
-			const name = this.name;
-
-			if ( name !== null ) {
-
-				nodeVary.name = name;
-
-			}
-
-			return builder.getPropertyName( nodeVary );
+			return builder.getPropertyName( builder.getVarFromNode( this, this.name ) );
 
 		}
 
@@ -56187,7 +56235,6 @@ var THREE = (async function (exports) {
 
 			} else {
 
-				const nodeType = this.getNodeType( builder );
 				const nodeData = builder.getDataFromNode( this );
 
 				let propertyName = nodeData.propertyName;
@@ -56195,7 +56242,7 @@ var THREE = (async function (exports) {
 				if ( propertyName === undefined ) {
 
 					const uvSnippet = uvNode.build( builder, 'vec2' );
-					const nodeVar = builder.getVarFromNode( this, nodeType );
+					const nodeVar = builder.getVarFromNode( this );
 
 					propertyName = builder.getPropertyName( nodeVar );
 
@@ -56231,6 +56278,7 @@ var THREE = (async function (exports) {
 				}
 
 				let snippet = propertyName;
+				const nodeType = this.getNodeType( builder );
 
 				if ( builder.needsColorSpaceToLinear( this.value ) ) {
 
@@ -56953,7 +57001,7 @@ var THREE = (async function (exports) {
 	}
 
 	nodeImmutable( ModelNode, ModelNode.DIRECTION );
-	const modelViewMatrix = label( nodeImmutable( ModelNode, ModelNode.VIEW_MATRIX ), 'modelViewMatrix' );
+	const modelViewMatrix = nodeImmutable( ModelNode, ModelNode.VIEW_MATRIX ).temp( 'ModelViewMatrix' );
 	const modelNormalMatrix = nodeImmutable( ModelNode, ModelNode.NORMAL_MATRIX );
 	const modelWorldMatrix = nodeImmutable( ModelNode, ModelNode.WORLD_MATRIX );
 	nodeImmutable( ModelNode, ModelNode.POSITION );
@@ -57039,7 +57087,7 @@ var THREE = (async function (exports) {
 	NormalNode.WORLD = 'world';
 
 	const normalGeometry = nodeImmutable( NormalNode, NormalNode.GEOMETRY );
-	const normalLocal = nodeImmutable( NormalNode, NormalNode.LOCAL );
+	const normalLocal = nodeImmutable( NormalNode, NormalNode.LOCAL ).temp( 'Normal' );
 	const normalView = nodeImmutable( NormalNode, NormalNode.VIEW );
 	const normalWorld = nodeImmutable( NormalNode, NormalNode.WORLD );
 	const transformedNormalView = property( 'vec3', 'TransformedNormalView' );
@@ -57047,89 +57095,6 @@ var THREE = (async function (exports) {
 	const transformedClearcoatNormalView = property( 'vec3', 'TransformedClearcoatNormalView' );
 
 	addNodeClass( 'NormalNode', NormalNode );
-
-	class VarNode extends Node {
-
-		constructor( node, name = null ) {
-
-			super();
-
-			this.node = node;
-			this.name = name;
-
-		}
-
-		assign( node ) {
-
-			node.traverse( ( childNode, replaceNode ) => {
-
-				if ( replaceNode && childNode.uuid === this.uuid ) {
-
-					replaceNode( this.node );
-
-				}
-
-			} );
-			this.node = node;
-			return this;
-
-		}
-
-		isGlobal() {
-
-			return true;
-
-		}
-
-		getHash( builder ) {
-
-			return this.name || super.getHash( builder );
-
-		}
-
-		getNodeType( builder ) {
-
-			return this.node.getNodeType( builder );
-
-		}
-
-		generate( builder ) {
-
-			const node = this.node;
-			const name = this.name;
-
-			if ( name === null && node.isTempNode === true ) {
-
-				return node.build( builder );
-
-			}
-
-			const type = builder.getVectorType( this.getNodeType( builder ) );
-
-			const snippet = node.build( builder, type );
-			const nodeVar = builder.getVarFromNode( this, type );
-
-			if ( name !== null ) {
-
-				nodeVar.name = name;
-
-			}
-
-			const propertyName = builder.getPropertyName( nodeVar );
-
-			builder.addLineFlowCode( `${propertyName} = ${snippet}` );
-
-			return propertyName;
-
-		}
-
-	}
-
-	const temp = nodeProxy( VarNode );
-
-	addNodeElement( 'temp', temp );
-
-	addNodeClass( 'VarNode', VarNode );
 
 	class TangentNode extends Node {
 
@@ -57392,7 +57357,7 @@ var THREE = (async function (exports) {
 	PositionNode.VIEW_DIRECTION = 'viewDirection';
 
 	const positionGeometry = nodeImmutable( PositionNode, PositionNode.GEOMETRY );
-	const positionLocal = nodeImmutable( PositionNode, PositionNode.LOCAL );
+	const positionLocal = nodeImmutable( PositionNode, PositionNode.LOCAL ).temp( 'Position' );
 	const positionWorld = nodeImmutable( PositionNode, PositionNode.WORLD );
 	const positionWorldDirection = nodeImmutable( PositionNode, PositionNode.WORLD_DIRECTION );
 	const positionView = nodeImmutable( PositionNode, PositionNode.VIEW );
@@ -57519,15 +57484,35 @@ var THREE = (async function (exports) {
 
 	// Evaluate the derivative of the height w.r.t. screen-space using forward differencing (listing 2)
 
-	const dHdxy_fwd = tslFn( ( { bumpTexture, bumpScale } ) => {
+	const dHdxy_fwd = tslFn( ( { textureNode, bumpScale } ) => {
 
-		const uvNode = uv();
+		let texNode = textureNode;
 
-		const Hll = texture( bumpTexture, uvNode ).x;
+		if ( texNode.isTextureNode !== true ) {
+
+			texNode.traverse( ( node ) => {
+
+				if ( node.isTextureNode === true ) texNode = node;
+
+			} );
+
+		}
+
+		if ( texNode.isTextureNode !== true ) {
+
+			throw new Error( 'THREE.TSL: dHdxy_fwd() requires a TextureNode.' );
+
+		}
+
+		const Hll = float( textureNode );
+		const uvNode = texNode.uvNode || uv();
+
+		// It's used to preserve the same TextureNode instance
+		const sampleTexture = ( uv ) => textureNode.cache().context( { getUVNode: () => uv } );
 
 		return vec2(
-			texture( bumpTexture, uvNode.add( uvNode.dFdx() ) ).x.sub( Hll ),
-			texture( bumpTexture, uvNode.add( uvNode.dFdy() ) ).x.sub( Hll )
+			float( sampleTexture( uvNode.add( uvNode.dFdx() ) ) ).sub( Hll ),
+			float( sampleTexture( uvNode.add( uvNode.dFdy() ) ) ).sub( Hll )
 		).mul( bumpScale );
 
 	} );
@@ -57553,11 +57538,11 @@ var THREE = (async function (exports) {
 
 	class BumpMapNode extends TempNode {
 
-		constructor( texture, scaleNode = null ) {
+		constructor( textureNode, scaleNode = null ) {
 
 			super( 'vec3' );
 
-			this.texture = texture;
+			this.textureNode = textureNode;
 			this.scaleNode = scaleNode;
 
 		}
@@ -57565,10 +57550,10 @@ var THREE = (async function (exports) {
 		setup() {
 
 			const bumpScale = this.scaleNode !== null ? this.scaleNode : 1;
-			const dHdxy = dHdxy_fwd( { bumpTexture: this.texture, bumpScale } );
+			const dHdxy = dHdxy_fwd( { textureNode: this.textureNode, bumpScale } );
 
 			return perturbNormalArb( {
-				surf_pos: positionView.negate(),
+				surf_pos: positionView,
 				surf_norm: normalView,
 				dHdxy
 			} );
@@ -57619,8 +57604,7 @@ var THREE = (async function (exports) {
 
 				} else if ( material.bumpMap ) {
 
-					// @TODO: Replace material.bumpMap to this.getTexture( 'bumpMap' )
-					node = bumpMap( material.bumpMap, materialReference( 'bumpScale', 'float' ) );
+					node = bumpMap( this.getTexture( 'bumpMap' ).r, materialReference( 'bumpScale', 'float' ) );
 
 				} else {
 
@@ -58094,7 +58078,6 @@ var THREE = (async function (exports) {
 
 			} else {
 
-				const nodeType = this.getNodeType( builder );
 				const nodeData = builder.getDataFromNode( this );
 
 				let propertyName = nodeData.propertyName;
@@ -58104,7 +58087,7 @@ var THREE = (async function (exports) {
 					const cubeUV = vec3( uvNode.x.negate(), uvNode.yz );
 					const uvSnippet = cubeUV.build( builder, 'vec3' );
 
-					const nodeVar = builder.getVarFromNode( this, 'vec4' );
+					const nodeVar = builder.getVarFromNode( this );
 
 					propertyName = builder.getPropertyName( nodeVar );
 
@@ -58134,6 +58117,7 @@ var THREE = (async function (exports) {
 				}
 
 				let snippet = propertyName;
+				const nodeType = this.getNodeType( builder );
 
 				if ( builder.needsColorSpaceToLinear( this.value ) ) {
 
@@ -58141,7 +58125,7 @@ var THREE = (async function (exports) {
 
 				}
 
-				return builder.format( snippet, 'vec4', output );
+				return builder.format( snippet, nodeType, output );
 
 			}
 
@@ -58355,6 +58339,11 @@ var THREE = (async function (exports) {
 
 			super( 'vec3' );
 
+			this.totalDiffuseNode = vec3().temp( 'totalDiffuse' );
+			this.totalSpecularNode = vec3().temp( 'totalSpecular' );
+
+			this.outgoingLightNode = vec3().temp( 'outgoingLight' );
+
 			this.lightNodes = lightNodes;
 
 			this._hash = null;
@@ -58369,13 +58358,66 @@ var THREE = (async function (exports) {
 
 		setup( builder ) {
 
-			const lightNodes = this.lightNodes;
+			const context = builder.context;
+			const lightingModel = context.lightingModel;
 
-			for ( const lightNode of lightNodes ) {
+			let outgoingLightNode = this.outgoingLightNode;
 
-				lightNode.build( builder );
+			if ( lightingModel ) {
+
+				const { lightNodes, totalDiffuseNode, totalSpecularNode } = this;
+
+				context.outgoingLight = outgoingLightNode;
+
+				const stack = builder.addStack();
+
+				//
+
+				lightingModel.start( context, stack, builder );
+
+				// lights
+
+				for ( const lightNode of lightNodes ) {
+
+					lightNode.build( builder );
+		
+				}
+
+				//
+
+				lightingModel.indirectDiffuse( context, stack, builder );
+				lightingModel.indirectSpecular( context, stack, builder );
+				lightingModel.ambientOcclusion( context, stack, builder );
+
+				//
+
+				const { backdrop, backdropAlpha } = context;
+				const { directDiffuse, directSpecular, indirectDiffuse, indirectSpecular } = context.reflectedLight;
+
+				let totalDiffuse = directDiffuse.add( indirectDiffuse );
+
+				if ( backdrop !== null ) {
+
+					totalDiffuse = vec3( backdropAlpha !== null ? backdropAlpha.mix( totalDiffuse, backdrop ) : backdrop );
+		
+				}
+
+				stack.assign( totalDiffuseNode, totalDiffuse );
+				stack.assign( totalSpecularNode, directSpecular.add( indirectSpecular ) );
+
+				stack.assign( outgoingLightNode, totalDiffuseNode.add( totalSpecularNode ) );
+
+				//
+
+				lightingModel.finish( context, stack, builder );
+
+				//
+
+				outgoingLightNode = outgoingLightNode.bypass( builder.removeStack() );
 
 			}
+
+			return outgoingLightNode;
 
 		}
 
@@ -58477,7 +58519,7 @@ var THREE = (async function (exports) {
 			const aoIntensity = 1;
 			const aoNode = this.aoNode.x.sub( 1.0 ).mul( aoIntensity ).add( 1.0 );
 
-			builder.context.ambientOcclusion.mulAssign( aoNode );
+			builder.stack.mulAssign( builder.context.ambientOcclusion, aoNode );
 
 		}
 
@@ -58495,80 +58537,46 @@ var THREE = (async function (exports) {
 			this.backdropNode = backdropNode;
 			this.backdropAlphaNode = backdropAlphaNode;
 
-		}
-
-		getNodeType( /*builder*/ ) {
-
-			return 'vec3';
+			this._context = null;
 
 		}
 
-		setup( builder ) {
+		getContext() {
 
-			const { lightingModel, backdropNode, backdropAlphaNode } = this;
+			const { backdropNode, backdropAlphaNode } = this;
 
-			const context = this.context = {}; // reset context
-			const properties = builder.getNodeProperties( this );
-
-			const directDiffuse = vec3().temp(),
-				directSpecular = vec3().temp(),
-				indirectDiffuse = vec3().temp(),
-				indirectSpecular = vec3().temp();
-
-			let totalDiffuse = add( directDiffuse, indirectDiffuse );
-
-			if ( backdropNode !== null ) {
-
-				totalDiffuse = vec3( backdropAlphaNode !== null ? mix( totalDiffuse, backdropNode, backdropAlphaNode ) : backdropNode );
-
-			}
-
-			const totalSpecular = add( directSpecular, indirectSpecular );
-			const total = add( totalDiffuse, totalSpecular ).temp();
+			const directDiffuse = vec3().temp( 'directDiffuse' ),
+				directSpecular = vec3().temp( 'directSpecular' ),
+				indirectDiffuse = vec3().temp( 'indirectDiffuse' ),
+				indirectSpecular = vec3().temp( 'indirectSpecular' );
 
 			const reflectedLight = {
 				directDiffuse,
 				directSpecular,
 				indirectDiffuse,
-				indirectSpecular,
-				total
+				indirectSpecular
 			};
 
-			const lighting = {
-				radiance: vec3().temp(),
-				irradiance: vec3().temp(),
-				iblIrradiance: vec3().temp(),
-				ambientOcclusion: float( 1 ).temp()
+			const context = {
+				radiance: vec3().temp( 'radiance' ),
+				irradiance: vec3().temp( 'irradiance' ),
+				iblIrradiance: vec3().temp( 'iblIrradiance' ),
+				ambientOcclusion: float( 1 ).temp( 'ambientOcclusion' ),
+				reflectedLight,
+				backdrop: backdropNode,
+				backdropAlpha : backdropAlphaNode
 			};
 
-			context.reflectedLight = reflectedLight;
-			context.lightingModel = lightingModel || context.lightingModel;
-
-			Object.assign( properties, reflectedLight, lighting );
-			Object.assign( context, lighting );
-
-			if ( lightingModel ) {
-
-				lightingModel.init( context, builder.stack, builder );
-
-				lightingModel.indirectDiffuse( context, builder.stack, builder );
-				lightingModel.indirectSpecular( context, builder.stack, builder );
-				lightingModel.ambientOcclusion( context, builder.stack, builder );
-
-			}
-
-			return super.setup( builder );
+			return context;
 
 		}
 
-		generate( builder ) {
+		setup( builder ) {
 
-			const { context } = this;
-			const type = this.getNodeType( builder );
+			this.context = this._context || ( this._context = this.getContext() );
+			this.context.lightingModel = this.lightingModel || builder.context.lightingModel;
 
-			super.generate( builder, type );
-
-			return context.reflectedLight.total.build( builder, type );
+			return super.setup( builder );
 
 		}
 
@@ -58694,7 +58702,6 @@ var THREE = (async function (exports) {
 		setup( builder ) {
 
 			let envNode = this.envNode;
-			const properties = builder.getNodeProperties( this );
 
 			if ( envNode.isTextureNode && envNode.value.isCubeTexture !== true ) {
 
@@ -58729,9 +58736,11 @@ var THREE = (async function (exports) {
 
 			//
 
-			builder.context.radiance.addAssign( isolateRadiance );
+			const { stack } = builder;
 
-			builder.context.iblIrradiance.addAssign( irradiance );
+			stack.addAssign( builder.context.radiance, isolateRadiance );
+
+			stack.addAssign( builder.context.iblIrradiance, irradiance );
 
 			//
 
@@ -58742,14 +58751,9 @@ var THREE = (async function (exports) {
 				const clearcoatRadianceContext = context( envNode, createRadianceContext( clearcoatRoughness, transformedClearcoatNormalView ) ).mul( intensity );
 				const isolateClearcoatRadiance = cache( clearcoatRadianceContext );
 
-				clearcoatRadiance.addAssign( isolateClearcoatRadiance );
+				stack.addAssign( clearcoatRadiance, isolateClearcoatRadiance );
 
 			}
-
-			//
-
-			properties.radiance = isolateRadiance;
-			properties.irradiance = irradiance;
 
 		}
 
@@ -59718,185 +59722,6 @@ var THREE = (async function (exports) {
 
 	addNodeClass( 'CondNode', CondNode );
 
-	class LoopNode extends Node {
-
-		constructor( params = [] ) {
-
-			super();
-
-			this.params = params;
-
-		}
-
-		getVarName( index ) {
-
-			return String.fromCharCode( 'i'.charCodeAt() + index );
-
-		}
-
-		getProperties( builder ) {
-
-			const properties = builder.getNodeProperties( this );
-
-			if ( properties.stackNode !== undefined ) return properties;
-
-			//
-
-			const inputs = {};
-
-			for ( let i = 0, l = this.params.length - 1; i < l; i ++ ) {
-
-				const prop = this.getVarName( i );
-
-				inputs[ prop ] = expression( prop, 'int' );
-
-			}
-
-			properties.returnsNode = this.params[ this.params.length - 1 ]( inputs, builder.addStack(), builder );
-			properties.stackNode = builder.removeStack();
-
-			return properties;
-
-		}
-
-		getNodeType( builder ) {
-
-			const { returnsNode } = this.getProperties( builder );
-
-			return returnsNode ? returnsNode.getNodeType( builder ) : 'void';
-
-		}
-
-		setup( builder ) {
-
-			// setup properties
-
-			this.getProperties( builder );
-
-		}
-
-		generate( builder ) {
-
-			const properties = this.getProperties( builder );
-
-			const contextData = { tempWrite: false };
-
-			const params = this.params;
-			const stackNode = properties.stackNode;
-
-			for ( let i = 0, l = params.length - 1; i < l; i ++ ) {
-
-				const param = params[ i ];
-				const property = this.getVarName( i );
-
-				let start = null, end = null, direction = null;
-
-				if ( param.isNode ) {
-
-					start = '0';
-					end = param.build( builder, 'int' );
-					direction = 'forward';
-
-				} else {
-
-					start = param.start;
-					end = param.end;
-					direction = param.direction;
-
-					if ( typeof start === 'number' ) start = start.toString();
-					else if ( start && start.isNode ) start = start.build( builder, 'int' );
-
-					if ( typeof end === 'number' ) end = end.toString();
-					else if ( end && end.isNode ) end = end.build( builder, 'int' );
-
-					if ( start !== undefined && end === undefined ) {
-
-						start = start + ' - 1';
-						end = '0';
-						direction = 'backwards';
-
-					} else if ( end !== undefined && start === undefined ) {
-
-						start = '0';
-						direction = 'forward';
-
-					}
-
-					if ( direction === undefined ) {
-
-						if ( Number( start ) > Number( end ) ) {
-
-							direction = 'backwards';
-
-						} else {
-
-							direction = 'forward';
-
-						}
-
-					}
-
-				}
-
-				const internalParam = { start, end, direction };
-
-				//
-
-				const startSnippet = internalParam.start;
-				const endSnippet = internalParam.end;
-
-				let declarationSnippet = '';
-				let conditionalSnippet = '';
-				let updateSnippet = '';
-
-				declarationSnippet += builder.getVar( 'int', property ) + ' = ' + startSnippet;
-
-				if ( internalParam.direction === 'backwards' ) {
-
-					conditionalSnippet += property + ' >= ' + endSnippet;
-					updateSnippet += property + ' --';
-
-				} else {
-
-					// forward
-
-					conditionalSnippet += property + ' < ' + endSnippet;
-					updateSnippet += property + ' ++';
-
-				}
-
-				const forSnippet = `for ( ${ declarationSnippet }; ${ conditionalSnippet }; ${ updateSnippet } )`;
-
-				builder.addFlowCode( ( i === 0 ? '\n' : '' ) + builder.tab + forSnippet + ' {\n\n' ).addFlowTab();
-
-			}
-
-			const stackSnippet = context( stackNode, contextData ).build( builder, 'void' );
-
-			const returnsSnippet = properties.returnsNode ? properties.returnsNode.build( builder ) : '';
-
-			builder.removeFlowTab().addFlowCode( '\n' + builder.tab + stackSnippet );
-
-			for ( let i = 0, l = this.params.length - 1; i < l; i ++ ) {
-
-				builder.addFlowCode( ( i === 0 ? '' : builder.tab ) + '}\n\n' ).removeFlowTab();
-
-			}
-
-			builder.addFlowTab();
-
-			return returnsSnippet;
-
-		}
-
-	}
-
-	const loop = ( ...params ) => nodeObject( new LoopNode( nodeArray( params, 'int' ) ) );
-
-	addNodeElement( 'loop', ( returns, ...params ) => bypass( returns, loop( ...params ) ) );
-
-	addNodeClass( 'LoopNode', LoopNode );
-
 	class StackNode extends Node {
 
 		constructor( parent = null ) {
@@ -59954,18 +59779,6 @@ var THREE = (async function (exports) {
 			this._currentCond.elseNode = new ShaderNode( method );
 
 			return this;
-
-		}
-
-		assign( targetNode, sourceValue ) {
-
-			return this.add( assign( targetNode, sourceValue ) );
-
-		}
-
-		loop( ...params ) {
-
-			return this.add( loop( ...params ) );
 
 		}
 
@@ -60687,7 +60500,7 @@ var THREE = (async function (exports) {
 
 		}
 
-		getVarFromNode( node, type, shaderStage = this.shaderStage ) {
+		getVarFromNode( node, name = null, type = node.getNodeType( this ), shaderStage = this.shaderStage ) {
 
 			const nodeData = this.getDataFromNode( node, shaderStage );
 
@@ -60696,9 +60509,10 @@ var THREE = (async function (exports) {
 			if ( nodeVar === undefined ) {
 
 				const vars = this.vars[ shaderStage ];
-				const index = vars.length;
 
-				nodeVar = new NodeVar( 'nodeVar' + index, type );
+				if ( name === null ) name = 'nodeVar' + vars.length;
+
+				nodeVar = new NodeVar( name, type );
 
 				vars.push( nodeVar );
 
@@ -61281,7 +61095,7 @@ var THREE = (async function (exports) {
 
 		generate( builder, output ) {
 
-			const nodeVar = builder.getVarFromNode( this, this.nodeType );
+			const nodeVar = builder.getVarFromNode( this );
 			nodeVar.isOutputStructVar = true;
 
 			const propertyName = builder.getPropertyName( nodeVar );
@@ -61357,6 +61171,185 @@ var THREE = (async function (exports) {
 	addNodeElement( 'discard', discard );
 
 	addNodeClass( 'DiscardNode', DiscardNode );
+
+	class LoopNode extends Node {
+
+		constructor( params = [] ) {
+
+			super();
+
+			this.params = params;
+
+		}
+
+		getVarName( index ) {
+
+			return String.fromCharCode( 'i'.charCodeAt() + index );
+
+		}
+
+		getProperties( builder ) {
+
+			const properties = builder.getNodeProperties( this );
+
+			if ( properties.stackNode !== undefined ) return properties;
+
+			//
+
+			const inputs = {};
+
+			for ( let i = 0, l = this.params.length - 1; i < l; i ++ ) {
+
+				const prop = this.getVarName( i );
+
+				inputs[ prop ] = expression( prop, 'int' );
+
+			}
+
+			properties.returnsNode = this.params[ this.params.length - 1 ]( inputs, builder.addStack(), builder );
+			properties.stackNode = builder.removeStack();
+
+			return properties;
+
+		}
+
+		getNodeType( builder ) {
+
+			const { returnsNode } = this.getProperties( builder );
+
+			return returnsNode ? returnsNode.getNodeType( builder ) : 'void';
+
+		}
+
+		setup( builder ) {
+
+			// setup properties
+
+			this.getProperties( builder );
+
+		}
+
+		generate( builder ) {
+
+			const properties = this.getProperties( builder );
+
+			const contextData = { tempWrite: false };
+
+			const params = this.params;
+			const stackNode = properties.stackNode;
+
+			for ( let i = 0, l = params.length - 1; i < l; i ++ ) {
+
+				const param = params[ i ];
+				const property = this.getVarName( i );
+
+				let start = null, end = null, direction = null;
+
+				if ( param.isNode ) {
+
+					start = '0';
+					end = param.build( builder, 'int' );
+					direction = 'forward';
+
+				} else {
+
+					start = param.start;
+					end = param.end;
+					direction = param.direction;
+
+					if ( typeof start === 'number' ) start = start.toString();
+					else if ( start && start.isNode ) start = start.build( builder, 'int' );
+
+					if ( typeof end === 'number' ) end = end.toString();
+					else if ( end && end.isNode ) end = end.build( builder, 'int' );
+
+					if ( start !== undefined && end === undefined ) {
+
+						start = start + ' - 1';
+						end = '0';
+						direction = 'backwards';
+
+					} else if ( end !== undefined && start === undefined ) {
+
+						start = '0';
+						direction = 'forward';
+
+					}
+
+					if ( direction === undefined ) {
+
+						if ( Number( start ) > Number( end ) ) {
+
+							direction = 'backwards';
+
+						} else {
+
+							direction = 'forward';
+
+						}
+
+					}
+
+				}
+
+				const internalParam = { start, end, direction };
+
+				//
+
+				const startSnippet = internalParam.start;
+				const endSnippet = internalParam.end;
+
+				let declarationSnippet = '';
+				let conditionalSnippet = '';
+				let updateSnippet = '';
+
+				declarationSnippet += builder.getVar( 'int', property ) + ' = ' + startSnippet;
+
+				if ( internalParam.direction === 'backwards' ) {
+
+					conditionalSnippet += property + ' >= ' + endSnippet;
+					updateSnippet += property + ' --';
+
+				} else {
+
+					// forward
+
+					conditionalSnippet += property + ' < ' + endSnippet;
+					updateSnippet += property + ' ++';
+
+				}
+
+				const forSnippet = `for ( ${ declarationSnippet }; ${ conditionalSnippet }; ${ updateSnippet } )`;
+
+				builder.addFlowCode( ( i === 0 ? '\n' : '' ) + builder.tab + forSnippet + ' {\n\n' ).addFlowTab();
+
+			}
+
+			const stackSnippet = context( stackNode, contextData ).build( builder, 'void' );
+
+			const returnsSnippet = properties.returnsNode ? properties.returnsNode.build( builder ) : '';
+
+			builder.removeFlowTab().addFlowCode( '\n' + builder.tab + stackSnippet );
+
+			for ( let i = 0, l = this.params.length - 1; i < l; i ++ ) {
+
+				builder.addFlowCode( ( i === 0 ? '' : builder.tab ) + '}\n\n' ).removeFlowTab();
+
+			}
+
+			builder.addFlowTab();
+
+			return returnsSnippet;
+
+		}
+
+	}
+
+	const loop = ( ...params ) => nodeObject( new LoopNode( nodeArray( params, 'int' ) ) );
+
+	addNodeElement( 'loop', ( returns, ...params ) => bypass( returns, loop( ...params ) ) );
+
+	addNodeClass( 'LoopNode', LoopNode );
 
 	class MatcapUVNode extends TempNode {
 
@@ -63941,7 +63934,7 @@ var THREE = (async function (exports) {
 				lightDirection,
 				lightColor,
 				reflectedLight
-			} );
+			}, builder.stack, builder );
 
 		}
 
@@ -63973,7 +63966,7 @@ var THREE = (async function (exports) {
 				lightDirection,
 				lightColor,
 				reflectedLight
-			} );
+			}, builder.stack, builder );
 
 		}
 
@@ -64049,7 +64042,7 @@ var THREE = (async function (exports) {
 				lightDirection,
 				lightColor,
 				reflectedLight
-			} );
+			}, builder.stack, builder );
 
 		}
 
@@ -64119,9 +64112,9 @@ var THREE = (async function (exports) {
 
 		}
 
-		setup( { context } ) {
+		setup( builder ) {
 
-			context.irradiance.addAssign( this.colorNode );
+			builder.stack.addAssign( builder.context.irradiance, this.colorNode );
 
 		}
 
@@ -64165,7 +64158,7 @@ var THREE = (async function (exports) {
 
 			const irradiance = mix( groundColorNode, colorNode, hemiDiffuseWeight );
 
-			builder.context.irradiance.addAssign( irradiance );
+			builder.stack.addAssign( builder.context.irradiance, irradiance );
 
 		}
 
@@ -64347,7 +64340,6 @@ var THREE = (async function (exports) {
 				stack.assign( start, modelViewMatrix.mul( vec4( instanceStart, 1.0 ) ) ); // force assignment into correct place in flow
 				stack.assign( end, modelViewMatrix.mul( vec4( instanceEnd, 1.0 ) ) );
 
-
 				if ( useWorldUnits ) {
 
 					stack.assign( varying( vec3(), 'worldStart' ), start.xyz );
@@ -64387,7 +64379,7 @@ var THREE = (async function (exports) {
 				const ndcEnd = clipEnd.xyz.div( clipEnd.w );
 
 				// direction
-				const dir = ndcEnd.xy.sub( ndcStart.xy );
+				const dir = ndcEnd.xy.sub( ndcStart.xy ).temp();
 
 				// account for clip-space aspect ratio
 				stack.assign( dir.x, dir.x.mul( aspect ) );
@@ -64813,24 +64805,24 @@ var THREE = (async function (exports) {
 
 		}
 
-		direct( { lightDirection, lightColor, reflectedLight } ) {
+		direct( { lightDirection, lightColor, reflectedLight }, stack ) {
 
 			const dotNL = transformedNormalView.dot( lightDirection ).clamp();
 			const irradiance = dotNL.mul( lightColor );
 
-			reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
+			stack.addAssign( reflectedLight.directDiffuse, irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
 
 			if ( this.specular === true ) {
 
-				reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_BlinnPhong( { lightDirection } ) ).mul( materialSpecularStrength ) );
+				stack.addAssign( reflectedLight.directSpecular, irradiance.mul( BRDF_BlinnPhong( { lightDirection } ) ).mul( materialSpecularStrength ) );
 
 			}
 
 		}
 
-		indirectDiffuse( { irradiance, reflectedLight } ) {
+		indirectDiffuse( { irradiance, reflectedLight }, stack ) {
 
-			reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
+			stack.addAssign( reflectedLight.indirectDiffuse, irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
 
 		}
 
@@ -65232,7 +65224,7 @@ var THREE = (async function (exports) {
 
 	class PhysicalLightingModel extends LightingModel {
 
-		constructor( clearcoat = true, sheen = true, iridescence = true ) {
+		constructor( clearcoat = false, sheen = false, iridescence = false ) {
 
 			super();
 
@@ -65248,38 +65240,18 @@ var THREE = (async function (exports) {
 
 		}
 
-		init( { reflectedLight } ) {
+		start( /*context*/ ) {
 
 			if ( this.clearcoat === true ) {
 
-				this.clearcoatRadiance = vec3().temp();
-				this.clearcoatSpecular = vec3().temp();
-
-				const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
-
-				const Fcc = F_Schlick( {
-					dotVH: dotNVcc,
-					f0: clearcoatF0,
-					f90: clearcoatF90
-				} );
-
-				const outgoingLight = reflectedLight.total;
-				const clearcoatLight = outgoingLight.mul( clearcoat.mul( Fcc ).oneMinus() ).add( this.clearcoatSpecular.mul( clearcoat ) );
-
-				outgoingLight.assign( clearcoatLight );
+				this.clearcoatRadiance = vec3().temp( 'clearcoatRadiance' );
+				this.clearcoatSpecular = vec3().temp( 'clearcoatSpecular' );
 
 			}
 
 			if ( this.sheen === true ) {
 
-				this.sheenSpecular = vec3().temp();
-
-				const outgoingLight = reflectedLight.total;
-
-				const sheenEnergyComp = sheen.r.max( sheen.g ).max( sheen.b ).mul( 0.157 ).oneMinus();
-				const sheenLight = outgoingLight.mul( sheenEnergyComp ).add( this.sheenSpecular );
-
-				outgoingLight.assign( sheenLight );
+				this.sheenSpecular = vec3().temp( 'sheenSpecular' );
 
 			}
 
@@ -65298,7 +65270,7 @@ var THREE = (async function (exports) {
 		// Approximates multiscattering in order to preserve energy.
 		// http://www.jcgt.org/published/0008/01/03/
 
-		computeMultiscattering( singleScatter, multiScatter, specularF90 = float( 1 ) ) {
+		computeMultiscattering( stack, singleScatter, multiScatter, specularF90 = float( 1 ) ) {
 
 			const fab = DFGApprox( { roughness } );
 
@@ -65312,19 +65284,19 @@ var THREE = (async function (exports) {
 			const Favg = specularColor.add( specularColor.oneMinus().mul( 0.047619 ) ); // 1/21
 			const Fms = FssEss.mul( Favg ).div( Ems.mul( Favg ).oneMinus() );
 
-			singleScatter.addAssign( FssEss );
-			multiScatter.addAssign( Fms.mul( Ems ) );
+			stack.addAssign( singleScatter, FssEss );
+			stack.addAssign( multiScatter, Fms.mul( Ems ) );
 
 		}
 
-		direct( { lightDirection, lightColor, reflectedLight } ) {
+		direct( { lightDirection, lightColor, reflectedLight }, stack ) {
 
 			const dotNL = transformedNormalView.dot( lightDirection ).clamp();
 			const irradiance = dotNL.mul( lightColor );
 
 			if ( this.sheen === true ) {
 
-				this.sheenSpecular.addAssign( irradiance.mul( BRDF_Sheen( { lightDirection } ) ) );
+				stack.addAssign( this.sheenSpecular, irradiance.mul( BRDF_Sheen( { lightDirection } ) ) );
 
 			}
 
@@ -65333,27 +65305,27 @@ var THREE = (async function (exports) {
 				const dotNLcc = transformedClearcoatNormalView.dot( lightDirection ).clamp();
 				const ccIrradiance = dotNLcc.mul( lightColor );
 
-				this.clearcoatSpecular.addAssign( ccIrradiance.mul( BRDF_GGX( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
+				stack.addAssign( this.clearcoatSpecular, ccIrradiance.mul( BRDF_GGX( { lightDirection, f0: clearcoatF0, f90: clearcoatF90, roughness: clearcoatRoughness, normalView: transformedClearcoatNormalView } ) ) );
 
 			}
 
-			reflectedLight.directDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
+			stack.addAssign( reflectedLight.directDiffuse, irradiance.mul( BRDF_Lambert( { diffuseColor: diffuseColor.rgb } ) ) );
 
-			reflectedLight.directSpecular.addAssign( irradiance.mul( BRDF_GGX( { lightDirection, f0: specularColor, f90: 1, roughness, iridescence: this.iridescence, iridescenceFresnel: this.iridescenceFresnel } ) ) );
-
-		}
-
-		indirectDiffuse( { irradiance, reflectedLight } ) {
-
-			reflectedLight.indirectDiffuse.addAssign( irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
+			stack.addAssign( reflectedLight.directSpecular, irradiance.mul( BRDF_GGX( { lightDirection, f0: specularColor, f90: 1, roughness, iridescence: this.iridescence, iridescenceFresnel: this.iridescenceFresnel } ) ) );
 
 		}
 
-		indirectSpecular( { radiance, iblIrradiance, reflectedLight, } ) {
+		indirectDiffuse( { irradiance, reflectedLight }, stack ) {
+
+			stack.addAssign( reflectedLight.indirectDiffuse, irradiance.mul( BRDF_Lambert( { diffuseColor } ) ) );
+
+		}
+
+		indirectSpecular( { radiance, iblIrradiance, reflectedLight }, stack ) {
 
 			if ( this.sheen === true ) {
 
-				this.sheenSpecular.addAssign( iblIrradiance.mul(
+				stack.addAssign( this.sheenSpecular, iblIrradiance.mul(
 					sheen,
 					IBLSheenBRDF( transformedNormalView, positionViewDirection, sheenRoughness )
 				) );
@@ -65371,30 +65343,30 @@ var THREE = (async function (exports) {
 					roughness: clearcoatRoughness
 				} );
 
-				this.clearcoatSpecular.addAssign( this.clearcoatRadiance.mul( clearcoatEnv ) );
+				stack.addAssign( this.clearcoatSpecular, this.clearcoatRadiance.mul( clearcoatEnv ) );
 
 			}
 
 			// Both indirect specular and indirect diffuse light accumulate here
 
-			const singleScattering = vec3().temp();
-			const multiScattering = vec3().temp();
+			const singleScattering = vec3().temp( 'singleScattering' );
+			const multiScattering = vec3().temp( 'multiScattering' );
 			const cosineWeightedIrradiance = iblIrradiance.mul( 1 / Math.PI );
 
-			this.computeMultiscattering( singleScattering, multiScattering );
+			this.computeMultiscattering( stack, singleScattering, multiScattering );
 
 			const totalScattering = singleScattering.add( multiScattering );
 
 			const diffuse = diffuseColor.mul( totalScattering.r.max( totalScattering.g ).max( totalScattering.b ).oneMinus() );
 
-			reflectedLight.indirectSpecular.addAssign( radiance.mul( singleScattering ) );
-			reflectedLight.indirectSpecular.addAssign( multiScattering.mul( cosineWeightedIrradiance ) );
+			stack.addAssign( reflectedLight.indirectSpecular, radiance.mul( singleScattering ) );
+			stack.addAssign( reflectedLight.indirectSpecular, multiScattering.mul( cosineWeightedIrradiance ) );
 
-			reflectedLight.indirectDiffuse.addAssign( diffuse.mul( cosineWeightedIrradiance ) );
+			stack.addAssign( reflectedLight.indirectDiffuse, diffuse.mul( cosineWeightedIrradiance ) );
 
 		}
 
-		ambientOcclusion( { ambientOcclusion, reflectedLight } ) {
+		ambientOcclusion( { ambientOcclusion, reflectedLight }, stack ) {
 
 			const dotNV = transformedNormalView.dot( positionViewDirection ).clamp(); // @ TODO: Move to core dotNV
 
@@ -65403,9 +65375,39 @@ var THREE = (async function (exports) {
 
 			const aoNode = ambientOcclusion.sub( aoNV.pow( aoExp ).oneMinus() ).clamp();
 
-			reflectedLight.indirectDiffuse.mulAssign( ambientOcclusion );
+			stack.mulAssign( reflectedLight.indirectDiffuse, ambientOcclusion );
+			stack.mulAssign( reflectedLight.indirectSpecular, aoNode );
 
-			reflectedLight.indirectSpecular.mulAssign( aoNode );
+		}
+
+		finish( context, stack ) {
+
+			const { outgoingLight } = context;
+
+			if ( this.clearcoat === true ) {
+
+				const dotNVcc = transformedClearcoatNormalView.dot( positionViewDirection ).clamp();
+
+				const Fcc = F_Schlick( {
+					dotVH: dotNVcc,
+					f0: clearcoatF0,
+					f90: clearcoatF90
+				} );
+
+				const clearcoatLight = outgoingLight.mul( clearcoat.mul( Fcc ).oneMinus() ).add( this.clearcoatSpecular.mul( clearcoat ) );
+
+				stack.assign( outgoingLight, clearcoatLight );
+
+			}
+
+			if ( this.sheen === true ) {
+
+				const sheenEnergyComp = sheen.r.max( sheen.g ).max( sheen.b ).mul( 0.157 ).oneMinus();
+				const sheenLight = outgoingLight.mul( sheenEnergyComp ).add( this.sheenSpecular );
+
+				stack.assign( outgoingLight, sheenLight );
+
+			}
 
 		}
 
@@ -65434,7 +65436,7 @@ var THREE = (async function (exports) {
 
 		setupLightingModel( /*builder*/ ) {
 
-			return new PhysicalLightingModel( false, false ); // ( clearcoat, sheen ) -> standard
+			return new PhysicalLightingModel();
 
 		}
 
@@ -65515,9 +65517,27 @@ var THREE = (async function (exports) {
 
 		}
 
+		get useClearcoat() {
+
+			return this.clearcoat > 0 || this.clearcoatNode !== null;
+
+		}
+
+		get useIridescence() {
+
+			return this.iridescence > 0 || this.iridescenceNode !== null;
+
+		}
+
+		get useSheen() {
+
+			return this.sheen > 0 || this.sheenNode !== null;
+
+		}
+
 		setupLightingModel( /*builder*/ ) {
 
-			return new PhysicalLightingModel(); // @TODO: Optimize shader using parameters.
+			return new PhysicalLightingModel( this.useClearcoat, this.useSheen, this.useIridescence );
 
 		}
 
@@ -65529,29 +65549,41 @@ var THREE = (async function (exports) {
 
 			// CLEARCOAT
 
-			const clearcoatNode = this.clearcoatNode ? float( this.clearcoatNode ) : materialClearcoat;
-			const clearcoatRoughnessNode = this.clearcoatRoughnessNode ? float( this.clearcoatRoughnessNode ) : materialClearcoatRoughness;
+			if ( this.useClearcoat ) {
 
-			stack.assign( clearcoat, clearcoatNode );
-			stack.assign( clearcoatRoughness, clearcoatRoughnessNode );
+				const clearcoatNode = this.clearcoatNode ? float( this.clearcoatNode ) : materialClearcoat;
+				const clearcoatRoughnessNode = this.clearcoatRoughnessNode ? float( this.clearcoatRoughnessNode ) : materialClearcoatRoughness;
+
+				stack.assign( clearcoat, clearcoatNode );
+				stack.assign( clearcoatRoughness, clearcoatRoughnessNode );
+
+			}
 
 			// SHEEN
 
-			const sheenNode = this.sheenNode ? vec3( this.sheenNode ) : materialSheen;
-			const sheenRoughnessNode = this.sheenRoughnessNode ? float( this.sheenRoughnessNode ) : materialSheenRoughness;
+			if ( this.useSheen ) {
 
-			stack.assign( sheen, sheenNode );
-			stack.assign( sheenRoughness, sheenRoughnessNode );
+				const sheenNode = this.sheenNode ? vec3( this.sheenNode ) : materialSheen;
+				const sheenRoughnessNode = this.sheenRoughnessNode ? float( this.sheenRoughnessNode ) : materialSheenRoughness;
+
+				stack.assign( sheen, sheenNode );
+				stack.assign( sheenRoughness, sheenRoughnessNode );
+
+			}
 
 			// IRIDESCENCE
 
-			const iridescenceNode = this.iridescenceNode ? float( this.iridescenceNode ) : materialIridescence;
-			const iridescenceIORNode = this.iridescenceIORNode ? float( this.iridescenceIORNode ) : materialIridescenceIOR;
-			const iridescenceThicknessNode = this.iridescenceThicknessNode ? float( this.iridescenceThicknessNode ) : materialIridescenceThickness;
+			if ( this.useIridescence ) {
 
-			stack.assign( iridescence, iridescenceNode );
-			stack.assign( iridescenceIOR, iridescenceIORNode );
-			stack.assign( iridescenceThickness, iridescenceThicknessNode );
+				const iridescenceNode = this.iridescenceNode ? float( this.iridescenceNode ) : materialIridescence;
+				const iridescenceIORNode = this.iridescenceIORNode ? float( this.iridescenceIORNode ) : materialIridescenceIOR;
+				const iridescenceThicknessNode = this.iridescenceThicknessNode ? float( this.iridescenceThicknessNode ) : materialIridescenceThickness;
+
+				stack.assign( iridescence, iridescenceNode );
+				stack.assign( iridescenceIOR, iridescenceIORNode );
+				stack.assign( iridescenceThickness, iridescenceThicknessNode );
+
+			}
 
 		}
 
@@ -69228,6 +69260,10 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 		high: 'highp'
 	};
 
+	const supports$1 = {
+		instance: true
+	};
+
 	class GLSLNodeBuilder extends NodeBuilder {
 
 		constructor( object, renderer, scene = null ) {
@@ -69386,7 +69422,7 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 			if ( shaderStage === 'vertex' ) {
 
-				const attributes = this.attributes;
+				const attributes = this.getAttributesArray();
 
 				let location = 0;
 
@@ -69494,6 +69530,13 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 			return 'gl_FragCoord';
 
 		}
+
+		isAvailable( name ) {
+
+			return supports$1[ name ] === true;
+
+		}
+
 
 		isFlipY() {
 
@@ -69907,11 +69950,24 @@ void main() {
 			const array = attribute.array;
 			const usage = attribute.usage || gl.STATIC_DRAW;
 
-			const bufferGPU = gl.createBuffer();
+			const bufferAttribute = attribute.isInterleavedBufferAttribute ? attribute.data : attribute;
+			const bufferData = backend.get( bufferAttribute );
 
-			gl.bindBuffer( bufferType, bufferGPU );
-			gl.bufferData( bufferType, array, usage );
-			gl.bindBuffer( bufferType, null );
+			let bufferGPU = bufferData.bufferGPU;
+
+			if ( bufferGPU === undefined ) {
+
+				bufferGPU = gl.createBuffer();
+
+				gl.bindBuffer( bufferType, bufferGPU );
+				gl.bufferData( bufferType, array, usage );
+				gl.bindBuffer( bufferType, null );
+
+				bufferData.bufferGPU = bufferGPU;
+				bufferData.bufferType = bufferType;
+				bufferData.version = bufferAttribute.version;
+
+			}
 
 			//attribute.onUploadCallback();
 
@@ -69966,9 +70022,26 @@ void main() {
 			backend.set( attribute, {
 				bufferGPU,
 				type,
-				bytesPerElement: array.BYTES_PER_ELEMENT,
-				version: attribute.version
+				bytesPerElement: array.BYTES_PER_ELEMENT
 			} );
+
+		}
+
+		updateAttribute( attribute ) {
+
+			const backend = this.backend;
+			const { gl } = backend;
+
+			const array = attribute.array;
+			const bufferAttribute = attribute.isInterleavedBufferAttribute ? attribute.data : attribute;
+			const bufferData = backend.get( bufferAttribute );
+			const bufferType = bufferData.bufferType;
+
+			gl.bindBuffer( bufferType, bufferData.bufferGPU );
+			gl.bufferSubData( bufferType, 0, array );
+			gl.bindBuffer( bufferType, null );
+
+			bufferData.version = bufferAttribute.version;
 
 		}
 
@@ -70959,6 +71032,8 @@ void main() {
 
 			super( parameters );
 
+			this.isWebGLBackend = true;
+
 		}
 
 		async init( renderer ) {
@@ -71039,11 +71114,111 @@ void main() {
 
 			}
 
+			const occlusionQueryCount = renderContext.occlusionQueryCount;
+
+			if ( occlusionQueryCount > 0 ) {
+
+				const renderContextData = this.get( renderContext );
+
+				// Get a reference to the array of objects with queries. The renderContextData property
+				// can be changed by another render pass before the async reading of all previous queries complete
+				renderContextData.currentOcclusionQueries = renderContextData.occlusionQueries;
+				renderContextData.currentOcclusionQueryObjects = renderContextData.occlusionQueryObjects;
+
+				renderContextData.lastOcclusionObject = null;
+				renderContextData.occlusionQueries = new Array( occlusionQueryCount );
+				renderContextData.occlusionQueryObjects = new Array( occlusionQueryCount );
+				renderContextData.occlusionQueryIndex = 0;
+
+			}
+
 		}
 
-		finishRender( /*renderContext*/ ) {
+		finishRender( renderContext ) {
 
-			//console.warn( 'Abstract class.' );
+			const occlusionQueryCount = renderContext.occlusionQueryCount;
+
+			if ( occlusionQueryCount > 0 ) {
+
+				const renderContextData = this.get( renderContext );
+
+				if ( occlusionQueryCount > renderContextData.occlusionQueryIndex ) {
+
+					const { gl } = this;
+
+					gl.endQuery( gl.ANY_SAMPLES_PASSED );
+
+				}
+
+				this.resolveOccludedAsync( renderContext );
+
+			}
+
+		}
+
+		resolveOccludedAsync( renderContext ) {
+
+			const renderContextData = this.get( renderContext );
+
+			// handle occlusion query results
+
+			const { currentOcclusionQueries, currentOcclusionQueryObjects } = renderContextData;
+
+			if ( currentOcclusionQueries && currentOcclusionQueryObjects ) {
+
+				const occluded = new WeakSet();
+				const { gl } = this;
+
+				renderContextData.currentOcclusionQueryObjects = null;
+				renderContextData.currentOcclusionQueries = null;
+
+				const check = () => {
+
+					let completed = 0;
+
+					// check all queries and requeue as appropriate
+					for ( let i = 0; i < currentOcclusionQueries.length; i ++ ) {
+
+						const query = currentOcclusionQueries[ i ];
+
+						if ( query === null ) continue;
+
+						if ( gl.getQueryParameter( query, gl.QUERY_RESULT_AVAILABLE ) ) {
+
+							if ( gl.getQueryParameter( query, gl.QUERY_RESULT ) > 0 ) occluded.add( currentOcclusionQueryObjects[ i ] );
+
+							currentOcclusionQueries[ i ] = null;
+							gl.deleteQuery( query );
+
+							completed ++;
+
+						}
+
+					}
+
+					if ( completed < currentOcclusionQueries.length ) {
+
+						requestAnimationFrame( check );
+
+					} else {
+
+						renderContextData.occluded = occluded;
+
+					}
+
+				};
+
+				check();
+
+			}
+
+		}
+
+		isOccluded( renderContext, object ) {
+
+			const renderContextData = this.get( renderContext );
+
+			return renderContextData.occluded && renderContextData.occluded.has( object );
 
 		}
 
@@ -71056,7 +71231,24 @@ void main() {
 
 		}
 
-		clear( /*renderContext, color, depth, stencil*/ ) {
+		clear( renderContext, color, depth, stencil ) {
+
+			const { gl } = this;
+
+			//
+
+			let clear = 0;
+
+			if ( color ) clear |= gl.COLOR_BUFFER_BIT;
+			if ( depth ) clear |= gl.DEPTH_BUFFER_BIT;
+			if ( stencil ) clear |= gl.STENCIL_BUFFER_BIT;
+
+			const clearColor = renderContext.clearColorValue;
+
+			if ( clear === 0 ) return;
+
+			gl.clearColor( clearColor.x, clearColor.y, clearColor.z, clearColor.a );
+			gl.clear( clear );
 
 		}
 
@@ -71074,10 +71266,12 @@ void main() {
 
 		draw( renderObject, info ) {
 
-			const { pipeline, material } = renderObject;
+			const { pipeline, material, context } = renderObject;
 			const { programGPU, vaoGPU } = this.get( pipeline );
 
 			const { gl, state } = this;
+
+			const contextData = this.get( context );
 
 			//
 
@@ -71117,23 +71311,61 @@ void main() {
 
 			//
 
+			const lastObject = contextData.lastOcclusionObject;
+
+			if ( lastObject !== object && lastObject !== undefined ) {
+
+				if ( lastObject !== null && lastObject.occlusionTest === true ) {
+
+					gl.endQuery( gl.ANY_SAMPLES_PASSED );
+
+					contextData.occlusionQueryIndex ++;
+
+				}
+
+				if ( object.occlusionTest === true ) {
+
+					const query = gl.createQuery();
+
+					gl.beginQuery( gl.ANY_SAMPLES_PASSED, query );
+
+					contextData.occlusionQueries[ contextData.occlusionQueryIndex ] = query;
+					contextData.occlusionQueryObjects[ contextData.occlusionQueryIndex ] = object;
+
+				}
+
+				contextData.lastOcclusionObject = object;
+
+			}
+
+			//
+
 			let mode;
 			if ( object.isPoints ) mode = gl.POINTS;
-			else if ( object.isLine ) mode = gl.LINES;
-			else if ( object.isLineLoop ) mode = gl.LINE_LOOP;
 			else if ( object.isLineSegments ) mode = gl.LINES;
+			else if ( object.isLine ) mode = gl.LINE_STRIP;
+			else if ( object.isLineLoop ) mode = gl.LINE_LOOP;
 			else mode = gl.TRIANGLES;
 
 			//
 
+			const instanceCount = this.getInstanceCount( renderObject );
 
 			if ( index !== null ) {
 
 				const indexData = this.get( index );
-
 				const indexCount = ( drawRange.count !== Infinity ) ? drawRange.count : index.count;
 
-				gl.drawElements( mode, index.count, indexData.type, firstVertex );
+				if ( instanceCount > 1 ) {
+
+					gl.drawElementsInstanced( mode, index.count, indexData.type, firstVertex, instanceCount );
+
+				} else {
+
+					gl.drawElements( mode, index.count, indexData.type, firstVertex );
+
+				}
+
 
 				info.update( object, indexCount, 1 );
 
@@ -71142,8 +71374,16 @@ void main() {
 				const positionAttribute = geometry.attributes.position;
 				const vertexCount = ( drawRange.count !== Infinity ) ? drawRange.count : positionAttribute.count;
 
+				if ( instanceCount > 1 ) {
 
-				gl.drawArrays( mode, 0, vertexCount );
+					gl.drawArraysInstanced( mode, 0, vertexCount, instanceCount );
+
+				} else {
+
+					gl.drawArrays( mode, 0, vertexCount );
+
+				}
+
 				//gl.drawArrays( mode, vertexCount, gl.UNSIGNED_SHORT, firstVertex );
 
 				info.update( object, vertexCount, 1 );
@@ -71166,7 +71406,7 @@ void main() {
 
 		getCacheKey( renderObject ) {
 
-			return '';
+			return renderObject.geometry.id;
 
 		}
 
@@ -71400,7 +71640,7 @@ void main() {
 			const vaoGPU = gl.createVertexArray();
 
 			const index = renderObject.getIndex();
-			const vertexBuffers = renderObject.getVertexBuffers();
+			const attributes = renderObject.getAttributes();
 
 			gl.bindVertexArray( vaoGPU );
 
@@ -71412,14 +71652,39 @@ void main() {
 
 			}
 
-			for ( let i = 0; i < vertexBuffers.length; i ++ ) {
+			for ( let i = 0; i < attributes.length; i ++ ) {
 
-				const attribute = vertexBuffers[ i ];
+				const attribute = attributes[ i ];
 				const attributeData = this.get( attribute );
 
 				gl.bindBuffer( gl.ARRAY_BUFFER, attributeData.bufferGPU );
 				gl.enableVertexAttribArray( i );
-				gl.vertexAttribPointer( i, attribute.itemSize, attributeData.type, false, 0, 0 );
+
+				let stride, offset;
+
+				if ( attribute.isInterleavedBufferAttribute === true ) {
+
+					stride = attribute.data.stride * attributeData.bytesPerElement;
+					offset = attribute.offset * attributeData.bytesPerElement;
+
+				} else {
+
+					stride = 0;
+					offset = 0;
+
+				}
+
+				gl.vertexAttribPointer( i, attribute.itemSize, attributeData.type, false, stride, offset );
+
+				if ( attribute.isInstancedBufferAttribute && ! attribute.isInterleavedBufferAttribute ) {
+
+					gl.vertexAttribDivisor( i, attribute.meshPerAttribute );
+
+				} else if ( attribute.isInterleavedBufferAttribute && attribute.data.isInstancedInterleavedBuffer ) {
+
+					gl.vertexAttribDivisor( i, attribute.data.meshPerAttribute );
+
+				}
 
 			}
 
@@ -71522,7 +71787,9 @@ void main() {
 
 		}
 
-		updateAttribute( /*attribute*/ ) {
+		updateAttribute( attribute ) {
+
+			this.attributeUtils.updateAttribute( attribute );
 
 		}
 
@@ -73725,7 +73992,7 @@ fn threejs_repeatWrapping( uv : vec2<f32>, dimension : vec2<u32> ) -> vec2<u32> 
 
 						let attributesSnippet = `@location( ${index} )`;
 
-						if ( varying.type === 'int' || varying.type === 'uint' ) {
+						if ( /^(int|uint|ivec|uvec)/.test( varying.type ) ) {
 
 							attributesSnippet += ' @interpolate( flat )';
 
@@ -75191,6 +75458,8 @@ var<${access}> ${name} : ${structName};`;
 		constructor( parameters = {} ) {
 
 			super( parameters );
+
+			this.isWebGPUBackend = true;
 
 			// some parameters require default values other than "undefined"
 
