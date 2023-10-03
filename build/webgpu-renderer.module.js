@@ -25238,4 +25238,4 @@ class WebGPUVideoAnimation {
     }
 }
 
-export { MeshBasicNodeMaterial, VideoAnimation, WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, color, equirectUV, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };
+export { MeshBasicNodeMaterial, NodeMaterial, VideoAnimation, WebGPU, WebGPUGLRenderer, WebGPURenderer, WebGPUVideoAnimation, clamp, color, equirectUV, fwidth, max$1 as max, min$1 as min, mix, outputStruct, step, texture, tslFn, uniform, uv, varying, vec2, vec4 };
