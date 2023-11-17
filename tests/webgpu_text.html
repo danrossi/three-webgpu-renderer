@@ -77,17 +77,19 @@
 			const container = document.getElementById('container');
 
 			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
-			camera.position.x = 6.926950826802958;
-			camera.position.y = -2.58284056910726;
-			camera.position.z = 49.450442736517815;
-	
-
+			//camera.position.x = 6.926950826802958;
+			//camera.position.y = -2.58284056910726;
+			//camera.position.z = 49.450442736517815;
+			camera.position.z = 1;
+//console.log(camera.position.z);
 			scene = new THREE.Scene();
 
 			let material;
 
 
-			renderer = new WebGPURenderer();
+			renderer = new THREE.WebGLRenderer();
+			//renderer = new WebGPURenderer();
+			//renderer = new WebGPUGLRenderer({}, true);
 			//videoTexture.colorSpace = THREE.SRGBColorSpace;
 
 		
@@ -106,12 +108,23 @@
                 letterSpacing: 1,
 				//flipY: false,
                 flipY: fontsTexture.flipY,
-                scale: 0.1,
+                //scale: 1,
+				//scale: 0.001,
+				//scale: 0.001,
                 color: "#ffffff",
                 texture: fontsTexture,
             }, renderer.isWebGPURenderer);
 
-            scene.add(text.group);
+            //scene.add(text.group);
+
+			const scale = 0.0001;
+
+			//text.geometry.center();
+			text.scale.set(scale, scale, scale);
+
+			scene.add(text);
+
+			
 
 
 

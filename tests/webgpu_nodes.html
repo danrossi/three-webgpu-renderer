@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>three.js webgl - equirectangular video panorama</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="../three.js/examples/main.css">
+	<style>
+		body {
+			touch-action: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="info">
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - video panorama
+	</div>
+
+	<div id="container"></div>
+
+	<video id="video" loop muted autoplay crossOrigin="anonymous" preload="metadata" playsinline style="display:none">
+
+	</video>
+
+	<!-- Import maps polyfill -->
+	<!-- Remove this when import maps will be widely supported -->
+	<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../three.js/build/three.module.js",
+					"three/addons/": "../three.js/examples/jsm/",
+					"three-webgpu": "../build/webgpu-renderer.module.js",
+					"three-bmfont-text": "./three-bmfont-text.module.js"
+				}
+			}
+		</script>
+
+	<script type="module">
+
+		import * as THREE from 'three';
+		import { NodeMaterial, modelViewProjection, WebGPU, WebGPURenderer,WebGPUGLRenderer, texture,glsl,glslFn,color,int,mix, uv, min, max, MeshBasicNodeMaterial, tslFn, clamp, fwidth, bool, vec2, vec3, vec4, float, mat3, uniform, varying, attribute, positionLocal, normalLocal } from 'three-webgpu';
+		import { TextBitmap } from 'three-bmfont-text';
+
+        import { fontAssets } from './fontassets.js';
+
+		let _requestVideoFrameCallback = false;
+
+		class BMFontLoader {
+
+			static loadTexture(image) {
+				return new Promise((resolve, reject) => {
+					const texture = new THREE.TextureLoader().load(image, function () {
+						resolve(texture);
+					}, null, reject);
+				});
+			}
+		}
+
+
+
+		let camera, scene, renderer;
+
+		const distance = 50;
+
+
+		init();
+
+
+
+
+		async function init() {
+
+			const container = document.getElementById('container');
+
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+			camera.position.x = 6.926950826802958;
+			camera.position.y = -2.58284056910726;
+			camera.position.z = 49.450442736517815;
+	
+
+			scene = new THREE.Scene();
+
+			let material;
+
+
+            //renderer = new THREE.WebGLRenderer();
+			//renderer = new WebGPURenderer();
+			renderer = new WebGPUGLRenderer({}, true);
+			//videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+		
+
+			const fontsTexture = await BMFontLoader.loadTexture(fontAssets.image);
+
+			//fontsTexture.colorSpace = THREE.SRGBColorSpace;
+
+
+            const text = new TextBitmap({
+                //text: "H",
+				text: "Participant Title",
+                width: 400,
+                align: "center",
+                font: fontAssets.font,
+                letterSpacing: 1,
+				flipY: false,
+                //flipY: fontsTexture.flipY,
+                scale: 0.1,
+                color: "#ffffff",
+                texture: fontsTexture,
+            }, renderer.isWebGPURenderer);
+
+          //  scene.add(text.group);
+
+            const geometry = new THREE.PlaneGeometry(10, 10).translate(0.5, -0.5, 0);
+
+			const glyphBounds = new Float32Array(44);
+
+			geometry.setAttribute('aTroikaGlyphBounds', new THREE.InstancedBufferAttribute(glyphBounds, 4));
+
+			const uniforms = {
+					uTroikaSDFTexture: {value: null},
+					uTroikaSDFTextureSize: {value: new THREE.Vector2()},
+					uTroikaSDFGlyphSize: {value: 0},
+					uTroikaSDFExponent: {value: 0},
+					uTroikaTotalBounds: {value: new THREE.Vector4(0,0,0,0)},
+					uTroikaClipRect: {value: new THREE.Vector4(0,0,0,0)},
+					uTroikaDistanceOffset: {value: 0},
+					uTroikaOutlineOpacity: {value: 0},
+					uTroikaFillOpacity: {value: 1},
+					uTroikaPositionOffset: {value: new THREE.Vector2()},
+					uTroikaCurveRadius: {value: 0},
+					uTroikaBlurRadius: {value: 0},
+					uTroikaStrokeWidth: {value: 0},
+					uTroikaStrokeColor: {value: new THREE.Color()},
+					uTroikaStrokeOpacity: {value: 1},
+					uTroikaOrient: {value: new THREE.Matrix3()},
+					uTroikaUseGlyphColors: {value: true},
+					uTroikaSDFDebug: {value: false}
+				};
+
+            //const geometry = new THREE.PlaneGeometry(10, 10);
+            const imgMaterial = new THREE.MeshBasicMaterial({
+				uniforms: uniforms
+			});
+
+			imgMaterial.uniforms = uniforms;
+
+            //const imgMaterial2 = new MeshBasicNodeMaterial();
+            const imgMaterial2 = NodeMaterial.fromMaterial(imgMaterial);
+
+			console.log(imgMaterial2);
+			
+
+			const loader = new THREE.TextureLoader();
+            
+
+            //const imgMesh = new THREE.Mesh(geometry, imgMaterial);
+            const imgMesh = new THREE.Mesh(geometry, imgMaterial2);
+
+            imgMaterial2.colorNode = texture(loader.load("./wowza-logo.png"), uv());
+
+			
+
+
+			const troikaVertexTransform1 = glsl(`vec4 troikaVertexTransform() {
+  
+  vec4 bounds = aTroikaGlyphBounds;
+  bounds.xz += uTroikaPositionOffset.x;
+  bounds.yw -= uTroikaPositionOffset.y;
+  
+  vec4 outlineBounds = vec4(
+	bounds.xy - uTroikaDistanceOffset - uTroikaBlurRadius,
+	bounds.zw + uTroikaDistanceOffset + uTroikaBlurRadius
+  );
+  vec4 clippedBounds = vec4(
+	clamp(outlineBounds.xy, uTroikaClipRect.xy, uTroikaClipRect.zw),
+	clamp(outlineBounds.zw, uTroikaClipRect.xy, uTroikaClipRect.zw)
+  )` );
+
+			const includes = [troikaVertexTransform1 ];
+
+			const troikaVertexTransform = glslFn( 'vec4 troikaVertexTransform(  )', includes );
+
+
+				const offset = uniform(float(), 'uTroikaDistanceOffset');
+
+			//	const bounds = attribute( 'aTroikaGlyphBounds', 'vec4' );
+				attribute( 'aTroikaGlyphIndex', 'float' );
+				attribute( 'aTroikaGlyphColor', 'vec3' );
+				//const vLineDistance = varying( attribute( 'lineDistance' ).mul( dashScaleNode ) );
+				varying( vec2(), 'vTroikaGlyphUV' );
+				varying( vec4(), 'vTroikaTextureUVBounds' );
+				varying( float(), 'vTroikaTextureChannel' );
+				varying( vec3(), 'vTroikaGlyphColor' );
+				varying( vec2(), 'vTroikaGlyphDimensions' );
+				
+			const defaultOrient = '+x+y';
+			let orient = defaultOrient;
+			const tempMat4 = /*#__PURE__*/ new THREE.Matrix4();
+			const tempVec3a = /*#__PURE__*/ new THREE.Vector3();
+			const tempVec3b = /*#__PURE__*/ new THREE.Vector3();
+			const tempArray = [];
+			const origin = /*#__PURE__*/ new THREE.Vector3();
+			//const rotMat = new THREE.Matrix3();
+
+			//const orient1 = uniform(mat3(), 'uTroikaOrient');
+			const orient1 = uniform(mat3());
+			const rotMat = orient1.value;
+
+			/*uniforms.uTroikaSDFTexture.value = sdfTexture;
+      uniforms.uTroikaSDFTextureSize.value.set(sdfTexture.image.width, sdfTexture.image.height);
+      uniforms.uTroikaSDFGlyphSize.value = textInfo.sdfGlyphSize;
+      uniforms.uTroikaSDFExponent.value = textInfo.sdfExponent;
+      uniforms.uTroikaTotalBounds.value.fromArray(blockBounds);
+      uniforms.uTroikaUseGlyphColors.value = !isOutline && !!textInfo.glyphColors;*/
+
+      let distanceOffset = 0;
+      let blurRadius = 0;
+      let strokeWidth = 0;
+      let fillOpacity;
+      let strokeOpacity;
+      let strokeColor;
+      let offsetX = 0;
+      let offsetY = 0;
+
+
+			const uTroikaSDFDebug = uniform(bool());
+			const vTroikaGlyphUV  = varying(vec2(), 'vTroikaGlyphUV');
+			const bounds = attribute('aTroikaGlyphBounds','vec4');
+
+			const uTroikaPositionOffset = uniform(vec2());
+
+			const uTroikaStrokeColor = color();
+			const uTroikaDistanceOffset = uniform(int());
+
+			
+			uTroikaStrokeColor.value.set(0x000000);
+			uTroikaDistanceOffset.value = distanceOffset;
+      		uTroikaPositionOffset.value.set(offsetX, offsetY);
+
+			
+			
+			bounds.xz.add(uTroikaPositionOffset.x);
+			bounds.yw.sub(uTroikaPositionOffset.y);
+
+			
+			const outlineBounds = vec4(
+				bounds.xy.sub(uTroikaDistanceOffset).sub(blurRadius),
+				bounds.zw.sub(uTroikaDistanceOffset).sub(blurRadius)
+			);
+
+			const clipRect = null;
+
+			const blockBounds = [0, -0.2099609375, 1.05400390625, 0];
+
+			console.log(imgMaterial);
+
+			if (clipRect && Array.isArray(clipRect) && clipRect.length === 4) {
+				uniforms.uTroikaClipRect.value.fromArray(clipRect);
+			} else {
+				let fontSize = 10;
+				// no clipping - choose a finite rect that shouldn't ever be reached by overflowing glyphs or outlines
+				const pad = (fontSize || 0.1) * 100;
+				uniforms.uTroikaClipRect.value.set(
+				blockBounds[0] - pad,
+				blockBounds[1] - pad,
+				blockBounds[2] + pad,
+				blockBounds[3] + pad
+				);
+			}
+	  
+			
+			const clippedBounds = vec4(
+				clamp(outlineBounds.xy, uniforms.uTroikaClipRect.xy, uniforms.uTroikaClipRect.zw),
+				clamp(outlineBounds.zw, uniforms.uTroikaClipRect.xy, uniforms.uTroikaClipRect.zw)
+			);
+
+			const clippedXY = mix(clippedBounds.xy, clippedBounds.zw, positionLocal.xy).sub(bounds.xy).div(bounds.zw.sub(bounds.xy));
+
+			console.log(positionLocal.xy);
+			
+			//positionLocal.xy.equal(mix(bounds.xy, bounds.zw, clippedXY));
+
+			console.log(positionLocal.xy);
+
+			console.log(positionLocal);
+
+			if (defaultOrient !== imgMaterial2._orientation) {
+
+				orient = orient.replace(/[^-+xyz]/g, '');
+				let match = orient !== defaultOrient && orient.match(/^([-+])([xyz])([-+])([xyz])$/);
+				if (match) {
+					let [, hSign, hAxis, vSign, vAxis] = match;
+					tempVec3a.set(0, 0, 0)[hAxis] = hSign === '-' ? 1 : -1;
+					tempVec3b.set(0, 0, 0)[vAxis] = vSign === '-' ? -1 : 1;
+					tempMat4.lookAt(origin, tempVec3a.cross(tempVec3b), tempVec3b);
+					rotMat.setFromMatrix4(tempMat4);
+				} else {
+					rotMat.identity();
+				}
+				imgMaterial2._orientation = orient;
+	  
+			}
+
+
+			const positionNode = tslFn( ( input ) => {
+				/*const textSize = uniform(vec2(), 'uTroikaSDFTextureSize');
+				uniform(float(), 'uTroikaSDFGlyphSize');
+				uniform(vec4(), 'uTroikaTotalBounds');
+				uniform(vec4(), 'uTroikaClipRect');
+				//const orient = uniform(mat3(), 'uTroikaOrient');
+				uniform(bool(), 'uTroikaUseGlyphColors');
+				
+				uniform(float(), 'uTroikaBlurRadius');
+				uniform(vec2(), 'uTroikaPositionOffset');
+				uniform(float(), 'uTroikaCurveRadius');
+				
+
+				const clippedBounds = troikaVertexTransform();
+				console.log(clippedBounds.xy);*/
+				//return positionLocal;
+				return positionLocal.mul(orient1);
+			});
+
+			const normalNode = tslFn( ( input ) => {
+				
+				return normalLocal.mul(orient1);
+			});
+
+			const vertexNode = tslFn( ( input ) => {
+				
+				return modelViewProjection;
+			});
+
+			
+
+			imgMaterial2.positionNode = positionNode();
+            imgMaterial2.normalNode = normalNode();
+			//imgMaterial2.vertexNode = vertexNode();
+            //console.log(imgMaterial2.normalNode);
+			//imgMaterial.map = loader.load("./wowza-logo.png");
+
+            //imgMaterial.map.colorSpace = THREE.SRGBColorSpace;
+  
+
+            scene.add(imgMesh);
+
+
+     /* loader.load("./wowza-logo.png", texture => {
+      
+
+        imgMaterial.map = texture;
+        //imgMaterial.transparent = true;
+
+        scene.add(imgMesh);
+        
+      });*/
+
+
+
+
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		
+			container.appendChild(renderer.domElement);
+
+			//
+
+			//await renderer.init();
+
+			//window.addEventListener( 'resize', onWindowResize );
+
+			renderer.setAnimationLoop( update);
+
+			//animate();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+
+		function animate() {
+
+			requestAnimationFrame(animate);
+			update();
+
+		}
+
+		function update() {
+
+			renderer.render(scene, camera);
+
+		}
+
+	</script>
+</body>
+
+</html>
