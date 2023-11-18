@@ -4420,9 +4420,9 @@ var THREE = (async function (exports) {
 
 		projectOnPlane( planeNormal ) {
 
-			_vector$b.copy( this ).projectOnVector( planeNormal );
+			_vector$c.copy( this ).projectOnVector( planeNormal );
 
-			return this.sub( _vector$b );
+			return this.sub( _vector$c );
 
 		}
 
@@ -4431,7 +4431,7 @@ var THREE = (async function (exports) {
 			// reflect incident vector off plane orthogonal to normal
 			// normal is assumed to have unit length
 
-			return this.sub( _vector$b.copy( normal ).multiplyScalar( 2 * this.dot( normal ) ) );
+			return this.sub( _vector$c.copy( normal ).multiplyScalar( 2 * this.dot( normal ) ) );
 
 		}
 
@@ -4633,7 +4633,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	const _vector$b = /*@__PURE__*/ new Vector3();
+	const _vector$c = /*@__PURE__*/ new Vector3();
 	const _quaternion$4 = /*@__PURE__*/ new Quaternion();
 
 	class Box3 {
@@ -4662,7 +4662,7 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, il = array.length; i < il; i += 3 ) {
 
-				this.expandByPoint( _vector$a.fromArray( array, i ) );
+				this.expandByPoint( _vector$b.fromArray( array, i ) );
 
 			}
 
@@ -4676,7 +4676,7 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, il = attribute.count; i < il; i ++ ) {
 
-				this.expandByPoint( _vector$a.fromBufferAttribute( attribute, i ) );
+				this.expandByPoint( _vector$b.fromBufferAttribute( attribute, i ) );
 
 			}
 
@@ -4700,7 +4700,7 @@ var THREE = (async function (exports) {
 
 		setFromCenterAndSize( center, size ) {
 
-			const halfSize = _vector$a.copy( size ).multiplyScalar( 0.5 );
+			const halfSize = _vector$b.copy( size ).multiplyScalar( 0.5 );
 
 			this.min.copy( center ).sub( halfSize );
 			this.max.copy( center ).add( halfSize );
@@ -4810,16 +4810,16 @@ var THREE = (async function (exports) {
 
 						if ( object.isMesh === true ) {
 
-							object.getVertexPosition( i, _vector$a );
+							object.getVertexPosition( i, _vector$b );
 
 						} else {
 
-							_vector$a.fromBufferAttribute( positionAttribute, i );
+							_vector$b.fromBufferAttribute( positionAttribute, i );
 
 						}
 
-						_vector$a.applyMatrix4( object.matrixWorld );
-						this.expandByPoint( _vector$a );
+						_vector$b.applyMatrix4( object.matrixWorld );
+						this.expandByPoint( _vector$b );
 
 					}
 
@@ -4835,7 +4835,7 @@ var THREE = (async function (exports) {
 
 						}
 
-						_box$3.copy( object.boundingBox );
+						_box$4.copy( object.boundingBox );
 
 
 					} else {
@@ -4848,13 +4848,13 @@ var THREE = (async function (exports) {
 
 						}
 
-						_box$3.copy( geometry.boundingBox );
+						_box$4.copy( geometry.boundingBox );
 
 					}
 
-					_box$3.applyMatrix4( object.matrixWorld );
+					_box$4.applyMatrix4( object.matrixWorld );
 
-					this.union( _box$3 );
+					this.union( _box$4 );
 
 				}
 
@@ -4913,10 +4913,10 @@ var THREE = (async function (exports) {
 		intersectsSphere( sphere ) {
 
 			// Find the point on the AABB closest to the sphere center.
-			this.clampPoint( sphere.center, _vector$a );
+			this.clampPoint( sphere.center, _vector$b );
 
 			// If that point is inside the sphere, the AABB and sphere intersect.
-			return _vector$a.distanceToSquared( sphere.center ) <= ( sphere.radius * sphere.radius );
+			return _vector$b.distanceToSquared( sphere.center ) <= ( sphere.radius * sphere.radius );
 
 		}
 
@@ -5028,7 +5028,7 @@ var THREE = (async function (exports) {
 
 		distanceToPoint( point ) {
 
-			return this.clampPoint( point, _vector$a ).distanceTo( point );
+			return this.clampPoint( point, _vector$b ).distanceTo( point );
 
 		}
 
@@ -5042,7 +5042,7 @@ var THREE = (async function (exports) {
 
 				this.getCenter( target.center );
 
-				target.radius = this.getSize( _vector$a ).length() * 0.5;
+				target.radius = this.getSize( _vector$b ).length() * 0.5;
 
 			}
 
@@ -5120,9 +5120,9 @@ var THREE = (async function (exports) {
 		/*@__PURE__*/ new Vector3()
 	];
 
-	const _vector$a = /*@__PURE__*/ new Vector3();
+	const _vector$b = /*@__PURE__*/ new Vector3();
 
-	const _box$3 = /*@__PURE__*/ new Box3();
+	const _box$4 = /*@__PURE__*/ new Box3();
 
 	// triangle centered vertices
 
@@ -5167,7 +5167,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	const _box$2 = /*@__PURE__*/ new Box3();
+	const _box$3 = /*@__PURE__*/ new Box3();
 	const _v1$6 = /*@__PURE__*/ new Vector3();
 	const _v2$3 = /*@__PURE__*/ new Vector3();
 
@@ -5199,7 +5199,7 @@ var THREE = (async function (exports) {
 
 			} else {
 
-				_box$2.setFromPoints( points ).getCenter( center );
+				_box$3.setFromPoints( points ).getCenter( center );
 
 			}
 
@@ -5406,7 +5406,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	const _vector$9 = /*@__PURE__*/ new Vector3();
+	const _vector$a = /*@__PURE__*/ new Vector3();
 	const _segCenter = /*@__PURE__*/ new Vector3();
 	const _segDir = /*@__PURE__*/ new Vector3();
 	const _diff = /*@__PURE__*/ new Vector3();
@@ -5458,7 +5458,7 @@ var THREE = (async function (exports) {
 
 		recast( t ) {
 
-			this.origin.copy( this.at( t, _vector$9 ) );
+			this.origin.copy( this.at( t, _vector$a ) );
 
 			return this;
 
@@ -5488,7 +5488,7 @@ var THREE = (async function (exports) {
 
 		distanceSqToPoint( point ) {
 
-			const directionDistance = _vector$9.subVectors( point, this.origin ).dot( this.direction );
+			const directionDistance = _vector$a.subVectors( point, this.origin ).dot( this.direction );
 
 			// point behind the ray
 
@@ -5498,9 +5498,9 @@ var THREE = (async function (exports) {
 
 			}
 
-			_vector$9.copy( this.origin ).addScaledVector( this.direction, directionDistance );
+			_vector$a.copy( this.origin ).addScaledVector( this.direction, directionDistance );
 
-			return _vector$9.distanceToSquared( point );
+			return _vector$a.distanceToSquared( point );
 
 		}
 
@@ -5625,9 +5625,9 @@ var THREE = (async function (exports) {
 
 		intersectSphere( sphere, target ) {
 
-			_vector$9.subVectors( sphere.center, this.origin );
-			const tca = _vector$9.dot( this.direction );
-			const d2 = _vector$9.dot( _vector$9 ) - tca * tca;
+			_vector$a.subVectors( sphere.center, this.origin );
+			const tca = _vector$a.dot( this.direction );
+			const d2 = _vector$a.dot( _vector$a ) - tca * tca;
 			const radius2 = sphere.radius * sphere.radius;
 
 			if ( d2 > radius2 ) return null;
@@ -5794,7 +5794,7 @@ var THREE = (async function (exports) {
 
 		intersectsBox( box ) {
 
-			return this.intersectBox( box, _vector$9 ) !== null;
+			return this.intersectBox( box, _vector$a ) !== null;
 
 		}
 
@@ -6807,7 +6807,7 @@ var THREE = (async function (exports) {
 	const _y = /*@__PURE__*/ new Vector3();
 	const _z = /*@__PURE__*/ new Vector3();
 
-	const _matrix = /*@__PURE__*/ new Matrix4();
+	const _matrix$1 = /*@__PURE__*/ new Matrix4();
 	const _quaternion$3 = /*@__PURE__*/ new Quaternion();
 
 	class Euler {
@@ -7042,9 +7042,9 @@ var THREE = (async function (exports) {
 
 		setFromQuaternion( q, order, update ) {
 
-			_matrix.makeRotationFromQuaternion( q );
+			_matrix$1.makeRotationFromQuaternion( q );
 
-			return this.setFromRotationMatrix( _matrix, order, update );
+			return this.setFromRotationMatrix( _matrix$1, order, update );
 
 		}
 
@@ -7891,6 +7891,7 @@ var THREE = (async function (exports) {
 
 				object.type = 'BatchedMesh';
 				object.perObjectFrustumCulled = this.perObjectFrustumCulled;
+				object.sortObjects = this.sortObjects;
 
 				object.drawRanges = this._drawRanges;
 				object.reservedRanges = this._reservedRanges;
@@ -7914,7 +7915,7 @@ var THREE = (async function (exports) {
 				object.geometryInitialized = this._geometryInitialized;
 				object.geometryCount = this._geometryCount;
 
-				object.matricesTexture = this._matricesTexture.toJSON();
+				object.matricesTexture = this._matricesTexture.toJSON( meta );
 
 				if ( this.boundingSphere !== null ) {
 
@@ -9879,7 +9880,7 @@ var THREE = (async function (exports) {
 		fromHalfFloat: fromHalfFloat,
 	};
 
-	const _vector$8 = /*@__PURE__*/ new Vector3();
+	const _vector$9 = /*@__PURE__*/ new Vector3();
 	const _vector2$1 = /*@__PURE__*/ new Vector2();
 
 	class BufferAttribute {
@@ -10000,10 +10001,10 @@ var THREE = (async function (exports) {
 
 				for ( let i = 0, l = this.count; i < l; i ++ ) {
 
-					_vector$8.fromBufferAttribute( this, i );
-					_vector$8.applyMatrix3( m );
+					_vector$9.fromBufferAttribute( this, i );
+					_vector$9.applyMatrix3( m );
 
-					this.setXYZ( i, _vector$8.x, _vector$8.y, _vector$8.z );
+					this.setXYZ( i, _vector$9.x, _vector$9.y, _vector$9.z );
 
 				}
 
@@ -10017,11 +10018,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, l = this.count; i < l; i ++ ) {
 
-				_vector$8.fromBufferAttribute( this, i );
+				_vector$9.fromBufferAttribute( this, i );
 
-				_vector$8.applyMatrix4( m );
+				_vector$9.applyMatrix4( m );
 
-				this.setXYZ( i, _vector$8.x, _vector$8.y, _vector$8.z );
+				this.setXYZ( i, _vector$9.x, _vector$9.y, _vector$9.z );
 
 			}
 
@@ -10033,11 +10034,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, l = this.count; i < l; i ++ ) {
 
-				_vector$8.fromBufferAttribute( this, i );
+				_vector$9.fromBufferAttribute( this, i );
 
-				_vector$8.applyNormalMatrix( m );
+				_vector$9.applyNormalMatrix( m );
 
-				this.setXYZ( i, _vector$8.x, _vector$8.y, _vector$8.z );
+				this.setXYZ( i, _vector$9.x, _vector$9.y, _vector$9.z );
 
 			}
 
@@ -10049,11 +10050,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, l = this.count; i < l; i ++ ) {
 
-				_vector$8.fromBufferAttribute( this, i );
+				_vector$9.fromBufferAttribute( this, i );
 
-				_vector$8.transformDirection( m );
+				_vector$9.transformDirection( m );
 
-				this.setXYZ( i, _vector$8.x, _vector$8.y, _vector$8.z );
+				this.setXYZ( i, _vector$9.x, _vector$9.y, _vector$9.z );
 
 			}
 
@@ -10512,9 +10513,9 @@ var THREE = (async function (exports) {
 	const _m1 = /*@__PURE__*/ new Matrix4();
 	const _obj = /*@__PURE__*/ new Object3D();
 	const _offset = /*@__PURE__*/ new Vector3();
-	const _box$1 = /*@__PURE__*/ new Box3();
+	const _box$2 = /*@__PURE__*/ new Box3();
 	const _boxMorphTargets = /*@__PURE__*/ new Box3();
-	const _vector$7 = /*@__PURE__*/ new Vector3();
+	const _vector$8 = /*@__PURE__*/ new Vector3();
 
 	class BufferGeometry extends EventDispatcher {
 
@@ -10819,20 +10820,20 @@ var THREE = (async function (exports) {
 					for ( let i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
 
 						const morphAttribute = morphAttributesPosition[ i ];
-						_box$1.setFromBufferAttribute( morphAttribute );
+						_box$2.setFromBufferAttribute( morphAttribute );
 
 						if ( this.morphTargetsRelative ) {
 
-							_vector$7.addVectors( this.boundingBox.min, _box$1.min );
-							this.boundingBox.expandByPoint( _vector$7 );
+							_vector$8.addVectors( this.boundingBox.min, _box$2.min );
+							this.boundingBox.expandByPoint( _vector$8 );
 
-							_vector$7.addVectors( this.boundingBox.max, _box$1.max );
-							this.boundingBox.expandByPoint( _vector$7 );
+							_vector$8.addVectors( this.boundingBox.max, _box$2.max );
+							this.boundingBox.expandByPoint( _vector$8 );
 
 						} else {
 
-							this.boundingBox.expandByPoint( _box$1.min );
-							this.boundingBox.expandByPoint( _box$1.max );
+							this.boundingBox.expandByPoint( _box$2.min );
+							this.boundingBox.expandByPoint( _box$2.max );
 
 						}
 
@@ -10881,7 +10882,7 @@ var THREE = (async function (exports) {
 
 				const center = this.boundingSphere.center;
 
-				_box$1.setFromBufferAttribute( position );
+				_box$2.setFromBufferAttribute( position );
 
 				// process morph attributes if present
 
@@ -10894,16 +10895,16 @@ var THREE = (async function (exports) {
 
 						if ( this.morphTargetsRelative ) {
 
-							_vector$7.addVectors( _box$1.min, _boxMorphTargets.min );
-							_box$1.expandByPoint( _vector$7 );
+							_vector$8.addVectors( _box$2.min, _boxMorphTargets.min );
+							_box$2.expandByPoint( _vector$8 );
 
-							_vector$7.addVectors( _box$1.max, _boxMorphTargets.max );
-							_box$1.expandByPoint( _vector$7 );
+							_vector$8.addVectors( _box$2.max, _boxMorphTargets.max );
+							_box$2.expandByPoint( _vector$8 );
 
 						} else {
 
-							_box$1.expandByPoint( _boxMorphTargets.min );
-							_box$1.expandByPoint( _boxMorphTargets.max );
+							_box$2.expandByPoint( _boxMorphTargets.min );
+							_box$2.expandByPoint( _boxMorphTargets.max );
 
 						}
 
@@ -10911,7 +10912,7 @@ var THREE = (async function (exports) {
 
 				}
 
-				_box$1.getCenter( center );
+				_box$2.getCenter( center );
 
 				// second, try to find a boundingSphere with a radius smaller than the
 				// boundingSphere of the boundingBox: sqrt(3) smaller in the best case
@@ -10920,9 +10921,9 @@ var THREE = (async function (exports) {
 
 				for ( let i = 0, il = position.count; i < il; i ++ ) {
 
-					_vector$7.fromBufferAttribute( position, i );
+					_vector$8.fromBufferAttribute( position, i );
 
-					maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector$7 ) );
+					maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector$8 ) );
 
 				}
 
@@ -10937,16 +10938,16 @@ var THREE = (async function (exports) {
 
 						for ( let j = 0, jl = morphAttribute.count; j < jl; j ++ ) {
 
-							_vector$7.fromBufferAttribute( morphAttribute, j );
+							_vector$8.fromBufferAttribute( morphAttribute, j );
 
 							if ( morphTargetsRelative ) {
 
 								_offset.fromBufferAttribute( position, j );
-								_vector$7.add( _offset );
+								_vector$8.add( _offset );
 
 							}
 
-							maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector$7 ) );
+							maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector$8 ) );
 
 						}
 
@@ -11229,11 +11230,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, il = normals.count; i < il; i ++ ) {
 
-				_vector$7.fromBufferAttribute( normals, i );
+				_vector$8.fromBufferAttribute( normals, i );
 
-				_vector$7.normalize();
+				_vector$8.normalize();
 
-				normals.setXYZ( i, _vector$7.x, _vector$7.y, _vector$7.z );
+				normals.setXYZ( i, _vector$8.x, _vector$8.y, _vector$8.z );
 
 			}
 
@@ -11575,7 +11576,7 @@ var THREE = (async function (exports) {
 
 	const _inverseMatrix$3 = /*@__PURE__*/ new Matrix4();
 	const _ray$3 = /*@__PURE__*/ new Ray();
-	const _sphere$5 = /*@__PURE__*/ new Sphere();
+	const _sphere$6 = /*@__PURE__*/ new Sphere();
 	const _sphereHitAt = /*@__PURE__*/ new Vector3();
 
 	const _vA$1 = /*@__PURE__*/ new Vector3();
@@ -11723,16 +11724,16 @@ var THREE = (async function (exports) {
 
 			if ( geometry.boundingSphere === null ) geometry.computeBoundingSphere();
 
-			_sphere$5.copy( geometry.boundingSphere );
-			_sphere$5.applyMatrix4( matrixWorld );
+			_sphere$6.copy( geometry.boundingSphere );
+			_sphere$6.applyMatrix4( matrixWorld );
 
 			// check distance from ray origin to bounding sphere
 
 			_ray$3.copy( raycaster.ray ).recast( raycaster.near );
 
-			if ( _sphere$5.containsPoint( _ray$3.origin ) === false ) {
+			if ( _sphere$6.containsPoint( _ray$3.origin ) === false ) {
 
-				if ( _ray$3.intersectSphere( _sphere$5, _sphereHitAt ) === null ) return;
+				if ( _ray$3.intersectSphere( _sphere$6, _sphereHitAt ) === null ) return;
 
 				if ( _ray$3.origin.distanceToSquared( _sphereHitAt ) > ( raycaster.far - raycaster.near ) ** 2 ) return;
 
@@ -13285,8 +13286,8 @@ var THREE = (async function (exports) {
 
 	}
 
-	const _sphere$4 = /*@__PURE__*/ new Sphere();
-	const _vector$6 = /*@__PURE__*/ new Vector3();
+	const _sphere$5 = /*@__PURE__*/ new Sphere();
+	const _vector$7 = /*@__PURE__*/ new Vector3();
 
 	class Frustum {
 
@@ -13364,7 +13365,7 @@ var THREE = (async function (exports) {
 
 				if ( object.boundingSphere === null ) object.computeBoundingSphere();
 
-				_sphere$4.copy( object.boundingSphere ).applyMatrix4( object.matrixWorld );
+				_sphere$5.copy( object.boundingSphere ).applyMatrix4( object.matrixWorld );
 
 			} else {
 
@@ -13372,21 +13373,21 @@ var THREE = (async function (exports) {
 
 				if ( geometry.boundingSphere === null ) geometry.computeBoundingSphere();
 
-				_sphere$4.copy( geometry.boundingSphere ).applyMatrix4( object.matrixWorld );
+				_sphere$5.copy( geometry.boundingSphere ).applyMatrix4( object.matrixWorld );
 
 			}
 
-			return this.intersectsSphere( _sphere$4 );
+			return this.intersectsSphere( _sphere$5 );
 
 		}
 
 		intersectsSprite( sprite ) {
 
-			_sphere$4.center.set( 0, 0, 0 );
-			_sphere$4.radius = 0.7071067811865476;
-			_sphere$4.applyMatrix4( sprite.matrixWorld );
+			_sphere$5.center.set( 0, 0, 0 );
+			_sphere$5.radius = 0.7071067811865476;
+			_sphere$5.applyMatrix4( sprite.matrixWorld );
 
-			return this.intersectsSphere( _sphere$4 );
+			return this.intersectsSphere( _sphere$5 );
 
 		}
 
@@ -13422,11 +13423,11 @@ var THREE = (async function (exports) {
 
 				// corner at max distance
 
-				_vector$6.x = plane.normal.x > 0 ? box.max.x : box.min.x;
-				_vector$6.y = plane.normal.y > 0 ? box.max.y : box.min.y;
-				_vector$6.z = plane.normal.z > 0 ? box.max.z : box.min.z;
+				_vector$7.x = plane.normal.x > 0 ? box.max.x : box.min.x;
+				_vector$7.y = plane.normal.y > 0 ? box.max.y : box.min.y;
+				_vector$7.z = plane.normal.z > 0 ? box.max.z : box.min.z;
 
-				if ( plane.distanceToPoint( _vector$6 ) < 0 ) {
+				if ( plane.distanceToPoint( _vector$7 ) < 0 ) {
 
 					return false;
 
@@ -13526,6 +13527,7 @@ var THREE = (async function (exports) {
 
 			const array = attribute.array;
 			const usage = attribute.usage;
+			const size = array.byteLength;
 
 			const buffer = gl.createBuffer();
 
@@ -13594,7 +13596,8 @@ var THREE = (async function (exports) {
 				buffer: buffer,
 				type: type,
 				bytesPerElement: array.BYTES_PER_ELEMENT,
-				version: attribute.version
+				version: attribute.version,
+				size: size
 			};
 
 		}
@@ -13716,6 +13719,12 @@ var THREE = (async function (exports) {
 				buffers.set( attribute, createBuffer( attribute, bufferType ) );
 
 			} else if ( data.version < attribute.version ) {
+
+				if ( data.size !== attribute.array.byteLength ) {
+
+					throw new Error( 'THREE.WebGLAttributes: The size of the buffer attribute\'s array buffer does not match the original size. Resizing buffer attributes is not supported.' );
+
+				}
 
 				updateBuffer( data.buffer, attribute, bufferType );
 
@@ -13931,7 +13940,7 @@ var THREE = (async function (exports) {
 
 	var lights_phong_pars_fragment = "varying vec3 vViewPosition;\nstruct BlinnPhongMaterial {\n\tvec3 diffuseColor;\n\tvec3 specularColor;\n\tfloat specularShininess;\n\tfloat specularStrength;\n};\nvoid RE_Direct_BlinnPhong( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {\n\tfloat dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;\n\treflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n\treflectedLight.directSpecular += irradiance * BRDF_BlinnPhong( directLight.direction, geometryViewDir, geometryNormal, material.specularColor, material.specularShininess ) * material.specularStrength;\n}\nvoid RE_IndirectDiffuse_BlinnPhong( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {\n\treflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct\t\t\t\tRE_Direct_BlinnPhong\n#define RE_IndirectDiffuse\t\tRE_IndirectDiffuse_BlinnPhong";
 
-	var lights_physical_fragment = "PhysicalMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );\nvec3 dxy = max( abs( dFdx( nonPerturbedNormal ) ), abs( dFdy( nonPerturbedNormal ) ) );\nfloat geometryRoughness = max( max( dxy.x, dxy.y ), dxy.z );\nmaterial.roughness = max( roughnessFactor, 0.0525 );material.roughness += geometryRoughness;\nmaterial.roughness = min( material.roughness, 1.0 );\n#ifdef IOR\n\tmaterial.ior = ior;\n\t#ifdef USE_SPECULAR\n\t\tfloat specularIntensityFactor = specularIntensity;\n\t\tvec3 specularColorFactor = specularColor;\n\t\t#ifdef USE_SPECULAR_COLORMAP\n\t\t\tspecularColorFactor *= texture2D( specularColorMap, vSpecularColorMapUv ).rgb;\n\t\t#endif\n\t\t#ifdef USE_SPECULAR_INTENSITYMAP\n\t\t\tspecularIntensityFactor *= texture2D( specularIntensityMap, vSpecularIntensityMapUv ).a;\n\t\t#endif\n\t\tmaterial.specularF90 = mix( specularIntensityFactor, 1.0, metalnessFactor );\n\t#else\n\t\tfloat specularIntensityFactor = 1.0;\n\t\tvec3 specularColorFactor = vec3( 1.0 );\n\t\tmaterial.specularF90 = 1.0;\n\t#endif\n\tmaterial.specularColor = mix( min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor, diffuseColor.rgb, metalnessFactor );\n#else\n\tmaterial.specularColor = mix( vec3( 0.04 ), diffuseColor.rgb, metalnessFactor );\n\tmaterial.specularF90 = 1.0;\n#endif\n#ifdef USE_CLEARCOAT\n\tmaterial.clearcoat = clearcoat;\n\tmaterial.clearcoatRoughness = clearcoatRoughness;\n\tmaterial.clearcoatF0 = vec3( 0.04 );\n\tmaterial.clearcoatF90 = 1.0;\n\t#ifdef USE_CLEARCOATMAP\n\t\tmaterial.clearcoat *= texture2D( clearcoatMap, vClearcoatMapUv ).x;\n\t#endif\n\t#ifdef USE_CLEARCOAT_ROUGHNESSMAP\n\t\tmaterial.clearcoatRoughness *= texture2D( clearcoatRoughnessMap, vClearcoatRoughnessMapUv ).y;\n\t#endif\n\tmaterial.clearcoat = saturate( material.clearcoat );\tmaterial.clearcoatRoughness = max( material.clearcoatRoughness, 0.0525 );\n\tmaterial.clearcoatRoughness += geometryRoughness;\n\tmaterial.clearcoatRoughness = min( material.clearcoatRoughness, 1.0 );\n#endif\n#ifdef USE_IRIDESCENCE\n\tmaterial.iridescence = iridescence;\n\tmaterial.iridescenceIOR = iridescenceIOR;\n\t#ifdef USE_IRIDESCENCEMAP\n\t\tmaterial.iridescence *= texture2D( iridescenceMap, vIridescenceMapUv ).r;\n\t#endif\n\t#ifdef USE_IRIDESCENCE_THICKNESSMAP\n\t\tmaterial.iridescenceThickness = (iridescenceThicknessMaximum - iridescenceThicknessMinimum) * texture2D( iridescenceThicknessMap, vIridescenceThicknessMapUv ).g + iridescenceThicknessMinimum;\n\t#else\n\t\tmaterial.iridescenceThickness = iridescenceThicknessMaximum;\n\t#endif\n#endif\n#ifdef USE_SHEEN\n\tmaterial.sheenColor = sheenColor;\n\t#ifdef USE_SHEEN_COLORMAP\n\t\tmaterial.sheenColor *= texture2D( sheenColorMap, vSheenColorMapUv ).rgb;\n\t#endif\n\tmaterial.sheenRoughness = clamp( sheenRoughness, 0.07, 1.0 );\n\t#ifdef USE_SHEEN_ROUGHNESSMAP\n\t\tmaterial.sheenRoughness *= texture2D( sheenRoughnessMap, vSheenRoughnessMapUv ).a;\n\t#endif\n#endif\n#ifdef USE_ANISOTROPY\n\t#ifdef USE_ANISOTROPYMAP\n\t\tmat2 anisotropyMat = mat2( anisotropyVector.x, anisotropyVector.y, - anisotropyVector.y, anisotropyVector.x );\n\t\tvec3 anisotropyPolar = texture2D( anisotropyMap, vAnisotropyMapUv ).rgb;\n\t\tvec2 anisotropyV = anisotropyMat * normalize( 2.0 * anisotropyPolar.rg - vec2( 1.0 ) ) * anisotropyPolar.b;\n\t#else\n\t\tvec2 anisotropyV = anisotropyVector;\n\t#endif\n\tmaterial.anisotropy = length( anisotropyV );\n\tanisotropyV /= material.anisotropy;\n\tmaterial.anisotropy = saturate( material.anisotropy );\n\tmaterial.alphaT = mix( pow2( material.roughness ), 1.0, pow2( material.anisotropy ) );\n\tmaterial.anisotropyT = tbn[ 0 ] * anisotropyV.x + tbn[ 1 ] * anisotropyV.y;\n\tmaterial.anisotropyB = tbn[ 1 ] * anisotropyV.x - tbn[ 0 ] * anisotropyV.y;\n#endif";
+	var lights_physical_fragment = "PhysicalMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );\nvec3 dxy = max( abs( dFdx( nonPerturbedNormal ) ), abs( dFdy( nonPerturbedNormal ) ) );\nfloat geometryRoughness = max( max( dxy.x, dxy.y ), dxy.z );\nmaterial.roughness = max( roughnessFactor, 0.0525 );material.roughness += geometryRoughness;\nmaterial.roughness = min( material.roughness, 1.0 );\n#ifdef IOR\n\tmaterial.ior = ior;\n\t#ifdef USE_SPECULAR\n\t\tfloat specularIntensityFactor = specularIntensity;\n\t\tvec3 specularColorFactor = specularColor;\n\t\t#ifdef USE_SPECULAR_COLORMAP\n\t\t\tspecularColorFactor *= texture2D( specularColorMap, vSpecularColorMapUv ).rgb;\n\t\t#endif\n\t\t#ifdef USE_SPECULAR_INTENSITYMAP\n\t\t\tspecularIntensityFactor *= texture2D( specularIntensityMap, vSpecularIntensityMapUv ).a;\n\t\t#endif\n\t\tmaterial.specularF90 = mix( specularIntensityFactor, 1.0, metalnessFactor );\n\t#else\n\t\tfloat specularIntensityFactor = 1.0;\n\t\tvec3 specularColorFactor = vec3( 1.0 );\n\t\tmaterial.specularF90 = 1.0;\n\t#endif\n\tmaterial.specularColor = mix( min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor, diffuseColor.rgb, metalnessFactor );\n#else\n\tmaterial.specularColor = mix( vec3( 0.04 ), diffuseColor.rgb, metalnessFactor );\n\tmaterial.specularF90 = 1.0;\n#endif\n#ifdef USE_CLEARCOAT\n\tmaterial.clearcoat = clearcoat;\n\tmaterial.clearcoatRoughness = clearcoatRoughness;\n\tmaterial.clearcoatF0 = vec3( 0.04 );\n\tmaterial.clearcoatF90 = 1.0;\n\t#ifdef USE_CLEARCOATMAP\n\t\tmaterial.clearcoat *= texture2D( clearcoatMap, vClearcoatMapUv ).x;\n\t#endif\n\t#ifdef USE_CLEARCOAT_ROUGHNESSMAP\n\t\tmaterial.clearcoatRoughness *= texture2D( clearcoatRoughnessMap, vClearcoatRoughnessMapUv ).y;\n\t#endif\n\tmaterial.clearcoat = saturate( material.clearcoat );\tmaterial.clearcoatRoughness = max( material.clearcoatRoughness, 0.0525 );\n\tmaterial.clearcoatRoughness += geometryRoughness;\n\tmaterial.clearcoatRoughness = min( material.clearcoatRoughness, 1.0 );\n#endif\n#ifdef USE_IRIDESCENCE\n\tmaterial.iridescence = iridescence;\n\tmaterial.iridescenceIOR = iridescenceIOR;\n\t#ifdef USE_IRIDESCENCEMAP\n\t\tmaterial.iridescence *= texture2D( iridescenceMap, vIridescenceMapUv ).r;\n\t#endif\n\t#ifdef USE_IRIDESCENCE_THICKNESSMAP\n\t\tmaterial.iridescenceThickness = (iridescenceThicknessMaximum - iridescenceThicknessMinimum) * texture2D( iridescenceThicknessMap, vIridescenceThicknessMapUv ).g + iridescenceThicknessMinimum;\n\t#else\n\t\tmaterial.iridescenceThickness = iridescenceThicknessMaximum;\n\t#endif\n#endif\n#ifdef USE_SHEEN\n\tmaterial.sheenColor = sheenColor;\n\t#ifdef USE_SHEEN_COLORMAP\n\t\tmaterial.sheenColor *= texture2D( sheenColorMap, vSheenColorMapUv ).rgb;\n\t#endif\n\tmaterial.sheenRoughness = clamp( sheenRoughness, 0.07, 1.0 );\n\t#ifdef USE_SHEEN_ROUGHNESSMAP\n\t\tmaterial.sheenRoughness *= texture2D( sheenRoughnessMap, vSheenRoughnessMapUv ).a;\n\t#endif\n#endif\n#ifdef USE_ANISOTROPY\n\t#ifdef USE_ANISOTROPYMAP\n\t\tmat2 anisotropyMat = mat2( anisotropyVector.x, anisotropyVector.y, - anisotropyVector.y, anisotropyVector.x );\n\t\tvec3 anisotropyPolar = texture2D( anisotropyMap, vAnisotropyMapUv ).rgb;\n\t\tvec2 anisotropyV = anisotropyMat * normalize( 2.0 * anisotropyPolar.rg - vec2( 1.0 ) ) * anisotropyPolar.b;\n\t#else\n\t\tvec2 anisotropyV = anisotropyVector;\n\t#endif\n\tmaterial.anisotropy = length( anisotropyV );\n\tif( material.anisotropy == 0.0 ) {\n\t\tanisotropyV = vec2( 1.0, 0.0 );\n\t} else {\n\t\tanisotropyV /= material.anisotropy;\n\t\tmaterial.anisotropy = saturate( material.anisotropy );\n\t}\n\tmaterial.alphaT = mix( pow2( material.roughness ), 1.0, pow2( material.anisotropy ) );\n\tmaterial.anisotropyT = tbn[ 0 ] * anisotropyV.x + tbn[ 1 ] * anisotropyV.y;\n\tmaterial.anisotropyB = tbn[ 1 ] * anisotropyV.x - tbn[ 0 ] * anisotropyV.y;\n#endif";
 
 	var lights_physical_pars_fragment = "struct PhysicalMaterial {\n\tvec3 diffuseColor;\n\tfloat roughness;\n\tvec3 specularColor;\n\tfloat specularF90;\n\t#ifdef USE_CLEARCOAT\n\t\tfloat clearcoat;\n\t\tfloat clearcoatRoughness;\n\t\tvec3 clearcoatF0;\n\t\tfloat clearcoatF90;\n\t#endif\n\t#ifdef USE_IRIDESCENCE\n\t\tfloat iridescence;\n\t\tfloat iridescenceIOR;\n\t\tfloat iridescenceThickness;\n\t\tvec3 iridescenceFresnel;\n\t\tvec3 iridescenceF0;\n\t#endif\n\t#ifdef USE_SHEEN\n\t\tvec3 sheenColor;\n\t\tfloat sheenRoughness;\n\t#endif\n\t#ifdef IOR\n\t\tfloat ior;\n\t#endif\n\t#ifdef USE_TRANSMISSION\n\t\tfloat transmission;\n\t\tfloat transmissionAlpha;\n\t\tfloat thickness;\n\t\tfloat attenuationDistance;\n\t\tvec3 attenuationColor;\n\t#endif\n\t#ifdef USE_ANISOTROPY\n\t\tfloat anisotropy;\n\t\tfloat alphaT;\n\t\tvec3 anisotropyT;\n\t\tvec3 anisotropyB;\n\t#endif\n};\nvec3 clearcoatSpecularDirect = vec3( 0.0 );\nvec3 clearcoatSpecularIndirect = vec3( 0.0 );\nvec3 sheenSpecularDirect = vec3( 0.0 );\nvec3 sheenSpecularIndirect = vec3(0.0 );\nvec3 Schlick_to_F0( const in vec3 f, const in float f90, const in float dotVH ) {\n    float x = clamp( 1.0 - dotVH, 0.0, 1.0 );\n    float x2 = x * x;\n    float x5 = clamp( x * x2 * x2, 0.0, 0.9999 );\n    return ( f - vec3( f90 ) * x5 ) / ( 1.0 - x5 );\n}\nfloat V_GGX_SmithCorrelated( const in float alpha, const in float dotNL, const in float dotNV ) {\n\tfloat a2 = pow2( alpha );\n\tfloat gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );\n\tfloat gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );\n\treturn 0.5 / max( gv + gl, EPSILON );\n}\nfloat D_GGX( const in float alpha, const in float dotNH ) {\n\tfloat a2 = pow2( alpha );\n\tfloat denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;\n\treturn RECIPROCAL_PI * a2 / pow2( denom );\n}\n#ifdef USE_ANISOTROPY\n\tfloat V_GGX_SmithCorrelated_Anisotropic( const in float alphaT, const in float alphaB, const in float dotTV, const in float dotBV, const in float dotTL, const in float dotBL, const in float dotNV, const in float dotNL ) {\n\t\tfloat gv = dotNL * length( vec3( alphaT * dotTV, alphaB * dotBV, dotNV ) );\n\t\tfloat gl = dotNV * length( vec3( alphaT * dotTL, alphaB * dotBL, dotNL ) );\n\t\tfloat v = 0.5 / ( gv + gl );\n\t\treturn saturate(v);\n\t}\n\tfloat D_GGX_Anisotropic( const in float alphaT, const in float alphaB, const in float dotNH, const in float dotTH, const in float dotBH ) {\n\t\tfloat a2 = alphaT * alphaB;\n\t\thighp vec3 v = vec3( alphaB * dotTH, alphaT * dotBH, a2 * dotNH );\n\t\thighp float v2 = dot( v, v );\n\t\tfloat w2 = a2 / v2;\n\t\treturn RECIPROCAL_PI * a2 * pow2 ( w2 );\n\t}\n#endif\n#ifdef USE_CLEARCOAT\n\tvec3 BRDF_GGX_Clearcoat( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in PhysicalMaterial material) {\n\t\tvec3 f0 = material.clearcoatF0;\n\t\tfloat f90 = material.clearcoatF90;\n\t\tfloat roughness = material.clearcoatRoughness;\n\t\tfloat alpha = pow2( roughness );\n\t\tvec3 halfDir = normalize( lightDir + viewDir );\n\t\tfloat dotNL = saturate( dot( normal, lightDir ) );\n\t\tfloat dotNV = saturate( dot( normal, viewDir ) );\n\t\tfloat dotNH = saturate( dot( normal, halfDir ) );\n\t\tfloat dotVH = saturate( dot( viewDir, halfDir ) );\n\t\tvec3 F = F_Schlick( f0, f90, dotVH );\n\t\tfloat V = V_GGX_SmithCorrelated( alpha, dotNL, dotNV );\n\t\tfloat D = D_GGX( alpha, dotNH );\n\t\treturn F * ( V * D );\n\t}\n#endif\nvec3 BRDF_GGX( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in PhysicalMaterial material ) {\n\tvec3 f0 = material.specularColor;\n\tfloat f90 = material.specularF90;\n\tfloat roughness = material.roughness;\n\tfloat alpha = pow2( roughness );\n\tvec3 halfDir = normalize( lightDir + viewDir );\n\tfloat dotNL = saturate( dot( normal, lightDir ) );\n\tfloat dotNV = saturate( dot( normal, viewDir ) );\n\tfloat dotNH = saturate( dot( normal, halfDir ) );\n\tfloat dotVH = saturate( dot( viewDir, halfDir ) );\n\tvec3 F = F_Schlick( f0, f90, dotVH );\n\t#ifdef USE_IRIDESCENCE\n\t\tF = mix( F, material.iridescenceFresnel, material.iridescence );\n\t#endif\n\t#ifdef USE_ANISOTROPY\n\t\tfloat dotTL = dot( material.anisotropyT, lightDir );\n\t\tfloat dotTV = dot( material.anisotropyT, viewDir );\n\t\tfloat dotTH = dot( material.anisotropyT, halfDir );\n\t\tfloat dotBL = dot( material.anisotropyB, lightDir );\n\t\tfloat dotBV = dot( material.anisotropyB, viewDir );\n\t\tfloat dotBH = dot( material.anisotropyB, halfDir );\n\t\tfloat V = V_GGX_SmithCorrelated_Anisotropic( material.alphaT, alpha, dotTV, dotBV, dotTL, dotBL, dotNV, dotNL );\n\t\tfloat D = D_GGX_Anisotropic( material.alphaT, alpha, dotNH, dotTH, dotBH );\n\t#else\n\t\tfloat V = V_GGX_SmithCorrelated( alpha, dotNL, dotNV );\n\t\tfloat D = D_GGX( alpha, dotNH );\n\t#endif\n\treturn F * ( V * D );\n}\nvec2 LTC_Uv( const in vec3 N, const in vec3 V, const in float roughness ) {\n\tconst float LUT_SIZE = 64.0;\n\tconst float LUT_SCALE = ( LUT_SIZE - 1.0 ) / LUT_SIZE;\n\tconst float LUT_BIAS = 0.5 / LUT_SIZE;\n\tfloat dotNV = saturate( dot( N, V ) );\n\tvec2 uv = vec2( roughness, sqrt( 1.0 - dotNV ) );\n\tuv = uv * LUT_SCALE + LUT_BIAS;\n\treturn uv;\n}\nfloat LTC_ClippedSphereFormFactor( const in vec3 f ) {\n\tfloat l = length( f );\n\treturn max( ( l * l + f.z ) / ( l + 1.0 ), 0.0 );\n}\nvec3 LTC_EdgeVectorFormFactor( const in vec3 v1, const in vec3 v2 ) {\n\tfloat x = dot( v1, v2 );\n\tfloat y = abs( x );\n\tfloat a = 0.8543985 + ( 0.4965155 + 0.0145206 * y ) * y;\n\tfloat b = 3.4175940 + ( 4.1616724 + y ) * y;\n\tfloat v = a / b;\n\tfloat theta_sintheta = ( x > 0.0 ) ? v : 0.5 * inversesqrt( max( 1.0 - x * x, 1e-7 ) ) - v;\n\treturn cross( v1, v2 ) * theta_sintheta;\n}\nvec3 LTC_Evaluate( const in vec3 N, const in vec3 V, const in vec3 P, const in mat3 mInv, const in vec3 rectCoords[ 4 ] ) {\n\tvec3 v1 = rectCoords[ 1 ] - rectCoords[ 0 ];\n\tvec3 v2 = rectCoords[ 3 ] - rectCoords[ 0 ];\n\tvec3 lightNormal = cross( v1, v2 );\n\tif( dot( lightNormal, P - rectCoords[ 0 ] ) < 0.0 ) return vec3( 0.0 );\n\tvec3 T1, T2;\n\tT1 = normalize( V - N * dot( V, N ) );\n\tT2 = - cross( N, T1 );\n\tmat3 mat = mInv * transposeMat3( mat3( T1, T2, N ) );\n\tvec3 coords[ 4 ];\n\tcoords[ 0 ] = mat * ( rectCoords[ 0 ] - P );\n\tcoords[ 1 ] = mat * ( rectCoords[ 1 ] - P );\n\tcoords[ 2 ] = mat * ( rectCoords[ 2 ] - P );\n\tcoords[ 3 ] = mat * ( rectCoords[ 3 ] - P );\n\tcoords[ 0 ] = normalize( coords[ 0 ] );\n\tcoords[ 1 ] = normalize( coords[ 1 ] );\n\tcoords[ 2 ] = normalize( coords[ 2 ] );\n\tcoords[ 3 ] = normalize( coords[ 3 ] );\n\tvec3 vectorFormFactor = vec3( 0.0 );\n\tvectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 0 ], coords[ 1 ] );\n\tvectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 1 ], coords[ 2 ] );\n\tvectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 2 ], coords[ 3 ] );\n\tvectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 3 ], coords[ 0 ] );\n\tfloat result = LTC_ClippedSphereFormFactor( vectorFormFactor );\n\treturn vec3( result );\n}\n#if defined( USE_SHEEN )\nfloat D_Charlie( float roughness, float dotNH ) {\n\tfloat alpha = pow2( roughness );\n\tfloat invAlpha = 1.0 / alpha;\n\tfloat cos2h = dotNH * dotNH;\n\tfloat sin2h = max( 1.0 - cos2h, 0.0078125 );\n\treturn ( 2.0 + invAlpha ) * pow( sin2h, invAlpha * 0.5 ) / ( 2.0 * PI );\n}\nfloat V_Neubelt( float dotNV, float dotNL ) {\n\treturn saturate( 1.0 / ( 4.0 * ( dotNL + dotNV - dotNL * dotNV ) ) );\n}\nvec3 BRDF_Sheen( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, vec3 sheenColor, const in float sheenRoughness ) {\n\tvec3 halfDir = normalize( lightDir + viewDir );\n\tfloat dotNL = saturate( dot( normal, lightDir ) );\n\tfloat dotNV = saturate( dot( normal, viewDir ) );\n\tfloat dotNH = saturate( dot( normal, halfDir ) );\n\tfloat D = D_Charlie( sheenRoughness, dotNH );\n\tfloat V = V_Neubelt( dotNV, dotNL );\n\treturn sheenColor * ( D * V );\n}\n#endif\nfloat IBLSheenBRDF( const in vec3 normal, const in vec3 viewDir, const in float roughness ) {\n\tfloat dotNV = saturate( dot( normal, viewDir ) );\n\tfloat r2 = roughness * roughness;\n\tfloat a = roughness < 0.25 ? -339.2 * r2 + 161.4 * roughness - 25.9 : -8.48 * r2 + 14.3 * roughness - 9.95;\n\tfloat b = roughness < 0.25 ? 44.0 * r2 - 23.7 * roughness + 3.26 : 1.97 * r2 - 3.27 * roughness + 0.72;\n\tfloat DG = exp( a * dotNV + b ) + ( roughness < 0.25 ? 0.0 : 0.1 * ( roughness - 0.25 ) );\n\treturn saturate( DG * RECIPROCAL_PI );\n}\nvec2 DFGApprox( const in vec3 normal, const in vec3 viewDir, const in float roughness ) {\n\tfloat dotNV = saturate( dot( normal, viewDir ) );\n\tconst vec4 c0 = vec4( - 1, - 0.0275, - 0.572, 0.022 );\n\tconst vec4 c1 = vec4( 1, 0.0425, 1.04, - 0.04 );\n\tvec4 r = roughness * c0 + c1;\n\tfloat a004 = min( r.x * r.x, exp2( - 9.28 * dotNV ) ) * r.x + r.y;\n\tvec2 fab = vec2( - 1.04, 1.04 ) * a004 + r.zw;\n\treturn fab;\n}\nvec3 EnvironmentBRDF( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float roughness ) {\n\tvec2 fab = DFGApprox( normal, viewDir, roughness );\n\treturn specularColor * fab.x + specularF90 * fab.y;\n}\n#ifdef USE_IRIDESCENCE\nvoid computeMultiscatteringIridescence( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float iridescence, const in vec3 iridescenceF0, const in float roughness, inout vec3 singleScatter, inout vec3 multiScatter ) {\n#else\nvoid computeMultiscattering( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float roughness, inout vec3 singleScatter, inout vec3 multiScatter ) {\n#endif\n\tvec2 fab = DFGApprox( normal, viewDir, roughness );\n\t#ifdef USE_IRIDESCENCE\n\t\tvec3 Fr = mix( specularColor, iridescenceF0, iridescence );\n\t#else\n\t\tvec3 Fr = specularColor;\n\t#endif\n\tvec3 FssEss = Fr * fab.x + specularF90 * fab.y;\n\tfloat Ess = fab.x + fab.y;\n\tfloat Ems = 1.0 - Ess;\n\tvec3 Favg = Fr + ( 1.0 - Fr ) * 0.047619;\tvec3 Fms = FssEss * Favg / ( 1.0 - Ems * Favg );\n\tsingleScatter += FssEss;\n\tmultiScatter += Fms * Ems;\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n\tvoid RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t\tvec3 normal = geometryNormal;\n\t\tvec3 viewDir = geometryViewDir;\n\t\tvec3 position = geometryPosition;\n\t\tvec3 lightPos = rectAreaLight.position;\n\t\tvec3 halfWidth = rectAreaLight.halfWidth;\n\t\tvec3 halfHeight = rectAreaLight.halfHeight;\n\t\tvec3 lightColor = rectAreaLight.color;\n\t\tfloat roughness = material.roughness;\n\t\tvec3 rectCoords[ 4 ];\n\t\trectCoords[ 0 ] = lightPos + halfWidth - halfHeight;\t\trectCoords[ 1 ] = lightPos - halfWidth - halfHeight;\n\t\trectCoords[ 2 ] = lightPos - halfWidth + halfHeight;\n\t\trectCoords[ 3 ] = lightPos + halfWidth + halfHeight;\n\t\tvec2 uv = LTC_Uv( normal, viewDir, roughness );\n\t\tvec4 t1 = texture2D( ltc_1, uv );\n\t\tvec4 t2 = texture2D( ltc_2, uv );\n\t\tmat3 mInv = mat3(\n\t\t\tvec3( t1.x, 0, t1.y ),\n\t\t\tvec3(    0, 1,    0 ),\n\t\t\tvec3( t1.z, 0, t1.w )\n\t\t);\n\t\tvec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n\t\treflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n\t\treflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n\t}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\tfloat dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;\n\t#ifdef USE_CLEARCOAT\n\t\tfloat dotNLcc = saturate( dot( geometryClearcoatNormal, directLight.direction ) );\n\t\tvec3 ccIrradiance = dotNLcc * directLight.color;\n\t\tclearcoatSpecularDirect += ccIrradiance * BRDF_GGX_Clearcoat( directLight.direction, geometryViewDir, geometryClearcoatNormal, material );\n\t#endif\n\t#ifdef USE_SHEEN\n\t\tsheenSpecularDirect += irradiance * BRDF_Sheen( directLight.direction, geometryViewDir, geometryNormal, material.sheenColor, material.sheenRoughness );\n\t#endif\n\treflectedLight.directSpecular += irradiance * BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material );\n\treflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\treflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 irradiance, const in vec3 clearcoatRadiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight) {\n\t#ifdef USE_CLEARCOAT\n\t\tclearcoatSpecularIndirect += clearcoatRadiance * EnvironmentBRDF( geometryClearcoatNormal, geometryViewDir, material.clearcoatF0, material.clearcoatF90, material.clearcoatRoughness );\n\t#endif\n\t#ifdef USE_SHEEN\n\t\tsheenSpecularIndirect += irradiance * material.sheenColor * IBLSheenBRDF( geometryNormal, geometryViewDir, material.sheenRoughness );\n\t#endif\n\tvec3 singleScattering = vec3( 0.0 );\n\tvec3 multiScattering = vec3( 0.0 );\n\tvec3 cosineWeightedIrradiance = irradiance * RECIPROCAL_PI;\n\t#ifdef USE_IRIDESCENCE\n\t\tcomputeMultiscatteringIridescence( geometryNormal, geometryViewDir, material.specularColor, material.specularF90, material.iridescence, material.iridescenceFresnel, material.roughness, singleScattering, multiScattering );\n\t#else\n\t\tcomputeMultiscattering( geometryNormal, geometryViewDir, material.specularColor, material.specularF90, material.roughness, singleScattering, multiScattering );\n\t#endif\n\tvec3 totalScattering = singleScattering + multiScattering;\n\tvec3 diffuse = material.diffuseColor * ( 1.0 - max( max( totalScattering.r, totalScattering.g ), totalScattering.b ) );\n\treflectedLight.indirectSpecular += radiance * singleScattering;\n\treflectedLight.indirectSpecular += multiScattering * cosineWeightedIrradiance;\n\treflectedLight.indirectDiffuse += diffuse * cosineWeightedIrradiance;\n}\n#define RE_Direct\t\t\t\tRE_Direct_Physical\n#define RE_Direct_RectArea\t\tRE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse\t\tRE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular\t\tRE_IndirectSpecular_Physical\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n\treturn saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
 
@@ -15739,21 +15748,26 @@ var THREE = (async function (exports) {
 			const extension = extensions.get( 'WEBGL_multi_draw' );
 			if ( extension === null ) {
 
-				console.error( 'THREE.WebGLBufferRenderer: using THREE.BatchedMesh but hardware does not support extension WEBGL_multi_draw.' );
-				return;
+				for ( let i = 0; i < drawCount; i ++ ) {
+
+					this.render( starts[ i ], counts[ i ] );
+
+				}
+
+			} else {
+
+				extension.multiDrawArraysWEBGL( mode, starts, 0, counts, 0, drawCount );
+
+				let elementCount = 0;
+				for ( let i = 0; i < drawCount; i ++ ) {
+
+					elementCount += counts[ i ];
+
+				}
+
+				info.update( elementCount, mode, 1 );
 
 			}
-
-			extension.multiDrawArraysWEBGL( mode, starts, 0, counts, 0, drawCount );
-
-			let elementCount = 0;
-			for ( let i = 0; i < drawCount; i ++ ) {
-
-				elementCount += counts[ i ];
-
-			}
-
-			info.update( elementCount, mode, 1 );
 
 		}
 
@@ -17651,21 +17665,26 @@ var THREE = (async function (exports) {
 			const extension = extensions.get( 'WEBGL_multi_draw' );
 			if ( extension === null ) {
 
-				console.error( 'THREE.WebGLBufferRenderer: using THREE.BatchedMesh but hardware does not support extension WEBGL_multi_draw.' );
-				return;
+				for ( let i = 0; i < drawCount; i ++ ) {
+
+					this.render( starts[ i ] / bytesPerElement, counts[ i ] );
+
+				}
+
+			} else {
+
+				extension.multiDrawElementsWEBGL( mode, counts, 0, type, starts, 0, drawCount );
+
+				let elementCount = 0;
+				for ( let i = 0; i < drawCount; i ++ ) {
+
+					elementCount += counts[ i ];
+
+				}
+
+				info.update( elementCount, mode, 1 );
 
 			}
-
-			extension.multiDrawElementsWEBGL( mode, counts, 0, type, starts, 0, drawCount );
-
-			let elementCount = 0;
-			for ( let i = 0; i < drawCount; i ++ ) {
-
-				elementCount += counts[ i ];
-
-			}
-
-			info.update( elementCount, mode, 1 );
 
 		}
 
@@ -24612,7 +24631,7 @@ var THREE = (async function (exports) {
 				let mipmap;
 				const mipmaps = texture.mipmaps;
 
-				const useTexStorage = ( isWebGL2 && texture.isVideoTexture !== true );
+				const useTexStorage = ( isWebGL2 && texture.isVideoTexture !== true && glInternalFormat !== RGB_ETC1_Format );
 				const allocateMemory = ( sourceProperties.__version === undefined ) || ( forceUpload === true );
 				const levels = getMipLevels( texture, image, supportsMips );
 
@@ -31241,7 +31260,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	const _vector$5 = /*@__PURE__*/ new Vector3();
+	const _vector$6 = /*@__PURE__*/ new Vector3();
 
 	class InterleavedBufferAttribute {
 
@@ -31281,11 +31300,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, l = this.data.count; i < l; i ++ ) {
 
-				_vector$5.fromBufferAttribute( this, i );
+				_vector$6.fromBufferAttribute( this, i );
 
-				_vector$5.applyMatrix4( m );
+				_vector$6.applyMatrix4( m );
 
-				this.setXYZ( i, _vector$5.x, _vector$5.y, _vector$5.z );
+				this.setXYZ( i, _vector$6.x, _vector$6.y, _vector$6.z );
 
 			}
 
@@ -31297,11 +31316,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, l = this.count; i < l; i ++ ) {
 
-				_vector$5.fromBufferAttribute( this, i );
+				_vector$6.fromBufferAttribute( this, i );
 
-				_vector$5.applyNormalMatrix( m );
+				_vector$6.applyNormalMatrix( m );
 
-				this.setXYZ( i, _vector$5.x, _vector$5.y, _vector$5.z );
+				this.setXYZ( i, _vector$6.x, _vector$6.y, _vector$6.z );
 
 			}
 
@@ -31313,11 +31332,11 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0, l = this.count; i < l; i ++ ) {
 
-				_vector$5.fromBufferAttribute( this, i );
+				_vector$6.fromBufferAttribute( this, i );
 
-				_vector$5.transformDirection( m );
+				_vector$6.transformDirection( m );
 
-				this.setXYZ( i, _vector$5.x, _vector$5.y, _vector$5.z );
+				this.setXYZ( i, _vector$6.x, _vector$6.y, _vector$6.z );
 
 			}
 
@@ -32004,7 +32023,7 @@ var THREE = (async function (exports) {
 	const _matrix4 = /*@__PURE__*/ new Matrix4();
 	const _vertex = /*@__PURE__*/ new Vector3();
 
-	const _sphere$3 = /*@__PURE__*/ new Sphere();
+	const _sphere$4 = /*@__PURE__*/ new Sphere();
 	const _inverseMatrix$2 = /*@__PURE__*/ new Matrix4();
 	const _ray$2 = /*@__PURE__*/ new Ray();
 
@@ -32101,10 +32120,10 @@ var THREE = (async function (exports) {
 
 			if ( this.boundingSphere === null ) this.computeBoundingSphere();
 
-			_sphere$3.copy( this.boundingSphere );
-			_sphere$3.applyMatrix4( matrixWorld );
+			_sphere$4.copy( this.boundingSphere );
+			_sphere$4.applyMatrix4( matrixWorld );
 
-			if ( raycaster.ray.intersectsSphere( _sphere$3 ) === false ) return;
+			if ( raycaster.ray.intersectsSphere( _sphere$4 ) === false ) return;
 
 			// convert ray to local space of skinned mesh
 
@@ -32283,7 +32302,7 @@ var THREE = (async function (exports) {
 	}
 
 	const _offsetMatrix = /*@__PURE__*/ new Matrix4();
-	const _identityMatrix = /*@__PURE__*/ new Matrix4();
+	const _identityMatrix$1 = /*@__PURE__*/ new Matrix4();
 
 	class Skeleton {
 
@@ -32412,7 +32431,7 @@ var THREE = (async function (exports) {
 
 				// compute the offset between the current and the original transform
 
-				const matrix = bones[ i ] ? bones[ i ].matrixWorld : _identityMatrix;
+				const matrix = bones[ i ] ? bones[ i ].matrixWorld : _identityMatrix$1;
 
 				_offsetMatrix.multiplyMatrices( matrix, boneInverses[ i ] );
 				_offsetMatrix.toArray( boneMatrices, i * 16 );
@@ -32592,8 +32611,8 @@ var THREE = (async function (exports) {
 
 	const _box3 = /*@__PURE__*/ new Box3();
 	const _identity = /*@__PURE__*/ new Matrix4();
-	const _mesh = /*@__PURE__*/ new Mesh();
-	const _sphere$2 = /*@__PURE__*/ new Sphere();
+	const _mesh$1 = /*@__PURE__*/ new Mesh();
+	const _sphere$3 = /*@__PURE__*/ new Sphere();
 
 	class InstancedMesh extends Mesh {
 
@@ -32673,9 +32692,9 @@ var THREE = (async function (exports) {
 
 				this.getMatrixAt( i, _instanceLocalMatrix );
 
-				_sphere$2.copy( geometry.boundingSphere ).applyMatrix4( _instanceLocalMatrix );
+				_sphere$3.copy( geometry.boundingSphere ).applyMatrix4( _instanceLocalMatrix );
 
-				this.boundingSphere.union( _sphere$2 );
+				this.boundingSphere.union( _sphere$3 );
 
 			}
 
@@ -32715,19 +32734,19 @@ var THREE = (async function (exports) {
 			const matrixWorld = this.matrixWorld;
 			const raycastTimes = this.count;
 
-			_mesh.geometry = this.geometry;
-			_mesh.material = this.material;
+			_mesh$1.geometry = this.geometry;
+			_mesh$1.material = this.material;
 
-			if ( _mesh.material === undefined ) return;
+			if ( _mesh$1.material === undefined ) return;
 
 			// test with bounding sphere first
 
 			if ( this.boundingSphere === null ) this.computeBoundingSphere();
 
-			_sphere$2.copy( this.boundingSphere );
-			_sphere$2.applyMatrix4( matrixWorld );
+			_sphere$3.copy( this.boundingSphere );
+			_sphere$3.applyMatrix4( matrixWorld );
 
-			if ( raycaster.ray.intersectsSphere( _sphere$2 ) === false ) return;
+			if ( raycaster.ray.intersectsSphere( _sphere$3 ) === false ) return;
 
 			// now test each instance
 
@@ -32741,9 +32760,9 @@ var THREE = (async function (exports) {
 
 				// the mesh represents this single instance
 
-				_mesh.matrixWorld = _instanceWorldMatrix;
+				_mesh$1.matrixWorld = _instanceWorldMatrix;
 
-				_mesh.raycast( raycaster, _instanceIntersects );
+				_mesh$1.raycast( raycaster, _instanceIntersects );
 
 				// process the result of raycast
 
@@ -32787,6 +32806,1016 @@ var THREE = (async function (exports) {
 		dispose() {
 
 			this.dispatchEvent( { type: 'dispose' } );
+
+		}
+
+	}
+
+	function sortOpaque( a, b ) {
+
+		return a.z - b.z;
+
+	}
+
+	function sortTransparent( a, b ) {
+
+		return b.z - a.z;
+
+	}
+
+	class MultiDrawRenderList {
+
+		constructor() {
+
+			this.index = 0;
+			this.pool = [];
+			this.list = [];
+
+		}
+
+		push( drawRange, z ) {
+
+			const pool = this.pool;
+			const list = this.list;
+			if ( this.index >= pool.length ) {
+
+				pool.push( {
+
+					start: - 1,
+					count: - 1,
+					z: - 1,
+
+				} );
+
+			}
+
+			const item = pool[ this.index ];
+			list.push( item );
+			this.index ++;
+
+			item.start = drawRange.start;
+			item.count = drawRange.count;
+			item.z = z;
+
+		}
+
+		reset() {
+
+			this.list.length = 0;
+			this.index = 0;
+
+		}
+
+	}
+
+	const ID_ATTR_NAME = 'batchId';
+	const _matrix = new Matrix4();
+	const _identityMatrix = new Matrix4();
+	const _projScreenMatrix$2 = new Matrix4();
+	const _frustum$1 = new Frustum();
+	const _box$1 = new Box3();
+	const _sphere$2 = new Sphere();
+	const _vector$5 = new Vector3();
+	const _renderList = new MultiDrawRenderList();
+	const _mesh = new Mesh();
+	const _batchIntersects = [];
+
+	// @TODO: SkinnedMesh support?
+	// @TODO: Future work if needed. Move into the core. Can be optimized more with WEBGL_multi_draw.
+	// @TODO: geometry.groups support?
+	// @TODO: geometry.drawRange support?
+	// @TODO: geometry.morphAttributes support?
+	// @TODO: Support uniform parameter per geometry
+	// @TODO: Add an "optimize" function to pack geometry and remove data gaps
+
+	// copies data from attribute "src" into "target" starting at "targetOffset"
+	function copyAttributeData( src, target, targetOffset = 0 ) {
+
+		const itemSize = target.itemSize;
+		if ( src.isInterleavedBufferAttribute || src.array.constructor !== target.array.constructor ) {
+
+			// use the component getters and setters if the array data cannot
+			// be copied directly
+			const vertexCount = src.count;
+			for ( let i = 0; i < vertexCount; i ++ ) {
+
+				for ( let c = 0; c < itemSize; c ++ ) {
+
+					target.setComponent( i + targetOffset, c, src.getComponent( i, c ) );
+
+				}
+
+			}
+
+		} else {
+
+			// faster copy approach using typed array set function
+			target.array.set( src.array, targetOffset * itemSize );
+
+		}
+
+		target.needsUpdate = true;
+
+	}
+
+	class BatchedMesh extends Mesh {
+
+		constructor( maxGeometryCount, maxVertexCount, maxIndexCount = maxVertexCount * 2, material ) {
+
+			super( new BufferGeometry(), material );
+
+			this.isBatchedMesh = true;
+			this.perObjectFrustumCulled = true;
+			this.sortObjects = true;
+			this.boundingBox = null;
+			this.boundingSphere = null;
+
+			this._drawRanges = [];
+			this._reservedRanges = [];
+
+			this._visible = [];
+			this._active = [];
+			this._bounds = [];
+
+			this._maxGeometryCount = maxGeometryCount;
+			this._maxVertexCount = maxVertexCount;
+			this._maxIndexCount = maxIndexCount;
+
+			this._geometryInitialized = false;
+			this._geometryCount = 0;
+			this._multiDrawCounts = new Int32Array( maxGeometryCount );
+			this._multiDrawStarts = new Int32Array( maxGeometryCount );
+			this._multiDrawCount = 0;
+
+			// Local matrix per geometry by using data texture
+			this._matricesTexture = null;
+
+			this._initMatricesTexture();
+
+		}
+
+		_initMatricesTexture() {
+
+			// layout (1 matrix = 4 pixels)
+			//      RGBA RGBA RGBA RGBA (=> column1, column2, column3, column4)
+			//  with  8x8  pixel texture max   16 matrices * 4 pixels =  (8 * 8)
+			//       16x16 pixel texture max   64 matrices * 4 pixels = (16 * 16)
+			//       32x32 pixel texture max  256 matrices * 4 pixels = (32 * 32)
+			//       64x64 pixel texture max 1024 matrices * 4 pixels = (64 * 64)
+
+			let size = Math.sqrt( this._maxGeometryCount * 4 ); // 4 pixels needed for 1 matrix
+			size = MathUtils.ceilPowerOfTwo( size );
+			size = Math.max( size, 4 );
+
+			const matricesArray = new Float32Array( size * size * 4 ); // 4 floats per RGBA pixel
+			const matricesTexture = new DataTexture( matricesArray, size, size, RGBAFormat, FloatType );
+
+			this._matricesTexture = matricesTexture;
+
+		}
+
+		_initializeGeometry( reference ) {
+
+			const geometry = this.geometry;
+			const maxVertexCount = this._maxVertexCount;
+			const maxGeometryCount = this._maxGeometryCount;
+			const maxIndexCount = this._maxIndexCount;
+			if ( this._geometryInitialized === false ) {
+
+				for ( const attributeName in reference.attributes ) {
+
+					const srcAttribute = reference.getAttribute( attributeName );
+					const { array, itemSize, normalized } = srcAttribute;
+
+					const dstArray = new array.constructor( maxVertexCount * itemSize );
+					const dstAttribute = new srcAttribute.constructor( dstArray, itemSize, normalized );
+					dstAttribute.setUsage( srcAttribute.usage );
+
+					geometry.setAttribute( attributeName, dstAttribute );
+
+				}
+
+				if ( reference.getIndex() !== null ) {
+
+					const indexArray = maxVertexCount > 65536
+						? new Uint32Array( maxIndexCount )
+						: new Uint16Array( maxIndexCount );
+
+					geometry.setIndex( new BufferAttribute( indexArray, 1 ) );
+
+				}
+
+				const idArray = maxGeometryCount > 65536
+					? new Uint32Array( maxVertexCount )
+					: new Uint16Array( maxVertexCount );
+				geometry.setAttribute( ID_ATTR_NAME, new BufferAttribute( idArray, 1 ) );
+
+				this._geometryInitialized = true;
+
+			}
+
+		}
+
+		// Make sure the geometry is compatible with the existing combined geometry atributes
+		_validateGeometry( geometry ) {
+
+			// check that the geometry doesn't have a version of our reserved id attribute
+			if ( geometry.getAttribute( ID_ATTR_NAME ) ) {
+
+				throw new Error( `BatchedMesh: Geometry cannot use attribute "${ ID_ATTR_NAME }"` );
+
+			}
+
+			// check to ensure the geometries are using consistent attributes and indices
+			const batchGeometry = this.geometry;
+			if ( Boolean( geometry.getIndex() ) !== Boolean( batchGeometry.getIndex() ) ) {
+
+				throw new Error( 'BatchedMesh: All geometries must consistently have "index".' );
+
+			}
+
+			for ( const attributeName in batchGeometry.attributes ) {
+
+				if ( attributeName === ID_ATTR_NAME ) {
+
+					continue;
+
+				}
+
+				if ( ! geometry.hasAttribute( attributeName ) ) {
+
+					throw new Error( `BatchedMesh: Added geometry missing "${ attributeName }". All geometries must have consistent attributes.` );
+
+				}
+
+				const srcAttribute = geometry.getAttribute( attributeName );
+				const dstAttribute = batchGeometry.getAttribute( attributeName );
+				if ( srcAttribute.itemSize !== dstAttribute.itemSize || srcAttribute.normalized !== dstAttribute.normalized ) {
+
+					throw new Error( 'BatchedMesh: All attributes must have a consistent itemSize and normalized value.' );
+
+				}
+
+			}
+
+		}
+
+		getGeometryCount() {
+
+			return this._geometryCount;
+
+		}
+
+		getVertexCount() {
+
+			const reservedRanges = this._reservedRanges;
+			if ( reservedRanges.length === 0 ) {
+
+				return 0;
+
+			} else {
+
+				const finalRange = reservedRanges[ reservedRanges.length - 1 ];
+				return finalRange.vertexStart + finalRange.vertexCount;
+
+			}
+
+		}
+
+		getIndexCount() {
+
+			const reservedRanges = this._reservedRanges;
+			const geometry = this.geometry;
+			if ( geometry.getIndex() === null || reservedRanges.length === 0 ) {
+
+				return 0;
+
+			} else {
+
+				const finalRange = reservedRanges[ reservedRanges.length - 1 ];
+				return finalRange.indexStart + finalRange.indexCount;
+
+			}
+
+		}
+
+		computeBoundingBox() {
+
+			if ( this.boundingBox === null ) {
+
+				this.boundingBox = new Box3();
+
+			}
+
+			const geometryCount = this._geometryCount;
+			const boundingBox = this.boundingBox;
+			const active = this._active;
+
+			boundingBox.makeEmpty();
+			for ( let i = 0; i < geometryCount; i ++ ) {
+
+				if ( active[ i ] === false ) continue;
+
+				this.getMatrixAt( i, _matrix );
+				this.getBoundingBoxAt( i, _box$1 ).applyMatrix4( _matrix );
+				boundingBox.union( _box$1 );
+
+			}
+
+		}
+
+		computeBoundingSphere() {
+
+			if ( this.boundingSphere === null ) {
+
+				this.boundingSphere = new Sphere();
+
+			}
+
+			const geometryCount = this._geometryCount;
+			const boundingSphere = this.boundingSphere;
+			const active = this._active;
+
+			boundingSphere.makeEmpty();
+			for ( let i = 0; i < geometryCount; i ++ ) {
+
+				if ( active[ i ] === false ) continue;
+
+				this.getMatrixAt( i, _matrix );
+				this.getBoundingSphereAt( i, _sphere$2 ).applyMatrix4( _matrix );
+				boundingSphere.union( _sphere$2 );
+
+			}
+
+		}
+
+		addGeometry( geometry, vertexCount = - 1, indexCount = - 1 ) {
+
+			this._initializeGeometry( geometry );
+
+			this._validateGeometry( geometry );
+
+			// ensure we're not over geometry
+			if ( this._geometryCount >= this._maxGeometryCount ) {
+
+				throw new Error( 'BatchedMesh: Maximum geometry count reached.' );
+
+			}
+
+			// get the necessary range fo the geometry
+			const reservedRange = {
+				vertexStart: - 1,
+				vertexCount: - 1,
+				indexStart: - 1,
+				indexCount: - 1,
+			};
+
+			let lastRange = null;
+			const reservedRanges = this._reservedRanges;
+			const drawRanges = this._drawRanges;
+			const bounds = this._bounds;
+			if ( this._geometryCount !== 0 ) {
+
+				lastRange = reservedRanges[ reservedRanges.length - 1 ];
+
+			}
+
+			if ( vertexCount === - 1 ) {
+
+				reservedRange.vertexCount = geometry.getAttribute( 'position' ).count;
+
+			} else {
+
+				reservedRange.vertexCount = vertexCount;
+
+			}
+
+			if ( lastRange === null ) {
+
+				reservedRange.vertexStart = 0;
+
+			} else {
+
+				reservedRange.vertexStart = lastRange.vertexStart + lastRange.vertexCount;
+
+			}
+
+			const index = geometry.getIndex();
+			const hasIndex = index !== null;
+			if ( hasIndex ) {
+
+				if ( indexCount	=== - 1 ) {
+
+					reservedRange.indexCount = index.count;
+
+				} else {
+
+					reservedRange.indexCount = indexCount;
+
+				}
+
+				if ( lastRange === null ) {
+
+					reservedRange.indexStart = 0;
+
+				} else {
+
+					reservedRange.indexStart = lastRange.indexStart + lastRange.indexCount;
+
+				}
+
+			}
+
+			if (
+				reservedRange.indexStart !== - 1 &&
+				reservedRange.indexStart + reservedRange.indexCount > this._maxIndexCount ||
+				reservedRange.vertexStart + reservedRange.vertexCount > this._maxVertexCount
+			) {
+
+				throw new Error( 'BatchedMesh: Reserved space request exceeds the maximum buffer size.' );
+
+			}
+
+			const visible = this._visible;
+			const active = this._active;
+			const matricesTexture = this._matricesTexture;
+			const matricesArray = this._matricesTexture.image.data;
+
+			// push new visibility states
+			visible.push( true );
+			active.push( true );
+
+			// update id
+			const geometryId = this._geometryCount;
+			this._geometryCount ++;
+
+			// initialize matrix information
+			_identityMatrix.toArray( matricesArray, geometryId * 16 );
+			matricesTexture.needsUpdate = true;
+
+			// add the reserved range and draw range objects
+			reservedRanges.push( reservedRange );
+			drawRanges.push( {
+				start: hasIndex ? reservedRange.indexStart : reservedRange.vertexStart,
+				count: - 1
+			} );
+			bounds.push( {
+				boxInitialized: false,
+				box: new Box3(),
+
+				sphereInitialized: false,
+				sphere: new Sphere()
+			} );
+
+			// set the id for the geometry
+			const idAttribute = this.geometry.getAttribute( ID_ATTR_NAME );
+			for ( let i = 0; i < reservedRange.vertexCount; i ++ ) {
+
+				idAttribute.setX( reservedRange.vertexStart + i, geometryId );
+
+			}
+
+			idAttribute.needsUpdate = true;
+
+			// update the geometry
+			this.setGeometryAt( geometryId, geometry );
+
+			return geometryId;
+
+		}
+
+		setGeometryAt( id, geometry ) {
+
+			if ( id >= this._geometryCount ) {
+
+				throw new Error( 'BatchedMesh: Maximum geometry count reached.' );
+
+			}
+
+			this._validateGeometry( geometry );
+
+			const batchGeometry = this.geometry;
+			const hasIndex = batchGeometry.getIndex() !== null;
+			const dstIndex = batchGeometry.getIndex();
+			const srcIndex = geometry.getIndex();
+			const reservedRange = this._reservedRanges[ id ];
+			if (
+				hasIndex &&
+				srcIndex.count > reservedRange.indexCount ||
+				geometry.attributes.position.count > reservedRange.vertexCount
+			) {
+
+				throw new Error( 'BatchedMesh: Reserved space not large enough for provided geometry.' );
+
+			}
+
+			// copy geometry over
+			const vertexStart = reservedRange.vertexStart;
+			const vertexCount = reservedRange.vertexCount;
+			for ( const attributeName in batchGeometry.attributes ) {
+
+				if ( attributeName === ID_ATTR_NAME ) {
+
+					continue;
+
+				}
+
+				// copy attribute data
+				const srcAttribute = geometry.getAttribute( attributeName );
+				const dstAttribute = batchGeometry.getAttribute( attributeName );
+				copyAttributeData( srcAttribute, dstAttribute, vertexStart );
+
+				// fill the rest in with zeroes
+				const itemSize = srcAttribute.itemSize;
+				for ( let i = srcAttribute.count, l = vertexCount; i < l; i ++ ) {
+
+					const index = vertexStart + i;
+					for ( let c = 0; c < itemSize; c ++ ) {
+
+						dstAttribute.setComponent( index, c, 0 );
+
+					}
+
+				}
+
+				dstAttribute.needsUpdate = true;
+
+			}
+
+			// copy index
+			if ( hasIndex ) {
+
+				const indexStart = reservedRange.indexStart;
+
+				// copy index data over
+				for ( let i = 0; i < srcIndex.count; i ++ ) {
+
+					dstIndex.setX( indexStart + i, vertexStart + srcIndex.getX( i ) );
+
+				}
+
+				// fill the rest in with zeroes
+				for ( let i = srcIndex.count, l = reservedRange.indexCount; i < l; i ++ ) {
+
+					dstIndex.setX( indexStart + i, vertexStart );
+
+				}
+
+				dstIndex.needsUpdate = true;
+
+			}
+
+			// store the bounding boxes
+			const bound = this._bounds[ id ];
+			if ( geometry.boundingBox !== null ) {
+
+				bound.box.copy( geometry.boundingBox );
+				bound.boxInitialized = true;
+
+			} else {
+
+				bound.boxInitialized = false;
+
+			}
+
+			if ( geometry.boundingSphere !== null ) {
+
+				bound.sphere.copy( geometry.boundingSphere );
+				bound.sphereInitialized = true;
+
+			} else {
+
+				bound.sphereInitialized = false;
+
+			}
+
+			// set drawRange count
+			const drawRange = this._drawRanges[ id ];
+			const posAttr = geometry.getAttribute( 'position' );
+			drawRange.count = hasIndex ? srcIndex.count : posAttr.count;
+
+			return id;
+
+		}
+
+		deleteGeometry( geometryId ) {
+
+			// Note: User needs to call optimize() afterward to pack the data.
+
+			const active = this._active;
+			if ( geometryId >= active.length || active[ geometryId ] === false ) {
+
+				return this;
+
+			}
+
+			active[ geometryId ] = false;
+
+			return this;
+
+		}
+
+		// get bounding box and compute it if it doesn't exist
+		getBoundingBoxAt( id, target ) {
+
+			const active = this._active;
+			if ( active[ id ] === false ) {
+
+				return this;
+
+			}
+
+			// compute bounding box
+			const bound = this._bounds[ id ];
+			const box = bound.box;
+			const geometry = this.geometry;
+			if ( bound.boxInitialized === false ) {
+
+				box.makeEmpty();
+
+				const index = geometry.index;
+				const position = geometry.attributes.position;
+				const drawRange = this._drawRanges[ id ];
+				for ( let i = drawRange.start, l = drawRange.start + drawRange.count; i < l; i ++ ) {
+
+					let iv = i;
+					if ( index ) {
+
+						iv = index.getX( iv );
+
+					}
+
+					box.expandByPoint( _vector$5.fromBufferAttribute( position, iv ) );
+
+				}
+
+				bound.boxInitialized = true;
+
+			}
+
+			target.copy( box );
+			return target;
+
+		}
+
+		// get bounding sphere and compute it if it doesn't exist
+		getBoundingSphereAt( id, target ) {
+
+			const active = this._active;
+			if ( active[ id ] === false ) {
+
+				return this;
+
+			}
+
+			// compute bounding sphere
+			const bound = this._bounds[ id ];
+			const sphere = bound.sphere;
+			const geometry = this.geometry;
+			if ( bound.sphereInitialized === false ) {
+
+				sphere.makeEmpty();
+
+				this.getBoundingBoxAt( id, _box$1 );
+				_box$1.getCenter( sphere.center );
+
+				const index = geometry.index;
+				const position = geometry.attributes.position;
+				const drawRange = this._drawRanges[ id ];
+
+				let maxRadiusSq = 0;
+				for ( let i = drawRange.start, l = drawRange.start + drawRange.count; i < l; i ++ ) {
+
+					let iv = i;
+					if ( index ) {
+
+						iv = index.getX( iv );
+
+					}
+
+					_vector$5.fromBufferAttribute( position, iv );
+					maxRadiusSq = Math.max( maxRadiusSq, sphere.center.distanceToSquared( _vector$5 ) );
+
+				}
+
+				sphere.radius = Math.sqrt( maxRadiusSq );
+				bound.sphereInitialized = true;
+
+			}
+
+			target.copy( sphere );
+			return target;
+
+		}
+
+		setMatrixAt( geometryId, matrix ) {
+
+			// @TODO: Map geometryId to index of the arrays because
+			//        optimize() can make geometryId mismatch the index
+
+			const active = this._active;
+			const matricesTexture = this._matricesTexture;
+			const matricesArray = this._matricesTexture.image.data;
+			const geometryCount = this._geometryCount;
+			if ( geometryId >= geometryCount || active[ geometryId ] === false ) {
+
+				return this;
+
+			}
+
+			matrix.toArray( matricesArray, geometryId * 16 );
+			matricesTexture.needsUpdate = true;
+
+			return this;
+
+		}
+
+		getMatrixAt( geometryId, matrix ) {
+
+			const active = this._active;
+			const matricesArray = this._matricesTexture.image.data;
+			const geometryCount = this._geometryCount;
+			if ( geometryId >= geometryCount || active[ geometryId ] === false ) {
+
+				return null;
+
+			}
+
+			return matrix.fromArray( matricesArray, geometryId * 16 );
+
+		}
+
+		setVisibleAt( geometryId, value ) {
+
+			const visible = this._visible;
+			const active = this._active;
+			const geometryCount = this._geometryCount;
+
+			// if the geometry is out of range, not active, or visibility state
+			// does not change then return early
+			if (
+				geometryId >= geometryCount ||
+				active[ geometryId ] === false ||
+				visible[ geometryId ] === value
+			) {
+
+				return this;
+
+			}
+
+			visible[ geometryId ] = value;
+			return this;
+
+		}
+
+		getVisibleAt( geometryId ) {
+
+			const visible = this._visible;
+			const active = this._active;
+			const geometryCount = this._geometryCount;
+
+			// return early if the geometry is out of range or not active
+			if ( geometryId >= geometryCount || active[ geometryId ] === false ) {
+
+				return false;
+
+			}
+
+			return visible[ geometryId ];
+
+		}
+
+		raycast( raycaster, intersects ) {
+
+			const visible = this._visible;
+			const active = this._active;
+			const drawRanges = this._drawRanges;
+			const geometryCount = this._geometryCount;
+			const matrixWorld = this.matrixWorld;
+			const batchGeometry = this.geometry;
+
+			// iterate over each geometry
+			_mesh.material = this.material;
+			_mesh.geometry.index = batchGeometry.index;
+			_mesh.geometry.attributes = batchGeometry.attributes;
+			if ( _mesh.geometry.boundingBox === null ) {
+
+				_mesh.geometry.boundingBox = new Box3();
+
+			}
+
+			if ( _mesh.geometry.boundingSphere === null ) {
+
+				_mesh.geometry.boundingSphere = new Sphere();
+
+			}
+
+			for ( let i = 0; i < geometryCount; i ++ ) {
+
+				if ( ! visible[ i ] || ! active[ i ] ) {
+
+					continue;
+
+				}
+
+				const drawRange = drawRanges[ i ];
+				_mesh.geometry.setDrawRange( drawRange.start, drawRange.count );
+
+				// ge the intersects
+				this.getMatrixAt( i, _mesh.matrixWorld ).premultiply( matrixWorld );
+				this.getBoundingBoxAt( i, _mesh.geometry.boundingBox );
+				this.getBoundingSphereAt( i, _mesh.geometry.boundingSphere );
+				_mesh.raycast( raycaster, _batchIntersects );
+
+				// add batch id to the intersects
+				for ( let j = 0, l = _batchIntersects.length; j < l; j ++ ) {
+
+					const intersect = _batchIntersects[ j ];
+					intersect.object = this;
+					intersect.batchId = i;
+					intersects.push( intersect );
+
+				}
+
+				_batchIntersects.length = 0;
+
+			}
+
+			_mesh.material = null;
+			_mesh.geometry.index = null;
+			_mesh.geometry.attributes = {};
+			_mesh.geometry.setDrawRange( 0, Infinity );
+
+		}
+
+		copy( source ) {
+
+			super.copy( source );
+
+			this.geometry = source.geometry.clone();
+			this.perObjectFrustumCulled = source.perObjectFrustumCulled;
+			this.sortObjects = source.sortObjects;
+			this.boundingBox = source.boundingBox !== null ? source.boundingBox.clone() : null;
+			this.boundingSphere = source.boundingSphere !== null ? source.boundingSphere.clone() : null;
+
+			this._drawRanges = source._drawRanges.map( range => ( { ...range } ) );
+			this._reservedRanges = source._reservedRanges.map( range => ( { ...range } ) );
+
+			this._visible = source._visible.slice();
+			this._active = source._active.slice();
+			this._bounds = source._bounds.map( bound => ( {
+				boxInitialized: bound.boxInitialized,
+				box: bound.box.clone(),
+
+				sphereInitialized: bound.sphereInitialized,
+				sphere: bound.sphere.clone()
+			} ) );
+
+			this._maxGeometryCount = source._maxGeometryCount;
+			this._maxVertexCount = source._maxVertexCount;
+			this._maxIndexCount = source._maxIndexCount;
+
+			this._geometryInitialized = source._geometryInitialized;
+			this._geometryCount = source._geometryCount;
+			this._multiDrawCounts = source._multiDrawCounts.slice();
+			this._multiDrawStarts = source._multiDrawStarts.slice();
+
+			this._matricesTexture = source._matricesTexture.clone();
+			this._matricesTexture.image.data = this._matricesTexture.image.slice();
+
+			return this;
+
+		}
+
+		dispose() {
+
+			// Assuming the geometry is not shared with other meshes
+			this.geometry.dispose();
+
+			this._matricesTexture.dispose();
+			this._matricesTexture = null;
+			return this;
+
+		}
+
+		onBeforeRender( _renderer, _scene, camera, geometry, material/*, _group*/ ) {
+
+			// the indexed version of the multi draw function requires specifying the start
+			// offset in bytes.
+			const index = geometry.getIndex();
+			const bytesPerElement = index === null ? 1 : index.array.BYTES_PER_ELEMENT;
+
+			const visible = this._visible;
+			const multiDrawStarts = this._multiDrawStarts;
+			const multiDrawCounts = this._multiDrawCounts;
+			const drawRanges = this._drawRanges;
+			const perObjectFrustumCulled = this.perObjectFrustumCulled;
+
+			// prepare the frustum
+			if ( perObjectFrustumCulled ) {
+
+				_projScreenMatrix$2
+					.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse )
+					.multiply( this.matrixWorld );
+				_frustum$1.setFromProjectionMatrix(
+					_projScreenMatrix$2,
+					_renderer.isWebGPURenderer ? WebGPUCoordinateSystem : WebGLCoordinateSystem
+				);
+
+			}
+
+			let count = 0;
+
+			if ( this.sortObjects ) {
+
+				// get the camera position
+				_vector$5.setFromMatrixPosition( camera.matrixWorld );
+
+				for ( let i = 0, l = visible.length; i < l; i ++ ) {
+
+					if ( visible[ i ] ) {
+
+						this.getMatrixAt( i, _matrix );
+						this.getBoundingSphereAt( i, _sphere$2 ).applyMatrix4( _matrix );
+
+						// determine whether the batched geometry is within the frustum
+						let culled = false;
+						if ( perObjectFrustumCulled ) {
+
+							// get the bounds in camera space
+							this.getMatrixAt( i, _matrix );
+
+							// get the bounds
+							this.getBoundingBoxAt( i, _box$1 ).applyMatrix4( _matrix );
+							culled = ! _frustum$1.intersectsBox( _box$1 ) || ! _frustum$1.intersectsSphere( _sphere$2 );
+
+						}
+
+						if ( ! culled ) {
+
+							// get the distance from camera used for sorting
+							const z = _vector$5.distanceToSquared( _sphere$2.center );
+							_renderList.push( drawRanges[ i ], z );
+
+						}
+
+					}
+
+				}
+
+				// Sort the draw ranges and prep for rendering
+				const list = _renderList.list;
+				list.sort( material.transparent ? sortTransparent : sortOpaque );
+
+				for ( let i = 0, l = list.length; i < l; i ++ ) {
+
+					const item = list[ i ];
+					multiDrawStarts[ count ] = item.start * bytesPerElement;
+					multiDrawCounts[ count ] = item.count;
+					count ++;
+
+				}
+
+				_renderList.reset();
+
+			} else {
+
+				for ( let i = 0, l = visible.length; i < l; i ++ ) {
+
+					if ( visible[ i ] ) {
+
+						// determine whether the batched geometry is within the frustum
+						let culled = false;
+						if ( perObjectFrustumCulled ) {
+
+							// get the bounds in camera space
+							this.getMatrixAt( i, _matrix );
+
+							// get the bounds
+							this.getBoundingBoxAt( i, _box$1 ).applyMatrix4( _matrix );
+							this.getBoundingSphereAt( i, _sphere$2 ).applyMatrix4( _matrix );
+							culled = ! _frustum$1.intersectsBox( _box$1 ) || ! _frustum$1.intersectsSphere( _sphere$2 );
+
+						}
+
+						if ( ! culled ) {
+
+							const range = drawRanges[ i ];
+							multiDrawStarts[ count ] = range.start * bytesPerElement;
+							multiDrawCounts[ count ] = range.count;
+							count ++;
+
+						}
+
+					}
+
+				}
+
+			}
+
+			this._multiDrawCount = count;
+
+			// @TODO: Implement geometry sorting for transparent and opaque materials
 
 		}
 
@@ -43457,7 +44486,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	const _projScreenMatrix$2 = /*@__PURE__*/ new Matrix4();
+	const _projScreenMatrix$3 = /*@__PURE__*/ new Matrix4();
 	const _lightPositionWorld = /*@__PURE__*/ new Vector3();
 	const _lookTarget = /*@__PURE__*/ new Vector3();
 
@@ -43538,8 +44567,8 @@ var THREE = (async function (exports) {
 
 			shadowMatrix.makeTranslation( - _lightPositionWorld.x, - _lightPositionWorld.y, - _lightPositionWorld.z );
 
-			_projScreenMatrix$2.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
-			this._frustum.setFromProjectionMatrix( _projScreenMatrix$2 );
+			_projScreenMatrix$3.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
+			this._frustum.setFromProjectionMatrix( _projScreenMatrix$3 );
 
 		}
 
@@ -45489,6 +46518,52 @@ var THREE = (async function (exports) {
 					object = new InstancedMesh( geometry, material, count );
 					object.instanceMatrix = new InstancedBufferAttribute( new Float32Array( instanceMatrix.array ), 16 );
 					if ( instanceColor !== undefined ) object.instanceColor = new InstancedBufferAttribute( new Float32Array( instanceColor.array ), instanceColor.itemSize );
+
+					break;
+
+				case 'BatchedMesh':
+
+					geometry = getGeometry( data.geometry );
+					material = getMaterial( data.material );
+
+					object = new BatchedMesh( data.maxGeometryCount, data.maxVertexCount, data.maxIndexCount, material );
+					object.geometry = geometry;
+					object.perObjectFrustumCulled = data.perObjectFrustumCulled;
+					object.sortObjects = data.sortObjects;
+
+					object._drawRanges = data.drawRanges;
+					object._reservedRanges = data.reservedRanges;
+
+					object._visible = data.visible;
+					object._active = data.active;
+					object._bounds = data.bounds.map( bound => {
+
+						const box = new Box3();
+						box.min.fromArray( bound.boxMin );
+						box.max.fromArray( bound.boxMax );
+
+						const sphere = new Sphere();
+						sphere.radius = bound.sphereRadius;
+						sphere.center.fromArray( bound.sphereCenter );
+
+						return {
+							boxInitialized: bound.boxInitialized,
+							box: box,
+
+							sphereInitialized: bound.sphereInitialized,
+							sphere: sphere
+						};
+
+					} );
+
+					object._maxGeometryCount = data.maxGeometryCount;
+					object._maxVertexCount = data.maxVertexCount;
+					object._maxIndexCount = data.maxIndexCount;
+
+					object._geometryInitialized = data.geometryInitialized;
+					object._geometryCount = data.geometryCount;
+
+					object._matricesTexture = getTexture( data.matricesTexture.uuid );
 
 					break;
 
@@ -53356,6 +54431,17 @@ var THREE = (async function (exports) {
 		OBJECT: 'object'
 	};
 
+	const NodeType = {
+		BOOLEAN: 'bool',
+		INTEGER: 'int',
+		FLOAT: 'float',
+		VECTOR2: 'vec2',
+		VECTOR3: 'vec3',
+		VECTOR4: 'vec4',
+		MATRIX3: 'mat3',
+		MATRIX4: 'mat4'
+	};
+
 	const defaultShaderStages = [ 'fragment', 'vertex' ];
 	const defaultBuildStages = [ 'setup', 'analyze', 'generate' ];
 	const shaderStages = [ ...defaultShaderStages, 'compute' ];
@@ -53569,6 +54655,16 @@ var THREE = (async function (exports) {
 		return Uint8Array.from( atob( base64 ), c => c.charCodeAt( 0 ) ).buffer;
 
 	}
+
+	var NodeUtils = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		getCacheKey: getCacheKey,
+		getNodeChildren: getNodeChildren,
+		getValueType: getValueType,
+		getValueFromType: getValueFromType,
+		arrayBufferToBase64: arrayBufferToBase64,
+		base64ToArrayBuffer: base64ToArrayBuffer
+	});
 
 	const NodeClasses = new Map();
 
@@ -54021,6 +55117,18 @@ var THREE = (async function (exports) {
 
 		NodeClasses.set( type, nodeClass );
 		nodeClass.type = type;
+
+	}
+
+	function createNodeFromType( type ) {
+
+		const Class = NodeClasses.get( type );
+
+		if ( Class !== undefined ) {
+
+			return new Class();
+
+		}
 
 	}
 
@@ -54975,6 +56083,12 @@ var THREE = (async function (exports) {
 	const nodeProxy = ( ...params ) => new ShaderNodeProxy( ...params );
 	const nodeImmutable = ( ...params ) => new ShaderNodeImmutable( ...params );
 
+	const shader = ( jsFunc ) => { // @deprecated, r154
+
+		return new ShaderNode( jsFunc );
+
+	};
+
 	const tslFn = ( jsFunc ) => {
 
 		const shaderNode = new ShaderNode( jsFunc );
@@ -55101,6 +56215,7 @@ var THREE = (async function (exports) {
 	// HACK - we cannot export them from the corresponding files because of the cyclic dependency
 	const element = nodeProxy( ArrayElementNode );
 	const convert = ( node, types ) => nodeObject( new ConvertNode( nodeObject( node ), types ) );
+	const split = ( node, channels ) => nodeObject( new SplitNode( nodeObject( node ), channels ) );
 
 	addNodeElement( 'element', element );
 	addNodeElement( 'convert', convert );
@@ -55306,16 +56421,10 @@ var THREE = (async function (exports) {
 			const { name, node } = this;
 			const type = this.getNodeType( builder );
 
-			const nodeVarying = builder.getVaryingFromNode( this, type );
+			const nodeVarying = builder.getVaryingFromNode( this, name, type );
 
 			// this property can be used to check if the varying can be optimized for a var
 			nodeVarying.needsInterpolation || ( nodeVarying.needsInterpolation = ( builder.shaderStage === 'fragment' ) );
-
-			if ( name !== null ) {
-
-				nodeVarying.name = name;
-
-			}
 
 			const propertyName = builder.getPropertyName( nodeVarying, NodeShaderStage.VERTEX );
 
@@ -55649,7 +56758,7 @@ var THREE = (async function (exports) {
 	IndexNode.VERTEX = 'vertex';
 	IndexNode.INSTANCE = 'instance';
 
-	nodeImmutable( IndexNode, IndexNode.VERTEX );
+	const vertexIndex = nodeImmutable( IndexNode, IndexNode.VERTEX );
 	const instanceIndex = nodeImmutable( IndexNode, IndexNode.INSTANCE );
 
 	addNodeClass( 'IndexNode', IndexNode );
@@ -55899,11 +57008,12 @@ var THREE = (async function (exports) {
 
 	class PropertyNode extends Node {
 
-		constructor( nodeType, name = null ) {
+		constructor( nodeType, name = null, varying = false ) {
 
 			super( nodeType );
 
 			this.name = name;
+			this.varying = varying;
 
 			this.isPropertyNode = true;
 
@@ -55923,13 +57033,27 @@ var THREE = (async function (exports) {
 
 		generate( builder ) {
 
-			return builder.getPropertyName( builder.getVarFromNode( this, this.name ) );
+			let nodeVar;
+
+			if ( this.varying === true ) {
+
+				nodeVar = builder.getVaryingFromNode( this, this.name );
+				nodeVar.needsInterpolation = true;
+
+			} else {
+
+				nodeVar = builder.getVarFromNode( this, this.name );
+
+			}
+
+			return builder.getPropertyName( nodeVar );
 
 		}
 
 	}
 
 	const property = ( type, name ) => nodeObject( new PropertyNode( type, name ) );
+	const varyingProperty = ( type, name ) => nodeObject( new PropertyNode( type, name, true ) );
 
 	const diffuseColor = nodeImmutable( PropertyNode, 'vec4', 'DiffuseColor' );
 	const roughness = nodeImmutable( PropertyNode, 'float', 'Roughness' );
@@ -55946,7 +57070,7 @@ var THREE = (async function (exports) {
 	const output = nodeImmutable( PropertyNode, 'vec4', 'Output' );
 	const dashSize = nodeImmutable( PropertyNode, 'float', 'dashSize' );
 	const gapSize = nodeImmutable( PropertyNode, 'float', 'gapSize' );
-	nodeImmutable( PropertyNode, 'float', 'pointWidth' );
+	const pointWidth = nodeImmutable( PropertyNode, 'float', 'pointWidth' );
 
 	addNodeClass( 'PropertyNode', PropertyNode );
 
@@ -55973,6 +57097,8 @@ var THREE = (async function (exports) {
 		}
 
 	}
+
+	const parameter = ( type, name ) => nodeObject( new ParameterNode( type, name ) );
 
 	addNodeClass( 'ParameterNode', ParameterNode );
 
@@ -56538,7 +57664,7 @@ var THREE = (async function (exports) {
 	MathNode.FACEFORWARD = 'faceforward';
 
 	const EPSILON = float( 1e-6 );
-	float( 1e6 );
+	const INFINITY = float( 1e6 );
 
 	const radians = nodeProxy( MathNode, MathNode.RADIANS );
 	const degrees = nodeProxy( MathNode, MathNode.DEGREES );
@@ -57156,6 +58282,9 @@ var THREE = (async function (exports) {
 	}
 
 	const texture = nodeProxy( TextureNode );
+	//export const textureLevel = ( value, uv, level ) => texture( value, uv ).level( level );
+
+	const sampler = ( aTexture ) => ( aTexture.isNode === true ? aTexture : texture( aTexture ) ).convert( 'sampler' );
 
 	addNodeElement( 'texture', texture );
 	//addNodeElement( 'textureLevel', textureLevel );
@@ -57409,12 +58538,12 @@ var THREE = (async function (exports) {
 	Object3DNode.VIEW_POSITION = 'viewPosition';
 	Object3DNode.DIRECTION = 'direction';
 
-	nodeProxy( Object3DNode, Object3DNode.DIRECTION );
-	nodeProxy( Object3DNode, Object3DNode.VIEW_MATRIX );
-	nodeProxy( Object3DNode, Object3DNode.NORMAL_MATRIX );
-	nodeProxy( Object3DNode, Object3DNode.WORLD_MATRIX );
+	const objectDirection = nodeProxy( Object3DNode, Object3DNode.DIRECTION );
+	const objectViewMatrix = nodeProxy( Object3DNode, Object3DNode.VIEW_MATRIX );
+	const objectNormalMatrix = nodeProxy( Object3DNode, Object3DNode.NORMAL_MATRIX );
+	const objectWorldMatrix = nodeProxy( Object3DNode, Object3DNode.WORLD_MATRIX );
 	const objectPosition = nodeProxy( Object3DNode, Object3DNode.POSITION );
-	nodeProxy( Object3DNode, Object3DNode.SCALE );
+	const objectScale = nodeProxy( Object3DNode, Object3DNode.SCALE );
 	const objectViewPosition = nodeProxy( Object3DNode, Object3DNode.VIEW_POSITION );
 
 	addNodeClass( 'Object3DNode', Object3DNode );
@@ -57513,9 +58642,9 @@ var THREE = (async function (exports) {
 	const cameraNear = nodeImmutable( CameraNode, CameraNode.NEAR );
 	const cameraFar = nodeImmutable( CameraNode, CameraNode.FAR );
 	const cameraViewMatrix = nodeImmutable( CameraNode, CameraNode.VIEW_MATRIX );
-	nodeImmutable( CameraNode, CameraNode.NORMAL_MATRIX );
-	nodeImmutable( CameraNode, CameraNode.WORLD_MATRIX );
-	nodeImmutable( CameraNode, CameraNode.POSITION );
+	const cameraNormalMatrix = nodeImmutable( CameraNode, CameraNode.NORMAL_MATRIX );
+	const cameraWorldMatrix = nodeImmutable( CameraNode, CameraNode.WORLD_MATRIX );
+	const cameraPosition = nodeImmutable( CameraNode, CameraNode.POSITION );
 
 	addNodeClass( 'CameraNode', CameraNode );
 
@@ -57537,13 +58666,13 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeImmutable( ModelNode, ModelNode.DIRECTION );
+	const modelDirection = nodeImmutable( ModelNode, ModelNode.DIRECTION );
 	const modelViewMatrix = nodeImmutable( ModelNode, ModelNode.VIEW_MATRIX ).label( 'modelViewMatrix' ).temp( 'ModelViewMatrix' );
 	const modelNormalMatrix = nodeImmutable( ModelNode, ModelNode.NORMAL_MATRIX );
 	const modelWorldMatrix = nodeImmutable( ModelNode, ModelNode.WORLD_MATRIX );
-	nodeImmutable( ModelNode, ModelNode.POSITION );
-	nodeImmutable( ModelNode, ModelNode.SCALE );
-	nodeImmutable( ModelNode, ModelNode.VIEW_POSITION );
+	const modelPosition = nodeImmutable( ModelNode, ModelNode.POSITION );
+	const modelScale = nodeImmutable( ModelNode, ModelNode.SCALE );
+	const modelViewPosition = nodeImmutable( ModelNode, ModelNode.VIEW_POSITION );
 
 	addNodeClass( 'ModelNode', ModelNode );
 
@@ -57918,7 +59047,7 @@ var THREE = (async function (exports) {
 	const materialOpacity = nodeImmutable( MaterialNode, MaterialNode.OPACITY );
 	const materialSpecularColor = nodeImmutable( MaterialNode, MaterialNode.SPECULAR_COLOR );
 	const materialSpecularStrength = nodeImmutable( MaterialNode, MaterialNode.SPECULAR_STRENGTH );
-	nodeImmutable( MaterialNode, MaterialNode.REFLECTIVITY );
+	const materialReflectivity = nodeImmutable( MaterialNode, MaterialNode.REFLECTIVITY );
 	const materialRoughness = nodeImmutable( MaterialNode, MaterialNode.ROUGHNESS );
 	const materialMetalness = nodeImmutable( MaterialNode, MaterialNode.METALNESS );
 	const materialNormal = nodeImmutable( MaterialNode, MaterialNode.NORMAL );
@@ -58353,7 +59482,7 @@ var THREE = (async function (exports) {
 	const tangentView = nodeImmutable( TangentNode, TangentNode.VIEW );
 	const tangentWorld = nodeImmutable( TangentNode, TangentNode.WORLD );
 	const transformedTangentView = temp( tangentView, 'TransformedTangentView' );
-	normalize( transformedTangentView.transformDirection( cameraViewMatrix ) );
+	const transformedTangentWorld = normalize( transformedTangentView.transformDirection( cameraViewMatrix ) );
 
 	addNodeClass( 'TangentNode', TangentNode );
 
@@ -58973,6 +60102,8 @@ var THREE = (async function (exports) {
 		}
 
 	}
+
+	const lights = ( lights ) => nodeObject( new LightsNode().fromLights( lights ) );
 	const lightNodes = nodeProxy( LightsNode );
 
 	function addLightNode( lightClass, lightNodeClass ) {
@@ -61000,7 +62131,7 @@ var THREE = (async function (exports) {
 
 		}
 
-		getVaryingFromNode( node, type ) {
+		getVaryingFromNode( node, name = null, type = node.getNodeType( this ) ) {
 
 			const nodeData = this.getDataFromNode( node, 'any' );
 
@@ -61011,7 +62142,9 @@ var THREE = (async function (exports) {
 				const varyings = this.varyings;
 				const index = varyings.length;
 
-				nodeVarying = new NodeVarying( 'nodeVarying' + index, type );
+				if ( name === null ) name = 'nodeVarying' + index;
+
+				nodeVarying = new NodeVarying( name, type );
 
 				varyings.push( nodeVarying );
 
@@ -61697,7 +62830,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeProxy( OutputStructNode );
+	const outputStruct = nodeProxy( OutputStructNode );
 
 	addNodeClass( 'OutputStructNode', OutputStructNode );
 
@@ -61962,7 +63095,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeImmutable( MatcapUVNode );
+	const matcapUV = nodeImmutable( MatcapUVNode );
 
 	addNodeClass( 'MatcapUVNode', MatcapUVNode );
 
@@ -62048,7 +63181,9 @@ var THREE = (async function (exports) {
 
 	// @TODO: add support to use node in timeScale
 	const timerLocal = ( timeScale, value = 0 ) => nodeObject( new TimerNode( TimerNode.LOCAL, timeScale, value ) );
-	nodeImmutable( TimerNode, TimerNode.FRAME ).uint();
+	const timerGlobal = ( timeScale, value = 0 ) => nodeObject( new TimerNode( TimerNode.GLOBAL, timeScale, value ) );
+	const timerDelta = ( timeScale, value = 0 ) => nodeObject( new TimerNode( TimerNode.DELTA, timeScale, value ) );
+	const frameId = nodeImmutable( TimerNode, TimerNode.FRAME ).uint();
 
 	addNodeClass( 'TimerNode', TimerNode );
 
@@ -62121,10 +63256,10 @@ var THREE = (async function (exports) {
 	OscNode.TRIANGLE = 'triangle';
 	OscNode.SAWTOOTH = 'sawtooth';
 
-	nodeProxy( OscNode, OscNode.SINE );
-	nodeProxy( OscNode, OscNode.SQUARE );
-	nodeProxy( OscNode, OscNode.TRIANGLE );
-	nodeProxy( OscNode, OscNode.SAWTOOTH );
+	const oscSine = nodeProxy( OscNode, OscNode.SINE );
+	const oscSquare = nodeProxy( OscNode, OscNode.SQUARE );
+	const oscTriangle = nodeProxy( OscNode, OscNode.TRIANGLE );
+	const oscSawtooth = nodeProxy( OscNode, OscNode.SAWTOOTH );
 
 	addNodeClass( 'OscNode', OscNode );
 
@@ -62286,7 +63421,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeProxy( SpriteSheetUVNode );
+	const spritesheetUV = nodeProxy( SpriteSheetUVNode );
 
 	addNodeClass( 'SpriteSheetUVNode', SpriteSheetUVNode );
 
@@ -62415,12 +63550,12 @@ var THREE = (async function (exports) {
 	BitangentNode.VIEW = 'view';
 	BitangentNode.WORLD = 'world';
 
-	nodeImmutable( BitangentNode, BitangentNode.GEOMETRY );
-	nodeImmutable( BitangentNode, BitangentNode.LOCAL );
+	const bitangentGeometry = nodeImmutable( BitangentNode, BitangentNode.GEOMETRY );
+	const bitangentLocal = nodeImmutable( BitangentNode, BitangentNode.LOCAL );
 	const bitangentView = nodeImmutable( BitangentNode, BitangentNode.VIEW );
-	nodeImmutable( BitangentNode, BitangentNode.WORLD );
+	const bitangentWorld = nodeImmutable( BitangentNode, BitangentNode.WORLD );
 	const transformedBitangentView = normalize( transformedNormalView.cross( transformedTangentView ).mul( tangentGeometry.w ) );
-	normalize( transformedBitangentView.transformDirection( cameraViewMatrix ) );
+	const transformedBitangentWorld = normalize( transformedBitangentView.transformDirection( cameraViewMatrix ) );
 
 	addNodeClass( 'BitangentNode', BitangentNode );
 
@@ -62529,7 +63664,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeImmutable( PointUVNode );
+	const pointUV = nodeImmutable( PointUVNode );
 
 	addNodeClass( 'PointUVNode', PointUVNode );
 
@@ -62593,6 +63728,8 @@ var THREE = (async function (exports) {
 
 	}
 
+	const storage = ( value, type, count ) => nodeObject( new StorageBufferNode( value, type, count ) );
+
 	addNodeClass( 'StorageBufferNode', StorageBufferNode );
 
 	class TextureStoreNode extends TextureNode {
@@ -62615,7 +63752,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeProxy( TextureStoreNode );
+	const textureStore = nodeProxy( TextureStoreNode );
 
 	addNodeClass( 'TextureStoreNode', TextureStoreNode );
 
@@ -62638,6 +63775,8 @@ var THREE = (async function (exports) {
 		}
 
 	}
+
+	const userData = ( name, inputType, userData ) => nodeObject( new UserDataNode( name, inputType, userData ) );
 
 	addNodeClass( 'UserDataNode', UserDataNode );
 
@@ -63307,8 +64446,8 @@ var THREE = (async function (exports) {
 	const viewport = nodeImmutable( ViewportNode, ViewportNode.VIEWPORT );
 	const viewportTopLeft = nodeImmutable( ViewportNode, ViewportNode.TOP_LEFT );
 	const viewportBottomLeft = nodeImmutable( ViewportNode, ViewportNode.BOTTOM_LEFT );
-	nodeImmutable( ViewportNode, ViewportNode.TOP_RIGHT );
-	nodeImmutable( ViewportNode, ViewportNode.BOTTOM_RIGHT );
+	const viewportTopRight = nodeImmutable( ViewportNode, ViewportNode.TOP_RIGHT );
+	const viewportBottomRight = nodeImmutable( ViewportNode, ViewportNode.BOTTOM_RIGHT );
 
 	addNodeClass( 'ViewportNode', ViewportNode );
 
@@ -63473,14 +64612,22 @@ var THREE = (async function (exports) {
 	// -near maps to 0; -far maps to 1
 	const viewZToOrthographicDepth = ( viewZ, near, far ) => viewZ.add( near ).div( near.sub( far ) );
 
+	// maps orthographic depth in [ 0, 1 ] to viewZ
+	const orthographicDepthToViewZ = ( depth, near, far ) => near.sub( far ).mul( depth ).sub( near );
+
+	// NOTE: https://twitter.com/gonnavis/status/1377183786949959682
+
+	// -near maps to 0; -far maps to 1
+	const viewZToPerspectiveDepth = ( viewZ, near, far ) => near.add( viewZ ).mul( far ).div( near.sub( far ).mul( viewZ ) );
+
 	// maps perspective depth in [ 0, 1 ] to viewZ
 	const perspectiveDepthToViewZ = ( depth, near, far ) => near.mul( far ).div( far.sub( near ).mul( depth ).sub( far ) );
 
 	ViewportDepthNode.DEPTH = 'depth';
 	ViewportDepthNode.DEPTH_TEXTURE = 'depthTexture';
 
-	nodeImmutable( ViewportDepthNode, ViewportDepthNode.DEPTH );
-	nodeProxy( ViewportDepthNode, ViewportDepthNode.DEPTH_TEXTURE );
+	const depth = nodeImmutable( ViewportDepthNode, ViewportDepthNode.DEPTH );
+	const depthTexture = nodeProxy( ViewportDepthNode, ViewportDepthNode.DEPTH_TEXTURE );
 
 	addNodeClass( 'ViewportDepthNode', ViewportDepthNode );
 
@@ -63551,6 +64698,9 @@ var THREE = (async function (exports) {
 	}
 
 	const code = nodeProxy( CodeNode );
+
+	const js = ( src, includes ) => code( src, includes, 'js' );
+	const wgsl = ( src, includes ) => code( src, includes, 'wgsl' );
 	const glsl = ( src, includes ) => code( src, includes, 'glsl' );
 
 	addNodeClass( 'CodeNode', CodeNode );
@@ -63767,6 +64917,7 @@ var THREE = (async function (exports) {
 	};
 
 	const glslFn = ( code, includes ) => nativeFn( code, includes, 'glsl' );
+	const wgslFn = ( code, includes ) => nativeFn( code, includes, 'wgsl' );
 
 	addNodeClass( 'FunctionNode', FunctionNode );
 
@@ -64593,7 +65744,7 @@ var THREE = (async function (exports) {
 
 	}
 
-	nodeProxy( RangeNode );
+	const range = nodeProxy( RangeNode );
 
 	addNodeClass( 'RangeNode', RangeNode );
 
@@ -65061,6 +66212,105 @@ var THREE = (async function (exports) {
 
 	addNodeClass( 'CheckerNode', CheckerNode );
 
+	class NodeLoader extends Loader {
+
+		constructor( manager ) {
+
+			super( manager );
+
+			this.textures = {};
+
+		}
+
+		load( url, onLoad, onProgress, onError ) {
+
+			const loader = new FileLoader( this.manager );
+			loader.setPath( this.path );
+			loader.setRequestHeader( this.requestHeader );
+			loader.setWithCredentials( this.withCredentials );
+			loader.load( url, ( text ) => {
+
+				try {
+
+					onLoad( this.parse( JSON.parse( text ) ) );
+
+				} catch ( e ) {
+
+					if ( onError ) {
+
+						onError( e );
+
+					}
+
+					this.manager.itemError( url );
+
+				}
+
+			}, onProgress, onError );
+
+		}
+
+		parseNodes( json ) {
+
+			const nodes = {};
+
+			if ( json !== undefined ) {
+
+				for ( const nodeJSON of json ) {
+
+					const { uuid, type } = nodeJSON;
+
+					nodes[ uuid ] = nodeObject( createNodeFromType( type ) ); // @TODO: Maybe nodeObjectify the node in createNodeFromType?
+					nodes[ uuid ].uuid = uuid;
+
+				}
+
+				const meta = { nodes, textures: this.textures };
+
+				for ( const nodeJSON of json ) {
+
+					nodeJSON.meta = meta;
+
+					const node = nodes[ nodeJSON.uuid ];
+					node.deserialize( nodeJSON );
+
+					delete nodeJSON.meta;
+
+				}
+
+			}
+
+			return nodes;
+
+		}
+
+		parse( json ) {
+
+			const node = nodeObject( createNodeFromType( json.type ) );
+			node.uuid = json.uuid;
+
+			const nodes = this.parseNodes( json.nodes );
+			const meta = { nodes, textures: this.textures };
+
+			json.meta = meta;
+
+			node.deserialize( json );
+
+			delete json.meta;
+
+			return node;
+
+		}
+
+		setTextures( value ) {
+
+			this.textures = value;
+			return this;
+
+		}
+
+	}
+
 	const defaultValues$b = new PointsMaterial();
 
 	class InstancedPointsNodeMaterial extends NodeMaterial {
@@ -65320,7 +66570,7 @@ var THREE = (async function (exports) {
 
 				const a = cameraProjectionMatrix.element( 2 ).element( 2 ); // 3nd entry in 3th column
 				const b = cameraProjectionMatrix.element( 3 ).element( 2 ); // 3nd entry in 4th column
-				const nearEstimate = b.mul( -0.5 ).div( a );
+				const nearEstimate = b.mul( - 0.5 ).div( a );
 
 				const alpha = nearEstimate.sub( start.z ).div( end.z.sub( start.z ) );
 
@@ -65330,7 +66580,7 @@ var THREE = (async function (exports) {
 
 			this.vertexNode = tslFn( () => {
 
-				varying( vec2(), 'vUv' ).assign( uv() ); // @TODO: Analyze other way to do this
+				varyingProperty( 'vec2', 'vUv' ).assign( uv() );
 
 				const instanceStart = attribute( 'instanceStart' );
 				const instanceEnd = attribute( 'instanceEnd' );
@@ -65345,8 +66595,8 @@ var THREE = (async function (exports) {
 
 				if ( useWorldUnits ) {
 
-					varying( vec3(), 'worldStart' ).assign( start.xyz );
-					varying( vec3(), 'worldEnd' ).assign( end.xyz );
+					varyingProperty( 'vec3', 'worldStart' ).assign( start.xyz );
+					varyingProperty( 'vec3', 'worldEnd' ).assign( end.xyz );
 
 				}
 
@@ -65357,7 +66607,7 @@ var THREE = (async function (exports) {
 				// but we need to perform ndc-space calculations in the shader, so we must address this issue directly
 				// perhaps there is a more elegant solution -- WestLangley
 
-				const perspective = cameraProjectionMatrix.element( 2 ).element( 3 ).equal( -1.0 ); // 4th entry in the 3rd column
+				const perspective = cameraProjectionMatrix.element( 2 ).element( 3 ).equal( - 1.0 ); // 4th entry in the 3rd column
 
 				If( perspective, () => {
 
@@ -65433,7 +66683,7 @@ var THREE = (async function (exports) {
 
 					// set the world position
 
-					const worldPos = varying( vec4(), 'worldPos' );
+					const worldPos = varyingProperty( 'vec4', 'worldPos' );
 
 					worldPos.assign( positionGeometry.y.lessThan( 0.5 ).cond( start, end ) );
 					worldPos.assign( worldPos.add( vec4( offset, 0 ) ) );
@@ -65517,7 +66767,7 @@ var THREE = (async function (exports) {
 
 			this.colorNode = tslFn( () => {
 
-				const vUv = varying( vec2(), 'vUv' );
+				const vUv = varyingProperty( 'vec2', 'vUv' );
 
 				if ( useDash ) {
 
@@ -65548,11 +66798,11 @@ var THREE = (async function (exports) {
 
 				if ( useWorldUnits ) {
 
-					const worldStart = varying( vec3(), 'worldStart' );
-					const worldEnd = varying( vec3(), 'worldEnd' );
+					const worldStart = varyingProperty( 'vec3', 'worldStart' );
+					const worldEnd = varyingProperty( 'vec3', 'worldEnd' );
 
 					// Find the closest points on the view ray and the line segment
-					const rayEnd = varying( vec4(), 'worldPos' ).xyz.normalize().mul( 1e5 );
+					const rayEnd = varyingProperty( 'vec4', 'worldPos' ).xyz.normalize().mul( 1e5 );
 					const lineDir = worldEnd.sub( worldStart );
 					const params = closestLineToLine( { p1: worldStart, p2: worldEnd, p3: vec3( 0.0, 0.0, 0.0 ), p4: rayEnd } );
 
@@ -66861,6 +68111,110 @@ var THREE = (async function (exports) {
 
 	};
 
+	class NodeMaterialLoader extends MaterialLoader {
+
+		constructor( manager ) {
+
+			super( manager );
+
+			this.nodes = {};
+
+		}
+
+		parse( json ) {
+
+			const material = super.parse( json );
+
+			const nodes = this.nodes;
+			const inputNodes = json.inputNodes;
+
+			for ( const property in inputNodes ) {
+
+				const uuid = inputNodes[ property ];
+
+				material[ property ] = nodes[ uuid ];
+
+			}
+
+			return material;
+
+		}
+
+		setNodes( value ) {
+
+			this.nodes = value;
+
+			return this;
+
+		}
+
+	}
+
+	class NodeObjectLoader extends ObjectLoader {
+
+		constructor( manager ) {
+
+			super( manager );
+
+			this._nodesJSON = null;
+
+		}
+
+		parse( json, onLoad ) {
+
+			this._nodesJSON = json.nodes;
+
+			const data = super.parse( json, onLoad );
+
+			this._nodesJSON = null; // dispose
+
+			return data;
+
+		}
+
+		parseNodes( json, textures ) {
+
+			if ( json !== undefined ) {
+
+				const loader = new NodeLoader();
+				loader.setTextures( textures );
+
+				return loader.parseNodes( json );
+
+			}
+
+			return {};
+
+		}
+
+		parseMaterials( json, textures ) {
+
+			const materials = {};
+
+			if ( json !== undefined ) {
+
+				const nodes = this.parseNodes( this._nodesJSON, textures );
+
+				const loader = new NodeMaterialLoader();
+				loader.setTextures( textures );
+				loader.setNodes( nodes );
+
+				for ( let i = 0, l = json.length; i < l; i ++ ) {
+
+					const data = json[ i ];
+
+					materials[ data.uuid ] = loader.parse( data );
+
+				}
+
+			}
+
+			return materials;
+
+		}
+
+	}
+
 	class NodeParser {
 
 		parseFunction( /*source*/ ) {
@@ -67647,25 +69001,25 @@ vec3 mx_worley_noise_vec3(vec3 p, float jitter, int metric)
 
 	const includes$1 = [ mx_noise ];
 
-	glslFn( 'float mx_perlin_noise_float( any p )', includes$1 );
-	glslFn( 'vec2 mx_perlin_noise_vec2( any p )', includes$1 );
-	glslFn( 'vec3 mx_perlin_noise_vec3( any p )', includes$1 );
+	const mx_perlin_noise_float = glslFn( 'float mx_perlin_noise_float( any p )', includes$1 );
+	const mx_perlin_noise_vec2 = glslFn( 'vec2 mx_perlin_noise_vec2( any p )', includes$1 );
+	const mx_perlin_noise_vec3 = glslFn( 'vec3 mx_perlin_noise_vec3( any p )', includes$1 );
 
-	glslFn( 'float mx_cell_noise_float( vec3 p )', includes$1 );
+	const mx_cell_noise_float$1 = glslFn( 'float mx_cell_noise_float( vec3 p )', includes$1 );
 
-	glslFn( 'float mx_worley_noise_float( any p, float jitter, int metric )', includes$1 );
-	glslFn( 'vec2 mx_worley_noise_vec2( any p, float jitter, int metric )', includes$1 );
-	glslFn( 'vec3 mx_worley_noise_vec3( any p, float jitter, int metric )', includes$1 );
+	const mx_worley_noise_float$1 = glslFn( 'float mx_worley_noise_float( any p, float jitter, int metric )', includes$1 );
+	const mx_worley_noise_vec2$1 = glslFn( 'vec2 mx_worley_noise_vec2( any p, float jitter, int metric )', includes$1 );
+	const mx_worley_noise_vec3$1 = glslFn( 'vec3 mx_worley_noise_vec3( any p, float jitter, int metric )', includes$1 );
 
-	glslFn( 'float mx_fractal_noise_float( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-	glslFn( 'vec2 mx_fractal_noise_vec2( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-	glslFn( 'vec3 mx_fractal_noise_vec3( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
-	glslFn( 'vec4 mx_fractal_noise_vec4( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	const mx_fractal_noise_float$1 = glslFn( 'float mx_fractal_noise_float( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	const mx_fractal_noise_vec2$1 = glslFn( 'vec2 mx_fractal_noise_vec2( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	const mx_fractal_noise_vec3$1 = glslFn( 'vec3 mx_fractal_noise_vec3( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
+	const mx_fractal_noise_vec4$1 = glslFn( 'vec4 mx_fractal_noise_vec4( vec3 p, int octaves, float lacunarity, float diminish )', includes$1 );
 
 	// Original shader code from:
 	// https://github.com/AcademySoftwareFoundation/MaterialX/blob/main/libraries/stdlib/genglsl/lib/mx_hsv.glsl
 
-	glslFn( `vec3 mx_hsvtorgb(vec3 hsv)
+	const mx_hsvtorgb = glslFn( `vec3 mx_hsvtorgb(vec3 hsv)
 {
     // Reference for this technique: Foley & van Dam
     float h = hsv.x; float s = hsv.y; float v = hsv.z;
@@ -67692,7 +69046,7 @@ vec3 mx_worley_noise_vec3(vec3 p, float jitter, int metric)
     }
 }` );
 
-	glslFn( `vec3 mx_rgbtohsv(vec3 c)
+	const mx_rgbtohsv = glslFn( `vec3 mx_rgbtohsv(vec3 c)
 {
     // See Foley & van Dam
     float r = c.x; float g = c.y; float b = c.z;
@@ -67732,7 +69086,62 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 
 	const includes = [ mx_transform_color ];
 
-	glslFn( 'vec3 mx_srgb_texture_to_lin_rec709( vec3 color )', includes );
+	const mx_srgb_texture_to_lin_rec709 = glslFn( 'vec3 mx_srgb_texture_to_lin_rec709( vec3 color )', includes );
+
+	const mx_aastep = ( threshold, value ) => {
+
+		threshold = float( threshold );
+		value = float( value );
+
+		const afwidth = vec2( value.dFdx(), value.dFdy() ).length().mul( 0.70710678118654757 );
+
+		return smoothstep( threshold.sub( afwidth ), threshold.add( afwidth ), value );
+
+	};
+
+	const _ramp = ( a, b, uv, p ) => mix( a, b, uv[ p ].clamp() );
+	const mx_ramplr = ( valuel, valuer, texcoord = uv() ) => _ramp( valuel, valuer, texcoord, 'x' );
+	const mx_ramptb = ( valuet, valueb, texcoord = uv() ) => _ramp( valuet, valueb, texcoord, 'y' );
+
+	const _split = ( a, b, center, uv, p ) => mix( a, b, mx_aastep( center, uv[ p ] ) );
+	const mx_splitlr = ( valuel, valuer, center, texcoord = uv() ) => _split( valuel, valuer, center, texcoord, 'x' );
+	const mx_splittb = ( valuet, valueb, center, texcoord = uv() ) => _split( valuet, valueb, center, texcoord, 'y' );
+
+	const mx_transform_uv = ( uv_scale = 1, uv_offset = 0, uv_geo = uv() ) => uv_geo.mul( uv_scale ).add( uv_offset );
+
+	const mx_safepower = ( in1, in2 = 1 ) => {
+
+		in1 = float( in1 );
+
+		return in1.abs().pow( in2 ).mul( in1.sign() );
+
+	};
+
+	const mx_contrast = ( input, amount = 1, pivot = .5 ) => float( input ).sub( pivot ).mul( amount ).add( pivot );
+
+	const mx_noise_float = ( texcoord = uv(), amplitude = 1, pivot = 0 ) => mx_perlin_noise_float( texcoord.convert( 'vec2|vec3' ) ).mul( amplitude ).add( pivot );
+	const mx_noise_vec2 = ( texcoord = uv(), amplitude = 1, pivot = 0 ) => mx_perlin_noise_vec2( texcoord.convert( 'vec2|vec3' ) ).mul( amplitude ).add( pivot );
+	const mx_noise_vec3 = ( texcoord = uv(), amplitude = 1, pivot = 0 ) => mx_perlin_noise_vec3( texcoord.convert( 'vec2|vec3' ) ).mul( amplitude ).add( pivot );
+	const mx_noise_vec4 = ( texcoord = uv(), amplitude = 1, pivot = 0 ) => {
+
+		texcoord = texcoord.convert( 'vec2|vec3' ); // overloading type
+
+		const noise_vec4 = vec4( mx_perlin_noise_vec3( texcoord ), mx_perlin_noise_float( texcoord.add( vec2( 19, 73 ) ) ) );
+
+		return noise_vec4.mul( amplitude ).add( pivot );
+
+	};
+
+	const mx_worley_noise_float = ( texcoord = uv(), jitter = 1 ) => mx_worley_noise_float$1( texcoord.convert( 'vec2|vec3' ), jitter, 1 );
+	const mx_worley_noise_vec2 = ( texcoord = uv(), jitter = 1 ) => mx_worley_noise_vec2$1( texcoord.convert( 'vec2|vec3' ), jitter, 1 );
+	const mx_worley_noise_vec3 = ( texcoord = uv(), jitter = 1 ) => mx_worley_noise_vec3$1( texcoord.convert( 'vec2|vec3' ), jitter, 1 );
+
+	const mx_cell_noise_float = ( texcoord = uv() ) => mx_cell_noise_float$1( texcoord.convert( 'vec2|vec3' ) );
+
+	const mx_fractal_noise_float = ( position = uv(), octaves = 3, lacunarity = 2, diminish = .5, amplitude = 1 ) => mx_fractal_noise_float$1( position, octaves, lacunarity, diminish ).mul( amplitude );
+	const mx_fractal_noise_vec2 = ( position = uv(), octaves = 3, lacunarity = 2, diminish = .5, amplitude = 1 ) => mx_fractal_noise_vec2$1( position, octaves, lacunarity, diminish ).mul( amplitude );
+	const mx_fractal_noise_vec3 = ( position = uv(), octaves = 3, lacunarity = 2, diminish = .5, amplitude = 1 ) => mx_fractal_noise_vec3$1( position, octaves, lacunarity, diminish ).mul( amplitude );
+	const mx_fractal_noise_vec4 = ( position = uv(), octaves = 3, lacunarity = 2, diminish = .5, amplitude = 1 ) => mx_fractal_noise_vec4$1( position, octaves, lacunarity, diminish ).mul( amplitude );
 
 	function painterSortStable( a, b ) {
 
@@ -71360,9 +72769,30 @@ void main() {
 			const bufferAttribute = attribute.isInterleavedBufferAttribute ? attribute.data : attribute;
 			const bufferData = backend.get( bufferAttribute );
 			const bufferType = bufferData.bufferType;
+			const updateRanges = attribute.isInterleavedBufferAttribute ? attribute.data.updateRanges : attribute.updateRanges;
 
 			gl.bindBuffer( bufferType, bufferData.bufferGPU );
-			gl.bufferSubData( bufferType, 0, array );
+
+			if ( updateRanges.length === 0 ) {
+
+				// Not using update ranges
+
+				gl.bufferSubData( bufferType, 0, array );
+
+			} else {
+
+				for ( let i = 0, l = updateRanges.length; i < l; i ++ ) {
+
+					const range = updateRanges[ i ];
+					gl.bufferSubData( bufferType, range.start * array.BYTES_PER_ELEMENT,
+						array, range.start, range.count );
+
+				}
+
+				bufferAttribute.clearUpdateRanges();
+
+			}
+
 			gl.bindBuffer( bufferType, null );
 
 			bufferData.version = bufferAttribute.version;
@@ -75103,7 +76533,7 @@ fn threejs_repeatWrapping( uv : vec2<f32>, dimension : vec2<u32> ) -> vec2<u32> 
 
 				if ( shaderStage === 'vertex' ) {
 
-					return `NodeVaryings.${ node.name }`;
+					return `varyings.${ node.name }`;
 
 				}
 
@@ -75498,7 +76928,7 @@ ${ flowData.code }
 
 			const code = snippets.join( ',\n\t' );
 
-			return shaderStage === 'vertex' ? this._getWGSLStruct( 'NodeVaryingsStruct', '\t' + code ) : code;
+			return shaderStage === 'vertex' ? this._getWGSLStruct( 'VaryingsStruct', '\t' + code ) : code;
 
 		}
 
@@ -75652,7 +77082,7 @@ ${ flowData.code }
 
 						if ( shaderStage === 'vertex' ) {
 
-							flow += 'NodeVaryings.Vertex = ';
+							flow += 'varyings.Vertex = ';
 
 						} else if ( shaderStage === 'fragment' ) {
 
@@ -75732,15 +77162,13 @@ ${shaderData.uniforms}
 
 // varyings
 ${shaderData.varyings}
+var<private> varyings : VaryingsStruct;
 
 // codes
 ${shaderData.codes}
 
 @vertex
-fn main( ${shaderData.attributes} ) -> NodeVaryingsStruct {
-
-	// system
-	var NodeVaryings: NodeVaryingsStruct;
+fn main( ${shaderData.attributes} ) -> VaryingsStruct {
 
 	// vars
 	${shaderData.vars}
@@ -75748,7 +77176,7 @@ fn main( ${shaderData.attributes} ) -> NodeVaryingsStruct {
 	// flow
 	${shaderData.flow}
 
-	return NodeVaryings;
+	return varyings;
 
 }
 `;
@@ -78055,7 +79483,38 @@ var<${access}> ${name} : ${structName};`;
 
 	}
 
+	class WebGPUGLRenderer extends Renderer {
+
+		constructor( parameters = {}, useWebGL = false ) {
+
+			let BackendClass;
+
+			if ( WebGPU.isAvailable() && !useWebGL) {
+
+				BackendClass = WebGPUBackend;
+
+
+			} else {
+
+				BackendClass = WebGLBackend;
+
+				//console.warn( 'THREE.WebGPURenderer: WebGPU is not available, running under WebGL2 backend.' );
+
+			}
+
+			const backend = new BackendClass( parameters );
+
+			//super( new Proxy( backend, debugHandler ) );
+			super( backend );
+
+			this.isWebGPURenderer = true;
+
+		}
+
+	}
+
 	exports.ACESFilmicToneMapping = ACESFilmicToneMapping;
+	exports.AONode = AONode;
 	exports.AddEquation = AddEquation;
 	exports.AddOperation = AddOperation;
 	exports.AdditiveAnimationBlendMode = AdditiveAnimationBlendMode;
@@ -78065,6 +79524,8 @@ var<${access}> ${name} : ${structName};`;
 	exports.AlwaysDepth = AlwaysDepth;
 	exports.AlwaysStencilFunc = AlwaysStencilFunc;
 	exports.AmbientLight = AmbientLight;
+	exports.AmbientLightNode = AmbientLightNode;
+	exports.AnalyticLightNode = AnalyticLightNode;
 	exports.AnimationAction = AnimationAction;
 	exports.AnimationClip = AnimationClip;
 	exports.AnimationLoader = AnimationLoader;
@@ -78073,17 +79534,26 @@ var<${access}> ${name} : ${structName};`;
 	exports.AnimationUtils = AnimationUtils;
 	exports.ArcCurve = ArcCurve;
 	exports.ArrayCamera = ArrayCamera;
+	exports.ArrayElementNode = ArrayElementNode;
+	exports.ArrayUniformNode = ArrayUniformNode;
 	exports.ArrowHelper = ArrowHelper;
+	exports.AssignNode = AssignNode;
 	exports.AttachedBindMode = AttachedBindMode;
+	exports.AttributeNode = AttributeNode;
 	exports.Audio = Audio;
 	exports.AudioAnalyser = AudioAnalyser;
 	exports.AudioContext = AudioContext;
 	exports.AudioListener = AudioListener;
 	exports.AudioLoader = AudioLoader;
 	exports.AxesHelper = AxesHelper;
+	exports.BRDF_GGX = BRDF_GGX;
+	exports.BRDF_Lambert = BRDF_Lambert;
 	exports.BackSide = BackSide;
 	exports.BasicDepthPacking = BasicDepthPacking;
 	exports.BasicShadowMap = BasicShadowMap;
+	exports.BatchedMesh = BatchedMesh;
+	exports.BitangentNode = BitangentNode;
+	exports.BlendModeNode = BlendModeNode;
 	exports.Bone = Bone;
 	exports.BooleanKeyframeTrack = BooleanKeyframeTrack;
 	exports.Box2 = Box2;
@@ -78092,34 +79562,50 @@ var<${access}> ${name} : ${structName};`;
 	exports.BoxGeometry = BoxGeometry;
 	exports.BoxHelper = BoxHelper;
 	exports.BufferAttribute = BufferAttribute;
+	exports.BufferAttributeNode = BufferAttributeNode;
 	exports.BufferGeometry = BufferGeometry;
 	exports.BufferGeometryLoader = BufferGeometryLoader;
+	exports.BufferNode = BufferNode;
+	exports.BumpMapNode = BumpMapNode;
+	exports.BypassNode = BypassNode;
 	exports.ByteType = ByteType;
 	exports.Cache = Cache;
+	exports.CacheNode = CacheNode;
 	exports.Camera = Camera;
 	exports.CameraHelper = CameraHelper;
+	exports.CameraNode = CameraNode;
 	exports.CanvasTexture = CanvasTexture;
 	exports.CapsuleGeometry = CapsuleGeometry;
 	exports.CatmullRomCurve3 = CatmullRomCurve3;
+	exports.CheckerNode = CheckerNode;
 	exports.CineonToneMapping = CineonToneMapping;
 	exports.CircleGeometry = CircleGeometry;
 	exports.ClampToEdgeWrapping = ClampToEdgeWrapping;
 	exports.Clock = Clock;
+	exports.CodeNode = CodeNode;
 	exports.Color = Color;
+	exports.ColorAdjustmentNode = ColorAdjustmentNode;
 	exports.ColorKeyframeTrack = ColorKeyframeTrack;
 	exports.ColorManagement = ColorManagement;
+	exports.ColorSpaceNode = ColorSpaceNode;
 	exports.CompressedArrayTexture = CompressedArrayTexture;
 	exports.CompressedCubeTexture = CompressedCubeTexture;
 	exports.CompressedTexture = CompressedTexture;
 	exports.CompressedTextureLoader = CompressedTextureLoader;
+	exports.ComputeNode = ComputeNode;
+	exports.CondNode = CondNode;
 	exports.ConeGeometry = ConeGeometry;
+	exports.ConstNode = ConstNode;
 	exports.ConstantAlphaFactor = ConstantAlphaFactor;
 	exports.ConstantColorFactor = ConstantColorFactor;
+	exports.ContextNode = ContextNode;
+	exports.ConvertNode = ConvertNode;
 	exports.CubeCamera = CubeCamera;
 	exports.CubeReflectionMapping = CubeReflectionMapping;
 	exports.CubeRefractionMapping = CubeRefractionMapping;
 	exports.CubeTexture = CubeTexture;
 	exports.CubeTextureLoader = CubeTextureLoader;
+	exports.CubeTextureNode = CubeTextureNode;
 	exports.CubeUVReflectionMapping = CubeUVReflectionMapping;
 	exports.CubicBezierCurve = CubicBezierCurve;
 	exports.CubicBezierCurve3 = CubicBezierCurve3;
@@ -78134,6 +79620,8 @@ var<${access}> ${name} : ${structName};`;
 	exports.CustomToneMapping = CustomToneMapping;
 	exports.CylinderGeometry = CylinderGeometry;
 	exports.Cylindrical = Cylindrical;
+	exports.DFGApprox = DFGApprox;
+	exports.D_GGX = D_GGX;
 	exports.Data3DTexture = Data3DTexture;
 	exports.DataArrayTexture = DataArrayTexture;
 	exports.DataTexture = DataTexture;
@@ -78148,6 +79636,8 @@ var<${access}> ${name} : ${structName};`;
 	exports.DetachedBindMode = DetachedBindMode;
 	exports.DirectionalLight = DirectionalLight;
 	exports.DirectionalLightHelper = DirectionalLightHelper;
+	exports.DirectionalLightNode = DirectionalLightNode;
+	exports.DiscardNode = DiscardNode;
 	exports.DiscreteInterpolant = DiscreteInterpolant;
 	exports.DisplayP3ColorSpace = DisplayP3ColorSpace;
 	exports.DodecahedronGeometry = DodecahedronGeometry;
@@ -78157,16 +79647,21 @@ var<${access}> ${name} : ${structName};`;
 	exports.DynamicCopyUsage = DynamicCopyUsage;
 	exports.DynamicDrawUsage = DynamicDrawUsage;
 	exports.DynamicReadUsage = DynamicReadUsage;
+	exports.EPSILON = EPSILON;
 	exports.EdgesGeometry = EdgesGeometry;
 	exports.EllipseCurve = EllipseCurve;
+	exports.EnvironmentNode = EnvironmentNode;
 	exports.EqualCompare = EqualCompare;
 	exports.EqualDepth = EqualDepth;
 	exports.EqualStencilFunc = EqualStencilFunc;
+	exports.EquirectUVNode = EquirectUVNode;
 	exports.EquirectangularReflectionMapping = EquirectangularReflectionMapping;
 	exports.EquirectangularRefractionMapping = EquirectangularRefractionMapping;
 	exports.Euler = Euler;
 	exports.EventDispatcher = EventDispatcher;
+	exports.ExpressionNode = ExpressionNode;
 	exports.ExtrudeGeometry = ExtrudeGeometry;
+	exports.F_Schlick = F_Schlick;
 	exports.FileLoader = FileLoader;
 	exports.Float16BufferAttribute = Float16BufferAttribute;
 	exports.Float32BufferAttribute = Float32BufferAttribute;
@@ -78174,12 +79669,19 @@ var<${access}> ${name} : ${structName};`;
 	exports.FloatType = FloatType;
 	exports.Fog = Fog;
 	exports.FogExp2 = FogExp2;
+	exports.FogExp2Node = FogExp2Node;
+	exports.FogNode = FogNode;
+	exports.FogRangeNode = FogRangeNode;
 	exports.FramebufferTexture = FramebufferTexture;
+	exports.FrontFacingNode = FrontFacingNode;
 	exports.FrontSide = FrontSide;
 	exports.Frustum = Frustum;
+	exports.FunctionCallNode = FunctionCallNode;
+	exports.FunctionNode = FunctionNode;
 	exports.GLBufferAttribute = GLBufferAttribute;
 	exports.GLSL1 = GLSL1;
 	exports.GLSL3 = GLSL3;
+	exports.GLSLNodeParser = GLSLNodeParser;
 	exports.GreaterCompare = GreaterCompare;
 	exports.GreaterDepth = GreaterDepth;
 	exports.GreaterEqualCompare = GreaterEqualCompare;
@@ -78189,18 +79691,26 @@ var<${access}> ${name} : ${structName};`;
 	exports.GridHelper = GridHelper;
 	exports.Group = Group;
 	exports.HalfFloatType = HalfFloatType;
+	exports.HashNode = HashNode;
 	exports.HemisphereLight = HemisphereLight;
 	exports.HemisphereLightHelper = HemisphereLightHelper;
+	exports.HemisphereLightNode = HemisphereLightNode;
+	exports.IESSpotLightNode = IESSpotLightNode;
+	exports.INFINITY = INFINITY;
 	exports.IcosahedronGeometry = IcosahedronGeometry;
+	exports.If = If;
 	exports.ImageBitmapLoader = ImageBitmapLoader;
 	exports.ImageLoader = ImageLoader;
 	exports.ImageUtils = ImageUtils;
 	exports.IncrementStencilOp = IncrementStencilOp;
 	exports.IncrementWrapStencilOp = IncrementWrapStencilOp;
+	exports.IndexNode = IndexNode;
+	exports.InstanceNode = InstanceNode;
 	exports.InstancedBufferAttribute = InstancedBufferAttribute;
 	exports.InstancedBufferGeometry = InstancedBufferGeometry;
 	exports.InstancedInterleavedBuffer = InstancedInterleavedBuffer;
 	exports.InstancedMesh = InstancedMesh;
+	exports.InstancedPointsNodeMaterial = InstancedPointsNodeMaterial;
 	exports.Int16BufferAttribute = Int16BufferAttribute;
 	exports.Int32BufferAttribute = Int32BufferAttribute;
 	exports.Int8BufferAttribute = Int8BufferAttribute;
@@ -78212,6 +79722,7 @@ var<${access}> ${name} : ${structName};`;
 	exports.InterpolateLinear = InterpolateLinear;
 	exports.InterpolateSmooth = InterpolateSmooth;
 	exports.InvertStencilOp = InvertStencilOp;
+	exports.JoinNode = JoinNode;
 	exports.KeepStencilOp = KeepStencilOp;
 	exports.KeyframeTrack = KeyframeTrack;
 	exports.LOD = LOD;
@@ -78224,13 +79735,21 @@ var<${access}> ${name} : ${structName};`;
 	exports.LessEqualStencilFunc = LessEqualStencilFunc;
 	exports.LessStencilFunc = LessStencilFunc;
 	exports.Light = Light;
+	exports.LightNode = LightNode;
 	exports.LightProbe = LightProbe;
+	exports.LightingContextNode = LightingContextNode;
+	exports.LightingModel = LightingModel;
+	exports.LightingNode = LightingNode;
+	exports.LightsNode = LightsNode;
 	exports.Line = Line;
+	exports.Line2NodeMaterial = Line2NodeMaterial;
 	exports.Line3 = Line3;
 	exports.LineBasicMaterial = LineBasicMaterial;
+	exports.LineBasicNodeMaterial = LineBasicNodeMaterial;
 	exports.LineCurve = LineCurve;
 	exports.LineCurve3 = LineCurve3;
 	exports.LineDashedMaterial = LineDashedMaterial;
+	exports.LineDashedNodeMaterial = LineDashedNodeMaterial;
 	exports.LineLoop = LineLoop;
 	exports.LineSegments = LineSegments;
 	exports.LinearDisplayP3ColorSpace = LinearDisplayP3ColorSpace;
@@ -78247,33 +79766,47 @@ var<${access}> ${name} : ${structName};`;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
 	exports.LoadingManager = LoadingManager;
+	exports.LoopNode = LoopNode;
 	exports.LoopOnce = LoopOnce;
 	exports.LoopPingPong = LoopPingPong;
 	exports.LoopRepeat = LoopRepeat;
 	exports.LuminanceAlphaFormat = LuminanceAlphaFormat;
 	exports.LuminanceFormat = LuminanceFormat;
 	exports.MOUSE = MOUSE;
+	exports.MatcapUVNode = MatcapUVNode;
 	exports.Material = Material;
 	exports.MaterialLoader = MaterialLoader;
+	exports.MaterialNode = MaterialNode;
+	exports.MaterialReferenceNode = MaterialReferenceNode;
+	exports.MathNode = MathNode;
 	exports.MathUtils = MathUtils;
 	exports.Matrix3 = Matrix3;
 	exports.Matrix4 = Matrix4;
 	exports.MaxEquation = MaxEquation;
+	exports.MaxMipLevelNode = MaxMipLevelNode;
 	exports.Mesh = Mesh;
 	exports.MeshBasicMaterial = MeshBasicMaterial;
 	exports.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
 	exports.MeshDepthMaterial = MeshDepthMaterial;
 	exports.MeshDistanceMaterial = MeshDistanceMaterial;
 	exports.MeshLambertMaterial = MeshLambertMaterial;
+	exports.MeshLambertNodeMaterial = MeshLambertNodeMaterial;
 	exports.MeshMatcapMaterial = MeshMatcapMaterial;
 	exports.MeshNormalMaterial = MeshNormalMaterial;
+	exports.MeshNormalNodeMaterial = MeshNormalNodeMaterial;
 	exports.MeshPhongMaterial = MeshPhongMaterial;
+	exports.MeshPhongNodeMaterial = MeshPhongNodeMaterial;
 	exports.MeshPhysicalMaterial = MeshPhysicalMaterial;
+	exports.MeshPhysicalNodeMaterial = MeshPhysicalNodeMaterial;
 	exports.MeshStandardMaterial = MeshStandardMaterial;
+	exports.MeshStandardNodeMaterial = MeshStandardNodeMaterial;
 	exports.MeshToonMaterial = MeshToonMaterial;
 	exports.MinEquation = MinEquation;
 	exports.MirroredRepeatWrapping = MirroredRepeatWrapping;
 	exports.MixOperation = MixOperation;
+	exports.ModelNode = ModelNode;
+	exports.ModelViewProjectionNode = ModelViewProjectionNode;
+	exports.MorphNode = MorphNode;
 	exports.MultiplyBlending = MultiplyBlending;
 	exports.MultiplyOperation = MultiplyOperation;
 	exports.NearestFilter = NearestFilter;
@@ -78287,13 +79820,35 @@ var<${access}> ${name} : ${structName};`;
 	exports.NoBlending = NoBlending;
 	exports.NoColorSpace = NoColorSpace;
 	exports.NoToneMapping = NoToneMapping;
+	exports.Node = Node;
+	exports.NodeAttribute = NodeAttribute;
+	exports.NodeBuilder = NodeBuilder;
+	exports.NodeCache = NodeCache;
+	exports.NodeCode = NodeCode;
+	exports.NodeFrame = NodeFrame;
+	exports.NodeFunctionInput = NodeFunctionInput;
+	exports.NodeKeywords = NodeKeywords;
+	exports.NodeLoader = NodeLoader;
+	exports.NodeMaterial = NodeMaterial;
+	exports.NodeMaterialLoader = NodeMaterialLoader;
+	exports.NodeObjectLoader = NodeObjectLoader;
+	exports.NodeShaderStage = NodeShaderStage;
+	exports.NodeType = NodeType;
+	exports.NodeUniform = NodeUniform;
+	exports.NodeUpdateType = NodeUpdateType;
+	exports.NodeUtils = NodeUtils;
+	exports.NodeVar = NodeVar;
+	exports.NodeVarying = NodeVarying;
 	exports.NormalAnimationBlendMode = NormalAnimationBlendMode;
 	exports.NormalBlending = NormalBlending;
+	exports.NormalMapNode = NormalMapNode;
+	exports.NormalNode = NormalNode;
 	exports.NotEqualCompare = NotEqualCompare;
 	exports.NotEqualDepth = NotEqualDepth;
 	exports.NotEqualStencilFunc = NotEqualStencilFunc;
 	exports.NumberKeyframeTrack = NumberKeyframeTrack;
 	exports.Object3D = Object3D;
+	exports.Object3DNode = Object3DNode;
 	exports.ObjectLoader = ObjectLoader;
 	exports.ObjectSpaceNormalMap = ObjectSpaceNormalMap;
 	exports.OctahedronGeometry = OctahedronGeometry;
@@ -78304,25 +79859,38 @@ var<${access}> ${name} : ${structName};`;
 	exports.OneMinusDstColorFactor = OneMinusDstColorFactor;
 	exports.OneMinusSrcAlphaFactor = OneMinusSrcAlphaFactor;
 	exports.OneMinusSrcColorFactor = OneMinusSrcColorFactor;
+	exports.OperatorNode = OperatorNode;
 	exports.OrthographicCamera = OrthographicCamera;
+	exports.OscNode = OscNode;
+	exports.OutputStructNode = OutputStructNode;
 	exports.P3Primaries = P3Primaries;
 	exports.PCFShadowMap = PCFShadowMap;
 	exports.PCFSoftShadowMap = PCFSoftShadowMap;
 	exports.PMREMGenerator = PMREMGenerator;
+	exports.PackingNode = PackingNode;
+	exports.ParameterNode = ParameterNode;
 	exports.Path = Path;
 	exports.PerspectiveCamera = PerspectiveCamera;
+	exports.PhongLightingModel = PhongLightingModel;
+	exports.PhysicalLightingModel = PhysicalLightingModel;
 	exports.Plane = Plane;
 	exports.PlaneGeometry = PlaneGeometry;
 	exports.PlaneHelper = PlaneHelper;
 	exports.PointLight = PointLight;
 	exports.PointLightHelper = PointLightHelper;
+	exports.PointLightNode = PointLightNode;
+	exports.PointUVNode = PointUVNode;
 	exports.Points = Points;
 	exports.PointsMaterial = PointsMaterial;
+	exports.PointsNodeMaterial = PointsNodeMaterial;
 	exports.PolarGridHelper = PolarGridHelper;
 	exports.PolyhedronGeometry = PolyhedronGeometry;
+	exports.PositionNode = PositionNode;
 	exports.PositionalAudio = PositionalAudio;
+	exports.PosterizeNode = PosterizeNode;
 	exports.PropertyBinding = PropertyBinding;
 	exports.PropertyMixer = PropertyMixer;
+	exports.PropertyNode = PropertyNode;
 	exports.QuadraticBezierCurve = QuadraticBezierCurve;
 	exports.QuadraticBezierCurve3 = QuadraticBezierCurve3;
 	exports.Quaternion = Quaternion;
@@ -78364,6 +79932,7 @@ var<${access}> ${name} : ${structName};`;
 	exports.RGB_S3TC_DXT1_Format = RGB_S3TC_DXT1_Format;
 	exports.RGFormat = RGFormat;
 	exports.RGIntegerFormat = RGIntegerFormat;
+	exports.RangeNode = RangeNode;
 	exports.RawShaderMaterial = RawShaderMaterial;
 	exports.Ray = Ray;
 	exports.Raycaster = Raycaster;
@@ -78371,20 +79940,30 @@ var<${access}> ${name} : ${structName};`;
 	exports.RectAreaLight = RectAreaLight;
 	exports.RedFormat = RedFormat;
 	exports.RedIntegerFormat = RedIntegerFormat;
+	exports.ReferenceNode = ReferenceNode;
+	exports.ReflectVectorNode = ReflectVectorNode;
 	exports.ReinhardToneMapping = ReinhardToneMapping;
+	exports.RemapNode = RemapNode;
 	exports.RenderTarget = RenderTarget;
 	exports.RepeatWrapping = RepeatWrapping;
 	exports.ReplaceStencilOp = ReplaceStencilOp;
 	exports.ReverseSubtractEquation = ReverseSubtractEquation;
 	exports.RingGeometry = RingGeometry;
+	exports.RotateUVNode = RotateUVNode;
 	exports.SIGNED_RED_GREEN_RGTC2_Format = SIGNED_RED_GREEN_RGTC2_Format;
 	exports.SIGNED_RED_RGTC1_Format = SIGNED_RED_RGTC1_Format;
 	exports.SRGBColorSpace = SRGBColorSpace;
 	exports.SRGBTransfer = SRGBTransfer;
 	exports.Scene = Scene;
+	exports.SceneNode = SceneNode;
+	exports.Schlick_to_F0 = Schlick_to_F0;
+	exports.ScriptableNode = ScriptableNode;
+	exports.ScriptableValueNode = ScriptableValueNode;
+	exports.SetNode = SetNode;
 	exports.ShaderChunk = ShaderChunk;
 	exports.ShaderLib = ShaderLib;
 	exports.ShaderMaterial = ShaderMaterial;
+	exports.ShaderNode = ShaderNode;
 	exports.ShadowMaterial = ShadowMaterial;
 	exports.Shape = Shape;
 	exports.ShapeGeometry = ShapeGeometry;
@@ -78394,48 +79973,68 @@ var<${access}> ${name} : ${structName};`;
 	exports.Skeleton = Skeleton;
 	exports.SkeletonHelper = SkeletonHelper;
 	exports.SkinnedMesh = SkinnedMesh;
+	exports.SkinningNode = SkinningNode;
 	exports.Source = Source;
+	exports.SpecularMIPLevelNode = SpecularMIPLevelNode;
 	exports.Sphere = Sphere;
 	exports.SphereGeometry = SphereGeometry;
 	exports.Spherical = Spherical;
 	exports.SphericalHarmonics3 = SphericalHarmonics3;
 	exports.SplineCurve = SplineCurve;
+	exports.SplitNode = SplitNode;
 	exports.SpotLight = SpotLight;
 	exports.SpotLightHelper = SpotLightHelper;
+	exports.SpotLightNode = SpotLightNode;
 	exports.Sprite = Sprite;
 	exports.SpriteMaterial = SpriteMaterial;
+	exports.SpriteNodeMaterial = SpriteNodeMaterial;
+	exports.SpriteSheetUVNode = SpriteSheetUVNode;
 	exports.SrcAlphaFactor = SrcAlphaFactor;
 	exports.SrcAlphaSaturateFactor = SrcAlphaSaturateFactor;
 	exports.SrcColorFactor = SrcColorFactor;
+	exports.StackNode = StackNode;
 	exports.StaticCopyUsage = StaticCopyUsage;
 	exports.StaticDrawUsage = StaticDrawUsage;
 	exports.StaticReadUsage = StaticReadUsage;
 	exports.StereoCamera = StereoCamera;
+	exports.StorageBufferNode = StorageBufferNode;
 	exports.StreamCopyUsage = StreamCopyUsage;
 	exports.StreamDrawUsage = StreamDrawUsage;
 	exports.StreamReadUsage = StreamReadUsage;
 	exports.StringKeyframeTrack = StringKeyframeTrack;
 	exports.SubtractEquation = SubtractEquation;
 	exports.SubtractiveBlending = SubtractiveBlending;
+	exports.TBNViewMatrix = TBNViewMatrix;
 	exports.TOUCH = TOUCH;
+	exports.TangentNode = TangentNode;
 	exports.TangentSpaceNormalMap = TangentSpaceNormalMap;
+	exports.TempNode = TempNode;
 	exports.TetrahedronGeometry = TetrahedronGeometry;
 	exports.Texture = Texture;
+	exports.TextureBicubicNode = TextureBicubicNode;
 	exports.TextureLoader = TextureLoader;
+	exports.TextureNode = TextureNode;
+	exports.TextureStoreNode = TextureStoreNode;
+	exports.TimerNode = TimerNode;
+	exports.ToneMappingNode = ToneMappingNode;
 	exports.TorusGeometry = TorusGeometry;
 	exports.TorusKnotGeometry = TorusKnotGeometry;
 	exports.Triangle = Triangle;
 	exports.TriangleFanDrawMode = TriangleFanDrawMode;
 	exports.TriangleStripDrawMode = TriangleStripDrawMode;
 	exports.TrianglesDrawMode = TrianglesDrawMode;
+	exports.TriplanarTexturesNode = TriplanarTexturesNode;
 	exports.TubeGeometry = TubeGeometry;
 	exports.TwoPassDoubleSide = TwoPassDoubleSide;
 	exports.UVMapping = UVMapping;
+	exports.UVNode = UVNode;
 	exports.Uint16BufferAttribute = Uint16BufferAttribute;
 	exports.Uint32BufferAttribute = Uint32BufferAttribute;
 	exports.Uint8BufferAttribute = Uint8BufferAttribute;
 	exports.Uint8ClampedBufferAttribute = Uint8ClampedBufferAttribute;
 	exports.Uniform = Uniform$1;
+	exports.UniformGroupNode = UniformGroupNode;
+	exports.UniformNode = UniformNode;
 	exports.UniformsGroup = UniformsGroup$1;
 	exports.UniformsLib = UniformsLib;
 	exports.UniformsUtils = UniformsUtils;
@@ -78445,12 +80044,21 @@ var<${access}> ${name} : ${structName};`;
 	exports.UnsignedShort4444Type = UnsignedShort4444Type;
 	exports.UnsignedShort5551Type = UnsignedShort5551Type;
 	exports.UnsignedShortType = UnsignedShortType;
+	exports.UserDataNode = UserDataNode;
 	exports.VSMShadowMap = VSMShadowMap;
+	exports.V_GGX_SmithCorrelated = V_GGX_SmithCorrelated;
+	exports.VarNode = VarNode;
+	exports.VaryingNode = VaryingNode;
 	exports.Vector2 = Vector2;
 	exports.Vector3 = Vector3;
 	exports.Vector4 = Vector4;
 	exports.VectorKeyframeTrack = VectorKeyframeTrack;
 	exports.VideoTexture = VideoTexture;
+	exports.ViewportDepthNode = ViewportDepthNode;
+	exports.ViewportDepthTextureNode = ViewportDepthTextureNode;
+	exports.ViewportNode = ViewportNode;
+	exports.ViewportSharedTextureNode = ViewportSharedTextureNode;
+	exports.ViewportTextureNode = ViewportTextureNode;
 	exports.WebGL1Renderer = WebGL1Renderer;
 	exports.WebGL3DRenderTarget = WebGL3DRenderTarget;
 	exports.WebGLArrayRenderTarget = WebGLArrayRenderTarget;
@@ -78462,6 +80070,7 @@ var<${access}> ${name} : ${structName};`;
 	exports.WebGLUtils = WebGLUtils$1;
 	exports.WebGPU = WebGPU;
 	exports.WebGPUCoordinateSystem = WebGPUCoordinateSystem;
+	exports.WebGPUGLRenderer = WebGPUGLRenderer;
 	exports.WebGPURenderer = WebGPURenderer;
 	exports.WireframeGeometry = WireframeGeometry;
 	exports.WrapAroundEnding = WrapAroundEnding;
@@ -78470,11 +80079,365 @@ var<${access}> ${name} : ${structName};`;
 	exports.ZeroSlopeEnding = ZeroSlopeEnding;
 	exports.ZeroStencilOp = ZeroStencilOp;
 	exports._SRGBAFormat = _SRGBAFormat;
+	exports.abs = abs;
+	exports.acos = acos;
+	exports.add = add;
+	exports.addLightNode = addLightNode;
+	exports.addNodeClass = addNodeClass;
+	exports.addNodeElement = addNodeElement;
+	exports.addNodeMaterial = addNodeMaterial;
+	exports.and = and;
+	exports.append = append;
+	exports.arrayBuffer = arrayBuffer;
+	exports.asin = asin;
+	exports.assign = assign;
+	exports.atan = atan;
+	exports.atan2 = atan2;
+	exports.attribute = attribute;
+	exports.backgroundBlurriness = backgroundBlurriness;
+	exports.backgroundIntensity = backgroundIntensity;
+	exports.bitAnd = bitAnd;
+	exports.bitOr = bitOr;
+	exports.bitXor = bitXor;
+	exports.bitangentGeometry = bitangentGeometry;
+	exports.bitangentLocal = bitangentLocal;
+	exports.bitangentView = bitangentView;
+	exports.bitangentWorld = bitangentWorld;
+	exports.bmat3 = bmat3;
+	exports.bmat4 = bmat4;
+	exports.bool = bool;
+	exports.buffer = buffer;
+	exports.bufferAttribute = bufferAttribute;
+	exports.bumpMap = bumpMap;
+	exports.burn = burn;
+	exports.bvec2 = bvec2;
+	exports.bvec3 = bvec3;
+	exports.bvec4 = bvec4;
+	exports.bypass = bypass;
+	exports.cache = cache;
+	exports.call = call;
+	exports.cameraFar = cameraFar;
+	exports.cameraNear = cameraNear;
+	exports.cameraNormalMatrix = cameraNormalMatrix;
+	exports.cameraPosition = cameraPosition;
+	exports.cameraProjectionMatrix = cameraProjectionMatrix;
+	exports.cameraViewMatrix = cameraViewMatrix;
+	exports.cameraWorldMatrix = cameraWorldMatrix;
+	exports.ceil = ceil;
+	exports.checker = checker;
+	exports.clamp = clamp;
+	exports.clearcoat = clearcoat;
+	exports.clearcoatRoughness = clearcoatRoughness;
+	exports.code = code;
+	exports.color = color;
+	exports.colorSpaceToLinear = colorSpaceToLinear;
+	exports.colorToDirection = colorToDirection;
+	exports.compute = compute;
+	exports.cond = cond;
+	exports.context = context;
+	exports.convert = convert;
+	exports.cos = cos;
 	exports.createCanvasElement = createCanvasElement;
+	exports.createNodeFromType = createNodeFromType;
+	exports.createNodeMaterialFromType = createNodeMaterialFromType;
+	exports.cross = cross;
+	exports.cubeTexture = cubeTexture;
+	exports.dFdx = dFdx;
+	exports.dFdy = dFdy;
+	exports.dashSize = dashSize;
+	exports.defaultBuildStages = defaultBuildStages;
+	exports.defaultShaderStages = defaultShaderStages;
+	exports.degrees = degrees;
+	exports.densityFog = densityFog;
+	exports.depth = depth;
+	exports.depthTexture = depthTexture;
+	exports.difference = difference;
+	exports.diffuseColor = diffuseColor;
+	exports.directionToColor = directionToColor;
+	exports.discard = discard;
+	exports.distance = distance;
+	exports.div = div;
+	exports.dodge = dodge;
+	exports.dot = dot;
+	exports.dynamicBufferAttribute = dynamicBufferAttribute;
+	exports.element = element;
+	exports.equal = equal;
 	exports.equirectUV = equirectUV;
+	exports.exp = exp;
+	exports.exp2 = exp2;
+	exports.expression = expression;
+	exports.faceDirection = faceDirection;
+	exports.faceForward = faceForward;
+	exports.float = float;
+	exports.floor = floor;
+	exports.fog = fog;
+	exports.fract = fract;
+	exports.frameGroup = frameGroup;
+	exports.frameId = frameId;
+	exports.frontFacing = frontFacing;
+	exports.fwidth = fwidth;
+	exports.gapSize = gapSize;
+	exports.getConstNodeType = getConstNodeType;
+	exports.getCurrentStack = getCurrentStack;
+	exports.getDistanceAttenuation = getDistanceAttenuation;
+	exports.getGeometryRoughness = getGeometryRoughness;
+	exports.getRoughness = getRoughness;
+	exports.global = global;
+	exports.glsl = glsl;
+	exports.glslFn = glslFn;
+	exports.greaterThan = greaterThan;
+	exports.greaterThanEqual = greaterThanEqual;
+	exports.hash = hash;
+	exports.hue = hue;
+	exports.imat3 = imat3;
+	exports.imat4 = imat4;
+	exports.instance = instance;
+	exports.instanceIndex = instanceIndex;
+	exports.instancedBufferAttribute = instancedBufferAttribute;
+	exports.instancedDynamicBufferAttribute = instancedDynamicBufferAttribute;
+	exports.int = int;
+	exports.inverseSqrt = inverseSqrt;
+	exports.iridescence = iridescence;
+	exports.iridescenceIOR = iridescenceIOR;
+	exports.iridescenceThickness = iridescenceThickness;
+	exports.ivec2 = ivec2;
+	exports.ivec3 = ivec3;
+	exports.ivec4 = ivec4;
+	exports.js = js;
+	exports.label = label;
+	exports.length = length;
+	exports.lessThan = lessThan;
+	exports.lessThanEqual = lessThanEqual;
+	exports.lightNodes = lightNodes;
+	exports.lightTargetDirection = lightTargetDirection;
+	exports.lightingContext = lightingContext;
+	exports.lights = lights;
+	exports.linearToColorSpace = linearToColorSpace;
+	exports.linearTosRGB = linearTosRGB;
+	exports.log = log;
+	exports.log2 = log2;
+	exports.loop = loop;
+	exports.lumaCoeffs = lumaCoeffs;
+	exports.luminance = luminance;
+	exports.mat3 = mat3;
+	exports.mat4 = mat4;
+	exports.matcapUV = matcapUV;
+	exports.materialAlphaTest = materialAlphaTest;
+	exports.materialClearcoat = materialClearcoat;
+	exports.materialClearcoatNormal = materialClearcoatNormal;
+	exports.materialClearcoatRoughness = materialClearcoatRoughness;
+	exports.materialColor = materialColor;
+	exports.materialEmissive = materialEmissive;
+	exports.materialIridescence = materialIridescence;
+	exports.materialIridescenceIOR = materialIridescenceIOR;
+	exports.materialIridescenceThickness = materialIridescenceThickness;
+	exports.materialLineDashOffset = materialLineDashOffset;
+	exports.materialLineDashSize = materialLineDashSize;
+	exports.materialLineGapSize = materialLineGapSize;
+	exports.materialLineScale = materialLineScale;
+	exports.materialLineWidth = materialLineWidth;
+	exports.materialMetalness = materialMetalness;
+	exports.materialNormal = materialNormal;
+	exports.materialOpacity = materialOpacity;
+	exports.materialPointWidth = materialPointWidth;
+	exports.materialReference = materialReference;
+	exports.materialReflectivity = materialReflectivity;
+	exports.materialRotation = materialRotation;
+	exports.materialRoughness = materialRoughness;
+	exports.materialSheen = materialSheen;
+	exports.materialSheenRoughness = materialSheenRoughness;
+	exports.materialShininess = materialShininess;
+	exports.materialSpecularColor = materialSpecularColor;
+	exports.materialSpecularStrength = materialSpecularStrength;
+	exports.max = max$1;
+	exports.maxMipLevel = maxMipLevel;
+	exports.metalness = metalness;
+	exports.min = min$1;
+	exports.mix = mix;
+	exports.mod = mod;
+	exports.modelDirection = modelDirection;
+	exports.modelNormalMatrix = modelNormalMatrix;
+	exports.modelPosition = modelPosition;
+	exports.modelScale = modelScale;
+	exports.modelViewMatrix = modelViewMatrix;
+	exports.modelViewPosition = modelViewPosition;
+	exports.modelViewProjection = modelViewProjection;
+	exports.modelWorldMatrix = modelWorldMatrix;
+	exports.morph = morph;
+	exports.mul = mul;
+	exports.mx_aastep = mx_aastep;
+	exports.mx_cell_noise_float = mx_cell_noise_float;
+	exports.mx_contrast = mx_contrast;
+	exports.mx_fractal_noise_float = mx_fractal_noise_float;
+	exports.mx_fractal_noise_vec2 = mx_fractal_noise_vec2;
+	exports.mx_fractal_noise_vec3 = mx_fractal_noise_vec3;
+	exports.mx_fractal_noise_vec4 = mx_fractal_noise_vec4;
+	exports.mx_hsvtorgb = mx_hsvtorgb;
+	exports.mx_noise_float = mx_noise_float;
+	exports.mx_noise_vec2 = mx_noise_vec2;
+	exports.mx_noise_vec3 = mx_noise_vec3;
+	exports.mx_noise_vec4 = mx_noise_vec4;
+	exports.mx_ramplr = mx_ramplr;
+	exports.mx_ramptb = mx_ramptb;
+	exports.mx_rgbtohsv = mx_rgbtohsv;
+	exports.mx_safepower = mx_safepower;
+	exports.mx_splitlr = mx_splitlr;
+	exports.mx_splittb = mx_splittb;
+	exports.mx_srgb_texture_to_lin_rec709 = mx_srgb_texture_to_lin_rec709;
+	exports.mx_transform_uv = mx_transform_uv;
+	exports.mx_worley_noise_float = mx_worley_noise_float;
+	exports.mx_worley_noise_vec2 = mx_worley_noise_vec2;
+	exports.mx_worley_noise_vec3 = mx_worley_noise_vec3;
+	exports.negate = negate;
+	exports.nodeArray = nodeArray;
+	exports.nodeImmutable = nodeImmutable;
+	exports.nodeObject = nodeObject;
+	exports.nodeObjects = nodeObjects;
+	exports.nodeProxy = nodeProxy;
+	exports.normalGeometry = normalGeometry;
+	exports.normalLocal = normalLocal;
+	exports.normalMap = normalMap;
+	exports.normalView = normalView;
+	exports.normalWorld = normalWorld;
+	exports.normalize = normalize;
+	exports.objectDirection = objectDirection;
+	exports.objectGroup = objectGroup;
+	exports.objectNormalMatrix = objectNormalMatrix;
+	exports.objectPosition = objectPosition;
+	exports.objectScale = objectScale;
+	exports.objectViewMatrix = objectViewMatrix;
+	exports.objectViewPosition = objectViewPosition;
+	exports.objectWorldMatrix = objectWorldMatrix;
+	exports.oneMinus = oneMinus;
+	exports.or = or;
+	exports.orthographicDepthToViewZ = orthographicDepthToViewZ;
+	exports.oscSawtooth = oscSawtooth;
+	exports.oscSine = oscSine;
+	exports.oscSquare = oscSquare;
+	exports.oscTriangle = oscTriangle;
+	exports.output = output;
+	exports.outputStruct = outputStruct;
+	exports.overlay = overlay;
+	exports.parameter = parameter;
+	exports.perspectiveDepthToViewZ = perspectiveDepthToViewZ;
+	exports.pointUV = pointUV;
+	exports.pointWidth = pointWidth;
+	exports.positionGeometry = positionGeometry;
+	exports.positionLocal = positionLocal;
+	exports.positionView = positionView;
+	exports.positionViewDirection = positionViewDirection;
+	exports.positionWorld = positionWorld;
+	exports.positionWorldDirection = positionWorldDirection;
+	exports.posterize = posterize;
+	exports.pow = pow;
+	exports.pow2 = pow2;
+	exports.pow3 = pow3;
+	exports.pow4 = pow4;
+	exports.property = property;
+	exports.radians = radians;
+	exports.range = range;
+	exports.rangeFog = rangeFog;
+	exports.reciprocal = reciprocal;
+	exports.reference = reference;
+	exports.reflect = reflect;
+	exports.reflectVector = reflectVector;
+	exports.refract = refract;
+	exports.remainder = remainder;
+	exports.remap = remap;
+	exports.remapClamp = remapClamp;
+	exports.renderGroup = renderGroup;
+	exports.rotateUV = rotateUV;
+	exports.roughness = roughness;
+	exports.round = round;
 	exports.sRGBEncoding = sRGBEncoding;
+	exports.sRGBToLinear = sRGBToLinear;
+	exports.sampler = sampler;
+	exports.saturate = saturate;
+	exports.saturation = saturation;
+	exports.screen = screen;
+	exports.scriptable = scriptable;
+	exports.scriptableValue = scriptableValue;
+	exports.setCurrentStack = setCurrentStack;
+	exports.shader = shader;
+	exports.shaderStages = shaderStages;
+	exports.sheen = sheen;
+	exports.sheenRoughness = sheenRoughness;
+	exports.shiftLeft = shiftLeft;
+	exports.shiftRight = shiftRight;
+	exports.shininess = shininess;
+	exports.sign = sign;
+	exports.sin = sin;
+	exports.skinning = skinning;
+	exports.smoothstep = smoothstep;
+	exports.specularColor = specularColor;
+	exports.specularMIPLevel = specularMIPLevel;
+	exports.split = split;
+	exports.spritesheetUV = spritesheetUV;
+	exports.sqrt = sqrt;
+	exports.stack = stack;
+	exports.step = step;
+	exports.storage = storage;
+	exports.string = string;
+	exports.sub = sub;
+	exports.tan = tan;
+	exports.tangentGeometry = tangentGeometry;
+	exports.tangentLocal = tangentLocal;
+	exports.tangentView = tangentView;
+	exports.tangentWorld = tangentWorld;
+	exports.temp = temp;
 	exports.texture = texture;
+	exports.textureBicubic = textureBicubic;
+	exports.textureStore = textureStore;
+	exports.timerDelta = timerDelta;
+	exports.timerGlobal = timerGlobal;
+	exports.timerLocal = timerLocal;
+	exports.toneMapping = toneMapping;
+	exports.transformDirection = transformDirection;
+	exports.transformedBitangentView = transformedBitangentView;
+	exports.transformedBitangentWorld = transformedBitangentWorld;
+	exports.transformedClearcoatNormalView = transformedClearcoatNormalView;
+	exports.transformedNormalView = transformedNormalView;
+	exports.transformedNormalWorld = transformedNormalWorld;
+	exports.transformedTangentView = transformedTangentView;
+	exports.transformedTangentWorld = transformedTangentWorld;
+	exports.triplanarTexture = triplanarTexture;
+	exports.triplanarTextures = triplanarTextures;
+	exports.trunc = trunc;
+	exports.tslFn = tslFn;
+	exports.uint = uint;
+	exports.umat3 = umat3;
+	exports.umat4 = umat4;
+	exports.uniform = uniform;
+	exports.uniformGroup = uniformGroup;
+	exports.userData = userData;
 	exports.uv = uv;
+	exports.uvec2 = uvec2;
+	exports.uvec3 = uvec3;
+	exports.uvec4 = uvec4;
+	exports.varying = varying;
+	exports.varyingProperty = varyingProperty;
+	exports.vec2 = vec2;
+	exports.vec3 = vec3;
+	exports.vec4 = vec4;
+	exports.vectorComponents = vectorComponents;
+	exports.vertexIndex = vertexIndex;
+	exports.vibrance = vibrance;
+	exports.viewZToOrthographicDepth = viewZToOrthographicDepth;
+	exports.viewZToPerspectiveDepth = viewZToPerspectiveDepth;
+	exports.viewport = viewport;
+	exports.viewportBottomLeft = viewportBottomLeft;
+	exports.viewportBottomRight = viewportBottomRight;
+	exports.viewportCoordinate = viewportCoordinate;
+	exports.viewportDepthTexture = viewportDepthTexture;
+	exports.viewportMipTexture = viewportMipTexture;
+	exports.viewportResolution = viewportResolution;
+	exports.viewportSharedTexture = viewportSharedTexture;
+	exports.viewportTexture = viewportTexture;
+	exports.viewportTopLeft = viewportTopLeft;
+	exports.viewportTopRight = viewportTopRight;
+	exports.wgsl = wgsl;
+	exports.wgslFn = wgslFn;
+	exports.xor = xor;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
