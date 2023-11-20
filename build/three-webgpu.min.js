@@ -7896,7 +7896,7 @@ var THREE = (async function (exports) {
 				object.drawRanges = this._drawRanges;
 				object.reservedRanges = this._reservedRanges;
 
-				object.visible = this._visible;
+				object.visibility = this._visibility;
 				object.active = this._active;
 				object.bounds = this._bounds.map( bound => ( {
 					boxInitialized: bound.boxInitialized,
@@ -32462,7 +32462,7 @@ var THREE = (async function (exports) {
 			//       64x64 pixel texture max 1024 bones * 4 pixels = (64 * 64)
 
 			let size = Math.sqrt( this.bones.length * 4 ); // 4 pixels needed for 1 matrix
-			size = ceilPowerOfTwo( size );
+			size = Math.ceil( size / 4 ) * 4;
 			size = Math.max( size, 4 );
 
 			const boneMatrices = new Float32Array( size * size * 4 ); // 4 floats per RGBA pixel
@@ -32881,7 +32881,6 @@ var THREE = (async function (exports) {
 	const _batchIntersects = [];
 
 	// @TODO: SkinnedMesh support?
-	// @TODO: Future work if needed. Move into the core. Can be optimized more with WEBGL_multi_draw.
 	// @TODO: geometry.groups support?
 	// @TODO: geometry.drawRange support?
 	// @TODO: geometry.morphAttributes support?
@@ -32933,7 +32932,7 @@ var THREE = (async function (exports) {
 			this._drawRanges = [];
 			this._reservedRanges = [];
 
-			this._visible = [];
+			this._visibility = [];
 			this._active = [];
 			this._bounds = [];
 
@@ -32946,6 +32945,7 @@ var THREE = (async function (exports) {
 			this._multiDrawCounts = new Int32Array( maxGeometryCount );
 			this._multiDrawStarts = new Int32Array( maxGeometryCount );
 			this._multiDrawCount = 0;
+			this._visibilityChanged = true;
 
 			// Local matrix per geometry by using data texture
 			this._matricesTexture = null;
@@ -32964,7 +32964,7 @@ var THREE = (async function (exports) {
 			//       64x64 pixel texture max 1024 matrices * 4 pixels = (64 * 64)
 
 			let size = Math.sqrt( this._maxGeometryCount * 4 ); // 4 pixels needed for 1 matrix
-			size = MathUtils.ceilPowerOfTwo( size );
+			size = Math.ceil( size / 4 ) * 4;
 			size = Math.max( size, 4 );
 
 			const matricesArray = new Float32Array( size * size * 4 ); // 4 floats per RGBA pixel
@@ -33236,13 +33236,13 @@ var THREE = (async function (exports) {
 
 			}
 
-			const visible = this._visible;
+			const visibility = this._visibility;
 			const active = this._active;
 			const matricesTexture = this._matricesTexture;
 			const matricesArray = this._matricesTexture.image.data;
 
 			// push new visibility states
-			visible.push( true );
+			visibility.push( true );
 			active.push( true );
 
 			// update id
@@ -33393,6 +33393,7 @@ var THREE = (async function (exports) {
 			const drawRange = this._drawRanges[ id ];
 			const posAttr = geometry.getAttribute( 'position' );
 			drawRange.count = hasIndex ? srcIndex.count : posAttr.count;
+			this._visibilityChanged = true;
 
 			return id;
 
@@ -33410,6 +33411,7 @@ var THREE = (async function (exports) {
 			}
 
 			active[ geometryId ] = false;
+			this._visibilityChanged = true;
 
 			return this;
 
@@ -33547,7 +33549,7 @@ var THREE = (async function (exports) {
 
 		setVisibleAt( geometryId, value ) {
 
-			const visible = this._visible;
+			const visibility = this._visibility;
 			const active = this._active;
 			const geometryCount = this._geometryCount;
 
@@ -33556,21 +33558,23 @@ var THREE = (async function (exports) {
 			if (
 				geometryId >= geometryCount ||
 				active[ geometryId ] === false ||
-				visible[ geometryId ] === value
+				visibility[ geometryId ] === value
 			) {
 
 				return this;
 
 			}
 
-			visible[ geometryId ] = value;
+			visibility[ geometryId ] = value;
+			this._visibilityChanged = true;
+
 			return this;
 
 		}
 
 		getVisibleAt( geometryId ) {
 
-			const visible = this._visible;
+			const visibility = this._visibility;
 			const active = this._active;
 			const geometryCount = this._geometryCount;
 
@@ -33581,13 +33585,13 @@ var THREE = (async function (exports) {
 
 			}
 
-			return visible[ geometryId ];
+			return visibility[ geometryId ];
 
 		}
 
 		raycast( raycaster, intersects ) {
 
-			const visible = this._visible;
+			const visibility = this._visibility;
 			const active = this._active;
 			const drawRanges = this._drawRanges;
 			const geometryCount = this._geometryCount;
@@ -33612,7 +33616,7 @@ var THREE = (async function (exports) {
 
 			for ( let i = 0; i < geometryCount; i ++ ) {
 
-				if ( ! visible[ i ] || ! active[ i ] ) {
+				if ( ! visibility[ i ] || ! active[ i ] ) {
 
 					continue;
 
@@ -33661,7 +33665,7 @@ var THREE = (async function (exports) {
 			this._drawRanges = source._drawRanges.map( range => ( { ...range } ) );
 			this._reservedRanges = source._reservedRanges.map( range => ( { ...range } ) );
 
-			this._visible = source._visible.slice();
+			this._visibility = source._visibility.slice();
 			this._active = source._active.slice();
 			this._bounds = source._bounds.map( bound => ( {
 				boxInitialized: bound.boxInitialized,
@@ -33700,12 +33704,20 @@ var THREE = (async function (exports) {
 
 		onBeforeRender( _renderer, _scene, camera, geometry, material/*, _group*/ ) {
 
+			// if visibility has not changed and frustum culling and object sorting is not required
+			// then skip iterating over all items
+			if ( ! this._visibilityChanged && ! this.perObjectFrustumCulled && ! this.sortObjects ) {
+
+				return;
+
+			}
+
 			// the indexed version of the multi draw function requires specifying the start
 			// offset in bytes.
 			const index = geometry.getIndex();
 			const bytesPerElement = index === null ? 1 : index.array.BYTES_PER_ELEMENT;
 
-			const visible = this._visible;
+			const visibility = this._visibility;
 			const multiDrawStarts = this._multiDrawStarts;
 			const multiDrawCounts = this._multiDrawCounts;
 			const drawRanges = this._drawRanges;
@@ -33731,9 +33743,9 @@ var THREE = (async function (exports) {
 				// get the camera position
 				_vector$5.setFromMatrixPosition( camera.matrixWorld );
 
-				for ( let i = 0, l = visible.length; i < l; i ++ ) {
+				for ( let i = 0, l = visibility.length; i < l; i ++ ) {
 
-					if ( visible[ i ] ) {
+					if ( visibility[ i ] ) {
 
 						this.getMatrixAt( i, _matrix );
 						this.getBoundingSphereAt( i, _sphere$2 ).applyMatrix4( _matrix );
@@ -33780,9 +33792,9 @@ var THREE = (async function (exports) {
 
 			} else {
 
-				for ( let i = 0, l = visible.length; i < l; i ++ ) {
+				for ( let i = 0, l = visibility.length; i < l; i ++ ) {
 
-					if ( visible[ i ] ) {
+					if ( visibility[ i ] ) {
 
 						// determine whether the batched geometry is within the frustum
 						let culled = false;
@@ -33814,8 +33826,7 @@ var THREE = (async function (exports) {
 			}
 
 			this._multiDrawCount = count;
-
-			// @TODO: Implement geometry sorting for transparent and opaque materials
+			this._visibilityChanged = false;
 
 		}
 
@@ -46534,7 +46545,7 @@ var THREE = (async function (exports) {
 					object._drawRanges = data.drawRanges;
 					object._reservedRanges = data.reservedRanges;
 
-					object._visible = data.visible;
+					object._visibility = data.visibility;
 					object._active = data.active;
 					object._bounds = data.bounds.map( bound => {
 
@@ -53281,7 +53292,7 @@ var THREE = (async function (exports) {
 
 		getMaterialCacheKey() {
 
-			const material = this.material;
+			const { object, material } = this;
 
 			let cacheKey = material.customProgramCacheKey();
 
@@ -53301,6 +53312,12 @@ var THREE = (async function (exports) {
 				}
 
 				cacheKey += /*property + ':' +*/ value + ',';
+
+			}
+
+			if ( object.morphTargetInfluences ) {
+
+				cacheKey += object.morphTargetInfluences.length + ',';
 
 			}
 
@@ -54179,29 +54196,13 @@ var THREE = (async function (exports) {
 
 		_getComputeCacheKey( computeNode, stageCompute ) {
 
-			return 'compute' + computeNode.id + stageCompute.id;
+			return computeNode.id + ',' + stageCompute.id;
 
 		}
 
 		_getRenderCacheKey( renderObject, stageVertex, stageFragment ) {
 
-			const { material } = renderObject;
-
-			const parameters = [
-				stageVertex.id, stageFragment.id,
-				material.transparent, material.blending, material.premultipliedAlpha,
-				material.blendSrc, material.blendDst, material.blendEquation,
-				material.blendSrcAlpha, material.blendDstAlpha, material.blendEquationAlpha,
-				material.colorWrite,
-				material.depthWrite, material.depthTest, material.depthFunc,
-				material.stencilWrite, material.stencilFunc,
-				material.stencilFail, material.stencilZFail, material.stencilZPass,
-				material.stencilFuncMask, material.stencilWriteMask,
-				material.side,
-				this.backend.getCacheKey( renderObject )
-			];
-
-			return parameters.join();
+			return stageVertex.id + ',' + stageFragment.id + ',' + this.backend.getRenderCacheKey( renderObject );
 
 		}
 
@@ -54231,40 +54232,8 @@ var THREE = (async function (exports) {
 		_needsRenderUpdate( renderObject ) {
 
 			const data = this.get( renderObject );
-			const material = renderObject.material;
 
-			let needsUpdate = this.backend.needsUpdate( renderObject );
-
-			// check material state
-
-			if ( data.material !== material || data.materialVersion !== material.version ||
-				data.transparent !== material.transparent || data.blending !== material.blending || data.premultipliedAlpha !== material.premultipliedAlpha ||
-				data.blendSrc !== material.blendSrc || data.blendDst !== material.blendDst || data.blendEquation !== material.blendEquation ||
-				data.blendSrcAlpha !== material.blendSrcAlpha || data.blendDstAlpha !== material.blendDstAlpha || data.blendEquationAlpha !== material.blendEquationAlpha ||
-				data.colorWrite !== material.colorWrite ||
-				data.depthWrite !== material.depthWrite || data.depthTest !== material.depthTest || data.depthFunc !== material.depthFunc ||
-				data.stencilWrite !== material.stencilWrite || data.stencilFunc !== material.stencilFunc ||
-				data.stencilFail !== material.stencilFail || data.stencilZFail !== material.stencilZFail || data.stencilZPass !== material.stencilZPass ||
-				data.stencilFuncMask !== material.stencilFuncMask || data.stencilWriteMask !== material.stencilWriteMask ||
-				data.side !== material.side || data.alphaToCoverage !== material.alphaToCoverage
-			) {
-
-				data.material = material; data.materialVersion = material.version;
-				data.transparent = material.transparent; data.blending = material.blending; data.premultipliedAlpha = material.premultipliedAlpha;
-				data.blendSrc = material.blendSrc; data.blendDst = material.blendDst; data.blendEquation = material.blendEquation;
-				data.blendSrcAlpha = material.blendSrcAlpha; data.blendDstAlpha = material.blendDstAlpha; data.blendEquationAlpha = material.blendEquationAlpha;
-				data.colorWrite = material.colorWrite;
-				data.depthWrite = material.depthWrite; data.depthTest = material.depthTest; data.depthFunc = material.depthFunc;
-				data.stencilWrite = material.stencilWrite; data.stencilFunc = material.stencilFunc;
-				data.stencilFail = material.stencilFail; data.stencilZFail = material.stencilZFail; data.stencilZPass = material.stencilZPass;
-				data.stencilFuncMask = material.stencilFuncMask; data.stencilWriteMask = material.stencilWriteMask;
-				data.side = material.side; data.alphaToCoverage = material.alphaToCoverage;
-
-				needsUpdate = true;
-
-			}
-
-			return needsUpdate || data.pipeline === undefined;
+			return data.pipeline === undefined || this.backend.needsRenderUpdate( renderObject );
 
 		}
 
@@ -58103,7 +58072,7 @@ var THREE = (async function (exports) {
 
 			}
 
-			return uvNode.build( builder, this.sampler === true ? 'vec2' : 'uvec2' );
+			return uvNode.build( builder, this.sampler === true ? 'vec2' : 'ivec2' );
 
 		}
 
@@ -58141,7 +58110,7 @@ var THREE = (async function (exports) {
 
 					const uvSnippet = this.generateUV( builder, uvNode );
 					const levelSnippet = levelNode ? levelNode.build( builder, 'float' ) : null;
-					const depthSnippet = depthNode ? depthNode.build( builder, 'uint' ) : null;
+					const depthSnippet = depthNode ? depthNode.build( builder, 'int' ) : null;
 					const compareSnippet = compareNode ? compareNode.build( builder, 'float' ) : null;
 
 					const nodeVar = builder.getVarFromNode( this );
@@ -58275,13 +58244,18 @@ var THREE = (async function (exports) {
 
 		clone() {
 
-			return new this.constructor( this.value, this.uvNode, this.levelNode );
+			const newNode = new this.constructor( this.value, this.uvNode, this.levelNode );
+			newNode.sampler = this.sampler;
+
+			return newNode;
 
 		}
 
 	}
 
 	const texture = nodeProxy( TextureNode );
+	const textureLoad = ( ...params ) => texture( ...params ).setSampler( false );
+
 	//export const textureLevel = ( value, uv, level ) => texture( value, uv ).level( level );
 
 	const sampler = ( aTexture ) => ( aTexture.isNode === true ? aTexture : texture( aTexture ) ).convert( 'sampler' );
@@ -58298,6 +58272,7 @@ var THREE = (async function (exports) {
 			super();
 
 			this.property = property;
+			this.index = null;
 
 			this.uniformType = uniformType;
 
@@ -58317,6 +58292,20 @@ var THREE = (async function (exports) {
 			this.reference = this.object !== null ? this.object : frame.object;
 
 			return this.reference;
+
+		}
+
+		setIndex( index ) {
+
+			this.index = index;
+
+			return this;
+
+		}
+
+		getIndex() {
+
+			return this.index;
 
 		}
 
@@ -58346,7 +58335,15 @@ var THREE = (async function (exports) {
 
 		update( /*frame*/ ) {
 
-			this.node.value = this.reference[ this.property ];
+			let value = this.reference[ this.property ];
+
+			if ( this.index !== null ) {
+
+				value = value[ this.index ];
+
+			}
+
+			this.node.value = value;
 
 		}
 
@@ -58359,6 +58356,7 @@ var THREE = (async function (exports) {
 	}
 
 	const reference = ( name, type, object ) => nodeObject( new ReferenceNode( name, type, object ) );
+	const referenceIndex = ( name, index, type, object ) => nodeObject( new ReferenceNode( name, type, object ).setIndex( index ) );
 
 	addNodeClass( 'ReferenceNode', ReferenceNode );
 
@@ -59577,6 +59575,149 @@ var THREE = (async function (exports) {
 
 	addNodeClass( 'SkinningNode', SkinningNode );
 
+	const morphTextures = new WeakMap();
+	const morphVec4 = new Vector4();
+
+	const getMorph = tslFn( ( { bufferMap, influence, stride, width, depth, offset } ) => {
+
+		const texelIndex = int( vertexIndex ).mul( stride ).add( offset );
+
+		const y = texelIndex.div( width );
+		const x = texelIndex.sub( y.mul( width ) );
+
+		const bufferAttrib = textureLoad( bufferMap, ivec2( x, y ) ).depth( depth );
+
+		return bufferAttrib.mul( influence );
+
+	} );
+
+	function getEntry( geometry ) {
+
+		const hasMorphPosition = geometry.morphAttributes.position !== undefined;
+		const hasMorphNormals = geometry.morphAttributes.normal !== undefined;
+		const hasMorphColors = geometry.morphAttributes.color !== undefined;
+
+		// instead of using attributes, the WebGL 2 code path encodes morph targets
+		// into an array of data textures. Each layer represents a single morph target.
+
+		const morphAttribute = geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color;
+		const morphTargetsCount = ( morphAttribute !== undefined ) ? morphAttribute.length : 0;
+
+		let entry = morphTextures.get( geometry );
+
+		if ( entry === undefined || entry.count !== morphTargetsCount ) {
+
+			if ( entry !== undefined ) entry.texture.dispose();
+
+			const morphTargets = geometry.morphAttributes.position || [];
+			const morphNormals = geometry.morphAttributes.normal || [];
+			const morphColors = geometry.morphAttributes.color || [];
+
+			let vertexDataCount = 0;
+
+			if ( hasMorphPosition === true ) vertexDataCount = 1;
+			if ( hasMorphNormals === true ) vertexDataCount = 2;
+			if ( hasMorphColors === true ) vertexDataCount = 3;
+
+			let width = geometry.attributes.position.count * vertexDataCount;
+			let height = 1;
+
+			const maxTextureSize = 4096; // @TODO: Use 'capabilities.maxTextureSize'
+
+			if ( width > maxTextureSize ) {
+
+				height = Math.ceil( width / maxTextureSize );
+				width = maxTextureSize;
+
+			}
+
+			const buffer = new Float32Array( width * height * 4 * morphTargetsCount );
+
+			const bufferTexture = new DataArrayTexture( buffer, width, height, morphTargetsCount );
+			bufferTexture.type = FloatType;
+			bufferTexture.needsUpdate = true;
+
+			// fill buffer
+
+			const vertexDataStride = vertexDataCount * 4;
+
+			for ( let i = 0; i < morphTargetsCount; i ++ ) {
+
+				const morphTarget = morphTargets[ i ];
+				const morphNormal = morphNormals[ i ];
+				const morphColor = morphColors[ i ];
+
+				const offset = width * height * 4 * i;
+
+				for ( let j = 0; j < morphTarget.count; j ++ ) {
+
+					const stride = j * vertexDataStride;
+
+					if ( hasMorphPosition === true ) {
+
+						morphVec4.fromBufferAttribute( morphTarget, j );
+
+						buffer[ offset + stride + 0 ] = morphVec4.x;
+						buffer[ offset + stride + 1 ] = morphVec4.y;
+						buffer[ offset + stride + 2 ] = morphVec4.z;
+						buffer[ offset + stride + 3 ] = 0;
+
+					}
+
+					if ( hasMorphNormals === true ) {
+
+						morphVec4.fromBufferAttribute( morphNormal, j );
+
+						buffer[ offset + stride + 4 ] = morphVec4.x;
+						buffer[ offset + stride + 5 ] = morphVec4.y;
+						buffer[ offset + stride + 6 ] = morphVec4.z;
+						buffer[ offset + stride + 7 ] = 0;
+
+					}
+
+					if ( hasMorphColors === true ) {
+
+						morphVec4.fromBufferAttribute( morphColor, j );
+
+						buffer[ offset + stride + 8 ] = morphVec4.x;
+						buffer[ offset + stride + 9 ] = morphVec4.y;
+						buffer[ offset + stride + 10 ] = morphVec4.z;
+						buffer[ offset + stride + 11 ] = ( morphColor.itemSize === 4 ) ? morphVec4.w : 1;
+
+					}
+
+				}
+
+			}
+
+			entry = {
+				count: morphTargetsCount,
+				texture: bufferTexture,
+				stride: vertexDataCount,
+				size: new Vector2( width, height )
+			};
+
+			morphTextures.set( geometry, entry );
+
+			function disposeTexture() {
+
+				bufferTexture.dispose();
+
+				morphTextures.delete( geometry );
+
+				geometry.removeEventListener( 'dispose', disposeTexture );
+
+			}
+
+			geometry.addEventListener( 'dispose', disposeTexture );
+
+		}
+
+		return entry;
+
+	}
+
+
 	class MorphNode extends Node {
 
 		constructor( mesh ) {
@@ -59590,29 +59731,57 @@ var THREE = (async function (exports) {
 
 		}
 
-		setupAttribute( name, assignNode = positionLocal ) {
+		setup( builder ) {
 
-			const mesh = this.mesh;
-			const attributes = mesh.geometry.morphAttributes[ name ];
+			const { geometry } = builder;
 
-			assignNode.mulAssign( this.morphBaseInfluence );
+			const hasMorphPosition = geometry.morphAttributes.position !== undefined;
+			const hasMorphNormals = geometry.morphAttributes.normal !== undefined;
 
-			for ( let i = 0; i < attributes.length; i ++ ) {
+			const morphAttribute = geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color;
+			const morphTargetsCount = ( morphAttribute !== undefined ) ? morphAttribute.length : 0;
 
-				const attribute = attributes[ i ];
+			// nodes
 
-				const bufferAttrib = bufferAttribute( attribute.array, 'vec3' );
-				const influence = reference( i, 'float', mesh.morphTargetInfluences );
+			const { texture: bufferMap, stride, size } = getEntry( geometry );
 
-				assignNode.addAssign( bufferAttrib.mul( influence ) );
+			if ( hasMorphPosition === true ) positionLocal.mulAssign( this.morphBaseInfluence );
+			if ( hasMorphNormals === true ) normalLocal.mulAssign( this.morphBaseInfluence );
+
+			const width = int( size.width );
+
+			for ( let i = 0; i < morphTargetsCount; i ++ ) {
+
+				const influence = referenceIndex( 'morphTargetInfluences', i, 'float' );
+				const depth = int( i );
+
+				if ( hasMorphPosition === true ) {
+
+					positionLocal.addAssign( getMorph( {
+						bufferMap,
+						influence,
+						stride,
+						width,
+						depth,
+						offset: int( 0 )
+					} ) );
+
+				}
+
+				if ( hasMorphNormals === true ) {
+
+					normalLocal.addAssign( getMorph( {
+						bufferMap,
+						influence,
+						stride,
+						width,
+						depth,
+						offset: int( 1 )
+					} ) );
+
+				}
 
 			}
-
-		}
-
-		setup( /*builder*/ ) {
-
-			this.setupAttribute( 'position' );
 
 		}
 
@@ -60566,7 +60735,7 @@ var THREE = (async function (exports) {
 
 			if ( this.vertexColors === true && geometry.hasAttribute( 'color' ) ) {
 
-				colorNode = vec4( colorNode.xyz.mul( attribute( 'color' ) ), colorNode.a );
+				colorNode = vec4( colorNode.xyz.mul( attribute( 'color', 'vec3' ) ), colorNode.a );
 
 			}
 
@@ -71909,6 +72078,13 @@ vec3 mx_srgb_texture_to_lin_rec709(vec3 color)
 		instance: true
 	};
 
+	const defaultPrecisions = `
+precision highp float;
+precision highp int;
+precision mediump sampler2DArray;
+precision lowp sampler2DShadow;
+`;
+
 	class GLSLNodeBuilder extends NodeBuilder {
 
 		constructor( object, renderer, scene = null ) {
@@ -71960,6 +72136,20 @@ ${ flowData.code }
 			//
 
 			return new FunctionNode( code );
+
+		}
+
+		generateTextureLoad( texture, textureProperty, uvIndexSnippet, depthSnippet, levelSnippet = '0' ) {
+
+			if ( depthSnippet ) {
+
+				return `texelFetch( ${ textureProperty }, ivec3( ${ uvIndexSnippet }, ${ depthSnippet } ), ${ levelSnippet } )`;
+
+			} else {
+
+				return `texelFetch( ${ textureProperty }, ${ uvIndexSnippet }, ${ levelSnippet } )`;
+
+			}
 
 		}
 
@@ -72117,6 +72307,30 @@ ${ flowData.code }
 
 		}
 
+		getTypeFromAttribute( attribute ) {
+
+			let nodeType = super.getTypeFromAttribute( attribute );
+
+			if ( /^[iu]/.test( nodeType ) && attribute.gpuType !== IntType ) {
+
+				let dataAttribute = attribute;
+
+				if ( attribute.isInterleavedBufferAttribute ) dataAttribute = attribute.data;
+
+				const array = dataAttribute.array;
+
+				if ( ( array instanceof Uint32Array || array instanceof Int32Array ) === false ) {
+
+					nodeType = nodeType.slice( 1 );
+
+				}
+
+			}
+
+			return nodeType;
+
+		}
+
 		getAttributes( shaderStage ) {
 
 			let snippet = '';
@@ -72222,7 +72436,7 @@ ${ flowData.code }
 
 		getVertexIndex() {
 
-			return 'gl_VertexID';
+			return 'uint( gl_VertexID )';
 
 		}
 
@@ -72273,8 +72487,7 @@ ${vars}
 ${ this.getSignature() }
 
 // precision
-precision highp float;
-precision highp int;
+${ defaultPrecisions }
 
 // uniforms
 ${shaderData.uniforms}
@@ -72310,10 +72523,7 @@ void main() {
 ${ this.getSignature() }
 
 // precision
-precision highp float;
-precision highp int;
-precision highp sampler2DArray;
-precision lowp sampler2DShadow;
+${ defaultPrecisions }
 
 // uniforms
 ${shaderData.uniforms}
@@ -72552,9 +72762,9 @@ void main() {
 
 		// cache key
 
-		needsUpdate( renderObject ) { } // return Boolean ( fast test )
+		needsRenderUpdate( renderObject ) { } // return Boolean ( fast test )
 
-		getCacheKey( renderObject ) { } // return String
+		getRenderCacheKey( renderObject ) { } // return String
 
 		// node builder
 
@@ -72700,19 +72910,16 @@ void main() {
 			//attribute.onUploadCallback();
 
 			let type;
-			let isFloat = false;
 
 			if ( array instanceof Float32Array ) {
 
 				type = gl.FLOAT;
-				isFloat = true;
 
 			} else if ( array instanceof Uint16Array ) {
 
 				if ( attribute.isFloat16BufferAttribute ) {
 
 					type = gl.HALF_FLOAT;
-					isFloat = true;
 
 				} else {
 
@@ -72755,7 +72962,7 @@ void main() {
 				type,
 				bytesPerElement: array.BYTES_PER_ELEMENT,
 				version: attribute.version,
-				isFloat
+				isInteger: type === gl.INT || type === gl.UNSIGNED_INT || attribute.gpuType === IntType
 			} );
 
 		}
@@ -74201,15 +74408,15 @@ void main() {
 
 		}
 
-		needsUpdate( renderObject ) {
+		needsRenderUpdate( renderObject ) {
 
 			return false;
 
 		}
 
-		getCacheKey( renderObject ) {
+		getRenderCacheKey( renderObject ) {
 
-			return renderObject.geometry.id;
+			return renderObject.id;
 
 		}
 
@@ -74489,13 +74696,13 @@ void main() {
 
 				}
 
-				if ( attributeData.isFloat ) {
+				if ( attributeData.isInteger ) {
 
-					gl.vertexAttribPointer( i, attribute.itemSize, attributeData.type, false, stride, offset );
+					gl.vertexAttribIPointer( i, attribute.itemSize, attributeData.type, stride, offset );
 
 				} else {
 
-					gl.vertexAttribIPointer( i, attribute.itemSize, attributeData.type, stride, offset );
+					gl.vertexAttribPointer( i, attribute.itemSize, attributeData.type, attribute.normalized, stride, offset );
 
 				}
 
@@ -76468,6 +76675,20 @@ fn threejs_repeatWrapping( uv : vec2<f32>, dimension : vec2<u32> ) -> vec2<u32> 
 			const dimension = `textureDimensions( ${ textureProperty }, 0 )`;
 
 			return `textureLoad( ${ textureProperty }, threejs_repeatWrapping( ${ uvSnippet }, ${ dimension } ), i32( ${ levelSnippet } ) )`;
+
+		}
+
+		generateTextureLoad( texture, textureProperty, uvIndexSnippet, depthSnippet, levelSnippet = '0u' ) {
+
+			if ( depthSnippet ) {
+
+				return `textureLoad( ${ textureProperty }, ${ uvIndexSnippet }, ${ depthSnippet }, ${ levelSnippet } )`;
+
+			} else {
+
+				return `textureLoad( ${ textureProperty }, ${ uvIndexSnippet }, ${ levelSnippet } )`;
+
+			}
 
 		}
 
@@ -79091,9 +79312,9 @@ var<${access}> ${name} : ${structName};`;
 
 		// cache key
 
-		needsUpdate( renderObject ) {
+		needsRenderUpdate( renderObject ) {
 
-			const renderObjectGPU = this.get( renderObject );
+			const data = this.get( renderObject );
 
 			const { object, material } = renderObject;
 
@@ -79107,15 +79328,35 @@ var<${access}> ${name} : ${structName};`;
 
 			let needsUpdate = false;
 
-			if ( renderObjectGPU.sampleCount !== sampleCount || renderObjectGPU.colorSpace !== colorSpace ||
-				renderObjectGPU.colorFormat !== colorFormat || renderObjectGPU.depthStencilFormat !== depthStencilFormat ||
-	            renderObjectGPU.primitiveTopology !== primitiveTopology ) {
+			if ( data.material !== material || data.materialVersion !== material.version ||
+				data.transparent !== material.transparent || data.blending !== material.blending || data.premultipliedAlpha !== material.premultipliedAlpha ||
+				data.blendSrc !== material.blendSrc || data.blendDst !== material.blendDst || data.blendEquation !== material.blendEquation ||
+				data.blendSrcAlpha !== material.blendSrcAlpha || data.blendDstAlpha !== material.blendDstAlpha || data.blendEquationAlpha !== material.blendEquationAlpha ||
+				data.colorWrite !== material.colorWrite || data.depthWrite !== material.depthWrite || data.depthTest !== material.depthTest || data.depthFunc !== material.depthFunc ||
+				data.stencilWrite !== material.stencilWrite || data.stencilFunc !== material.stencilFunc ||
+				data.stencilFail !== material.stencilFail || data.stencilZFail !== material.stencilZFail || data.stencilZPass !== material.stencilZPass ||
+				data.stencilFuncMask !== material.stencilFuncMask || data.stencilWriteMask !== material.stencilWriteMask ||
+				data.side !== material.side || data.alphaToCoverage !== material.alphaToCoverage ||
+				data.sampleCount !== sampleCount || data.colorSpace !== colorSpace ||
+				data.colorFormat !== colorFormat || data.depthStencilFormat !== depthStencilFormat ||
+				data.primitiveTopology !== primitiveTopology 
+			) {
 
-				renderObjectGPU.sampleCount = sampleCount;
-				renderObjectGPU.colorSpace = colorSpace;
-				renderObjectGPU.colorFormat = colorFormat;
-				renderObjectGPU.depthStencilFormat = depthStencilFormat;
-				renderObjectGPU.primitiveTopology = primitiveTopology;
+				data.material = material; data.materialVersion = material.version;
+				data.transparent = material.transparent; data.blending = material.blending; data.premultipliedAlpha = material.premultipliedAlpha;
+				data.blendSrc = material.blendSrc; data.blendDst = material.blendDst; data.blendEquation = material.blendEquation;
+				data.blendSrcAlpha = material.blendSrcAlpha; data.blendDstAlpha = material.blendDstAlpha; data.blendEquationAlpha = material.blendEquationAlpha;
+				data.colorWrite = material.colorWrite;
+				data.depthWrite = material.depthWrite; data.depthTest = material.depthTest; data.depthFunc = material.depthFunc;
+				data.stencilWrite = material.stencilWrite; data.stencilFunc = material.stencilFunc;
+				data.stencilFail = material.stencilFail; data.stencilZFail = material.stencilZFail; data.stencilZPass = material.stencilZPass;
+				data.stencilFuncMask = material.stencilFuncMask; data.stencilWriteMask = material.stencilWriteMask;
+				data.side = material.side; data.alphaToCoverage = material.alphaToCoverage;
+				data.sampleCount = sampleCount;
+				data.colorSpace = colorSpace;
+				data.colorFormat = colorFormat;
+				data.depthStencilFormat = depthStencilFormat;
+				data.primitiveTopology = primitiveTopology;
 
 				needsUpdate = true;
 
@@ -79125,7 +79366,7 @@ var<${access}> ${name} : ${structName};`;
 
 		}
 
-		getCacheKey( renderObject ) {
+		getRenderCacheKey( renderObject ) {
 
 			const { object, material } = renderObject;
 
@@ -79133,6 +79374,15 @@ var<${access}> ${name} : ${structName};`;
 			const renderContext = renderObject.context;
 
 			return [
+				material.transparent, material.blending, material.premultipliedAlpha,
+				material.blendSrc, material.blendDst, material.blendEquation,
+				material.blendSrcAlpha, material.blendDstAlpha, material.blendEquationAlpha,
+				material.colorWrite,
+				material.depthWrite, material.depthTest, material.depthFunc,
+				material.stencilWrite, material.stencilFunc,
+				material.stencilFail, material.stencilZFail, material.stencilZPass,
+				material.stencilFuncMask, material.stencilWriteMask,
+				material.side,
 				utils.getSampleCount( renderContext ),
 				utils.getCurrentColorSpace( renderContext ), utils.getCurrentColorFormat( renderContext ), utils.getCurrentDepthStencilFormat( renderContext ),
 				utils.getPrimitiveTopology( object, material )
@@ -80339,6 +80589,7 @@ var<${access}> ${name} : ${structName};`;
 	exports.rangeFog = rangeFog;
 	exports.reciprocal = reciprocal;
 	exports.reference = reference;
+	exports.referenceIndex = referenceIndex;
 	exports.reflect = reflect;
 	exports.reflectVector = reflectVector;
 	exports.refract = refract;
@@ -80387,6 +80638,7 @@ var<${access}> ${name} : ${structName};`;
 	exports.temp = temp;
 	exports.texture = texture;
 	exports.textureBicubic = textureBicubic;
+	exports.textureLoad = textureLoad;
 	exports.textureStore = textureStore;
 	exports.timerDelta = timerDelta;
 	exports.timerGlobal = timerGlobal;
