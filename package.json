@@ -1,6 +1,6 @@
 {
     "name": "three-webgpu-renderer",
-    "version": "0.155.0",
+    "version": "0.162.0",
     "description": "Three.js WebGPU Renderer",
     "main": "build/three-webgpu-renderer.js",
     "module": "build/webgpu-renderer.module.js",
